@@ -1,0 +1,1394 @@
+# B2B+ Phase 4: Container Builder Implementation
+
+**Duration**: 3-4 weeks  
+**Goal**: 3D container visualization, bin packing optimization, loading instructions
+
+## Phase 4 Overview
+
+By the end of Phase 4, you will have:
+- ✅ 3D container visualization with React Three Fiber
+- ✅ Bin packing algorithm (binpackingjs)
+- ✅ Interactive 3D controls (orbit, zoom, pan)
+- ✅ Step-by-step loading instructions
+- ✅ Container utilization analytics
+- ✅ PDF export of loading plan
+- ✅ Mobile-optimized 3D viewer
+
+---
+
+## Step 4.1: Install Dependencies
+
+**Prompt for Augment**:
+```
+Install React Three Fiber and related dependencies:
+
+# Web app
+cd apps/web
+npm install three @react-three/fiber @react-three/drei
+npm install -D @types/three
+
+# For bin packing
+npm install binpackingjs
+
+# For PDF generation
+npm install @react-pdf/renderer
+
+# Mobile app (for React Native 3D)
+cd ../mobile
+npm install expo-gl expo-three three@0.128.0
+npx expo install expo-gl expo-three
+```
+
+---
+
+## Step 4.2: Create Container Configuration Schema
+
+**Location**: `/supabase/migrations/20240104000000_container_builder.sql`
+
+**Prompt for Augment**:
+```
+Create container builder tables:
+
+-- Container types (standard shipping containers)
+CREATE TABLE container_types (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  length_inches DECIMAL(8,2) NOT NULL,
+  width_inches DECIMAL(8,2) NOT NULL,
+  height_inches DECIMAL(8,2) NOT NULL,
+  max_weight_lbs DECIMAL(10,2) NOT NULL,
+  volume_cubic_ft DECIMAL(10,2) NOT NULL,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Insert standard container sizes
+INSERT INTO container_types (name, length_inches, width_inches, height_inches, max_weight_lbs, volume_cubic_ft, is_default) VALUES
+  ('20ft Standard', 235, 94, 94, 48000, 1172, true),
+  ('40ft Standard', 475, 94, 94, 64000, 2385, false),
+  ('40ft High Cube', 475, 94, 110, 64000, 2694, false),
+  ('Custom Box', 48, 40, 36, 500, 40, false);
+
+-- Container optimization sessions (saved packing results)
+CREATE TABLE container_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  container_type_id UUID NOT NULL REFERENCES container_types(id),
+  name TEXT,
+  total_items INTEGER NOT NULL,
+  fitted_items INTEGER NOT NULL,
+  unfitted_items INTEGER NOT NULL,
+  utilization_percentage DECIMAL(5,2) NOT NULL,
+  packing_data JSONB NOT NULL, -- Full packing result from binpackingjs
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_container_sessions_user ON container_sessions(user_id);
+CREATE INDEX idx_container_sessions_org ON container_sessions(organization_id);
+
+-- RLS policies
+ALTER TABLE container_sessions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their organization's sessions" ON container_sessions
+  FOR SELECT USING (is_organization_member(organization_id));
+
+CREATE POLICY "Users can create sessions" ON container_sessions
+  FOR INSERT WITH CHECK (
+    is_organization_member(organization_id) AND
+    user_id = auth.uid()
+  );
+
+Run migration:
+supabase db reset
+```
+
+---
+
+## Step 4.3: Create Bin Packing Service
+
+**Prompt for Augment**:
+```
+Create bin packing utility in /packages/shared/src/binPacking.ts:
+
+import { Packer, Bin, Item } from 'binpackingjs'
+
+export type PackingItem = {
+  id: string
+  name: string
+  sku: string
+  width: number    // inches
+  height: number   // inches
+  depth: number    // inches
+  weight: number   // lbs
+  quantity: number
+  stackable: boolean
+}
+
+export type PackingResult = {
+  bins: Array<{
+    id: string
+    name: string
+    width: number
+    height: number
+    depth: number
+    maxWeight: number
+    items: Array<{
+      id: string
+      name: string
+      sku: string
+      x: number
+      y: number
+      z: number
+      width: number
+      height: number
+      depth: number
+      rotationType: number
+    }>
+    unfittedItems: Array<{
+      id: string
+      name: string
+      sku: string
+    }>
+    volume: number
+    usedVolume: number
+    utilization: number
+  }>
+  totalUtilization: number
+}
+
+export function packItems(
+  items: PackingItem[],
+  containerWidth: number,
+  containerHeight: number,
+  containerDepth: number,
+  containerMaxWeight: number
+): PackingResult {
+  // Create bin (container)
+  const bin = new Bin(
+    'container-1',
+    containerWidth,
+    containerHeight,
+    containerDepth,
+    containerMaxWeight
+  )
+
+  // Create items (expand by quantity)
+  const expandedItems: Item[] = []
+  items.forEach(item => {
+    for (let i = 0; i < item.quantity; i++) {
+      expandedItems.push(
+        new Item(
+          `${item.id}-${i}`,
+          item.width,
+          item.height,
+          item.depth,
+          item.weight
+        )
+      )
+    }
+  })
+
+  // Create packer and add bin & items
+  const packer = new Packer()
+  packer.addBin(bin)
+  expandedItems.forEach(item => packer.addItem(item))
+
+  // Pack!
+  packer.pack()
+
+  // Get results
+  const packedBin = packer.bins[0]
+  const containerVolume = containerWidth * containerHeight * containerDepth
+
+  let usedVolume = 0
+  const fittedItems = packedBin.items.map((item: any) => {
+    const originalItem = items.find(i => item.name.startsWith(i.id))
+    usedVolume += item.width * item.height * item.depth
+    
+    return {
+      id: item.name,
+      name: originalItem?.name || 'Unknown',
+      sku: originalItem?.sku || 'Unknown',
+      x: item.position[0],
+      y: item.position[1],
+      z: item.position[2],
+      width: item.width,
+      height: item.height,
+      depth: item.depth,
+      rotationType: item.rotationType
+    }
+  })
+
+  const unfittedItems = packedBin.unfittedItems.map((item: any) => {
+    const originalItem = items.find(i => item.name.startsWith(i.id))
+    return {
+      id: item.name,
+      name: originalItem?.name || 'Unknown',
+      sku: originalItem?.sku || 'Unknown'
+    }
+  })
+
+  const utilization = (usedVolume / containerVolume) * 100
+
+  return {
+    bins: [{
+      id: 'container-1',
+      name: 'Container',
+      width: containerWidth,
+      height: containerHeight,
+      depth: containerDepth,
+      maxWeight: containerMaxWeight,
+      items: fittedItems,
+      unfittedItems,
+      volume: containerVolume,
+      usedVolume,
+      utilization
+    }],
+    totalUtilization: utilization
+  }
+}
+
+// Helper to convert inches to feet
+export function inchesToFeet(inches: number): number {
+  return inches / 12
+}
+
+// Helper to calculate cubic feet
+export function calculateCubicFeet(width: number, height: number, depth: number): number {
+  return (width * height * depth) / 1728 // divide by 12^3
+}
+```
+
+---
+
+## Step 4.4: Create Container Builder Page (Web)
+
+**Prompt for Augment**:
+```
+Create container builder page in /apps/web/src/app/container-builder/page.tsx:
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { packItems, type PackingItem } from '@b2b-plus/shared'
+import ContainerViewer3D from '@/components/ContainerViewer3D'
+import ItemSelector from '@/components/ItemSelector'
+
+export default function ContainerBuilderPage() {
+  const [products, setProducts] = useState([])
+  const [selectedItems, setSelectedItems] = useState<PackingItem[]>([])
+  const [containerType, setContainerType] = useState<any>(null)
+  const [containerTypes, setContainerTypes] = useState([])
+  const [packingResult, setPackingResult] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadProducts()
+    loadContainerTypes()
+  }, [])
+
+  const loadProducts = async () => {
+    const { data } = await supabase
+      .from('products')
+      .select('*')
+      .eq('in_stock', true)
+
+    setProducts(data || [])
+  }
+
+  const loadContainerTypes = async () => {
+    const { data } = await supabase
+      .from('container_types')
+      .select('*')
+      .order('is_default', { ascending: false })
+
+    setContainerTypes(data || [])
+    if (data && data.length > 0) {
+      setContainerType(data[0])
+    }
+  }
+
+  const addItem = (product: any, quantity: number) => {
+    // Validate product has dimensions
+    if (!product.dimensions_inches) {
+      alert('This product does not have dimensions configured')
+      return
+    }
+
+    const dims = product.dimensions_inches
+    const newItem: PackingItem = {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      width: dims.width,
+      height: dims.height,
+      depth: dims.length, // length becomes depth
+      weight: product.weight_lbs || 10,
+      quantity,
+      stackable: true
+    }
+
+    setSelectedItems([...selectedItems, newItem])
+  }
+
+  const removeItem = (index: number) => {
+    setSelectedItems(selectedItems.filter((_, i) => i !== index))
+  }
+
+  const updateQuantity = (index: number, quantity: number) => {
+    const updated = [...selectedItems]
+    updated[index].quantity = quantity
+    setSelectedItems(updated)
+  }
+
+  const runOptimization = () => {
+    if (!containerType || selectedItems.length === 0) {
+      alert('Please select a container and add items')
+      return
+    }
+
+    setLoading(true)
+
+    // Run bin packing
+    const result = packItems(
+      selectedItems,
+      containerType.width_inches,
+      containerType.height_inches,
+      containerType.length_inches,
+      containerType.max_weight_lbs
+    )
+
+    setPackingResult(result)
+    setLoading(false)
+  }
+
+  const saveSession = async () => {
+    if (!packingResult) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('current_organization_id')
+      .eq('id', user.id)
+      .single()
+
+    await supabase.from('container_sessions').insert({
+      user_id: user.id,
+      organization_id: profile?.current_organization_id,
+      container_type_id: containerType.id,
+      name: `Session ${new Date().toLocaleDateString()}`,
+      total_items: selectedItems.reduce((sum, item) => sum + item.quantity, 0),
+      fitted_items: packingResult.bins[0].items.length,
+      unfitted_items: packingResult.bins[0].unfittedItems.length,
+      utilization_percentage: packingResult.totalUtilization,
+      packing_data: packingResult
+    })
+
+    alert('Session saved!')
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Container Builder</h1>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Left column: Configuration */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Container selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Container Type</label>
+            <select
+              value={containerType?.id || ''}
+              onChange={(e) => {
+                const selected = containerTypes.find(c => c.id === e.target.value)
+                setContainerType(selected)
+              }}
+              className="w-full border rounded px-3 py-2"
+            >
+              {containerTypes.map(type => (
+                <option key={type.id} value={type.id}>
+                  {type.name} ({type.length_inches}" L × {type.width_inches}" W × {type.height_inches}" H)
+                </option>
+              ))}
+            </select>
+            {containerType && (
+              <p className="text-sm text-gray-600 mt-1">
+                Volume: {containerType.volume_cubic_ft.toFixed(1)} cu ft
+                | Max Weight: {containerType.max_weight_lbs.toLocaleString()} lbs
+              </p>
+            )}
+          </div>
+
+          {/* Item list */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Items to Pack</h2>
+            {selectedItems.length === 0 ? (
+              <p className="text-gray-500 text-sm">No items added yet</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedItems.map((item, idx) => (
+                  <div key={idx} className="border rounded p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-gray-600">{item.sku}</p>
+                      </div>
+                      <button
+                        onClick={() => removeItem(idx)}
+                        className="text-red-600 text-sm hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm">Qty:</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(idx, parseInt(e.target.value) || 1)}
+                        className="w-20 border rounded px-2 py-1 text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {item.width}" × {item.height}" × {item.depth}" | {item.weight} lbs
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add items button */}
+          <ItemSelector products={products} onAddItem={addItem} />
+
+          {/* Action buttons */}
+          <div className="space-y-2">
+            <button
+              onClick={runOptimization}
+              disabled={loading || selectedItems.length === 0}
+              className="w-full bg-blue-600 text-white px-4 py-3 rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Optimizing...' : 'Optimize Packing'}
+            </button>
+            {packingResult && (
+              <button
+                onClick={saveSession}
+                className="w-full border border-blue-600 text-blue-600 px-4 py-2 rounded hover:bg-blue-50"
+              >
+                Save Session
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Right column: 3D Viewer & Results */}
+        <div className="lg:col-span-2">
+          {!packingResult ? (
+            <div className="border rounded-lg h-[600px] flex items-center justify-center bg-gray-50">
+              <div className="text-center text-gray-500">
+                <p className="text-lg font-medium mb-2">No packing result yet</p>
+                <p className="text-sm">Add items and click "Optimize Packing" to see 3D visualization</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* Results summary */}
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="bg-blue-50 p-4 rounded">
+                  <p className="text-sm text-gray-600">Utilization</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {packingResult.totalUtilization.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded">
+                  <p className="text-sm text-gray-600">Fitted Items</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {packingResult.bins[0].items.length}
+                  </p>
+                </div>
+                <div className="bg-red-50 p-4 rounded">
+                  <p className="text-sm text-gray-600">Unfitted Items</p>
+                  <p className="text-2xl font-bold text-red-700">
+                    {packingResult.bins[0].unfittedItems.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* 3D Viewer */}
+              <ContainerViewer3D
+                container={containerType}
+                packingResult={packingResult.bins[0]}
+              />
+
+              {/* Unfitted items warning */}
+              {packingResult.bins[0].unfittedItems.length > 0 && (
+                <div className="mt-4 bg-red-50 p-4 rounded">
+                  <p className="font-semibold text-red-800 mb-2">Items that didn't fit:</p>
+                  <ul className="list-disc list-inside text-sm text-red-700">
+                    {packingResult.bins[0].unfittedItems.map((item: any, idx: number) => (
+                      <li key={idx}>{item.name} ({item.sku})</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Step 4.5: Create 3D Container Viewer Component
+
+**Prompt for Augment**:
+```
+Create 3D viewer component in /apps/web/src/components/ContainerViewer3D.tsx:
+
+'use client'
+
+import { Canvas } from '@react-three/fiber'
+import { OrbitControls, Box, Text, PerspectiveCamera, Environment } from '@react-three/drei'
+import { useState } from 'react'
+
+type PackedItem = {
+  id: string
+  name: string
+  sku: string
+  x: number
+  y: number
+  z: number
+  width: number
+  height: number
+  depth: number
+}
+
+type Props = {
+  container: {
+    width_inches: number
+    height_inches: number
+    length_inches: number
+  }
+  packingResult: {
+    items: PackedItem[]
+  }
+}
+
+function Item({ item, index }: { item: PackedItem; index: number }) {
+  const [hovered, setHovered] = useState(false)
+
+  // Convert inches to a manageable scale for Three.js
+  const scale = 0.01 // 1 inch = 0.01 units
+
+  // Position (center the box at its position)
+  const position: [number, number, number] = [
+    (item.x + item.width / 2) * scale,
+    (item.y + item.height / 2) * scale,
+    (item.z + item.depth / 2) * scale
+  ]
+
+  // Size
+  const size: [number, number, number] = [
+    item.width * scale,
+    item.height * scale,
+    item.depth * scale
+  ]
+
+  // Color based on index
+  const colors = [
+    '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
+  ]
+  const color = colors[index % colors.length]
+
+  return (
+    <group>
+      <Box
+        position={position}
+        args={size}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <meshStandardMaterial
+          color={color}
+          opacity={hovered ? 0.9 : 0.7}
+          transparent
+        />
+      </Box>
+      {hovered && (
+        <Text
+          position={[position[0], position[1] + size[1] / 2 + 0.5, position[2]]}
+          fontSize={0.3}
+          color="black"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {item.name}
+        </Text>
+      )}
+    </group>
+  )
+}
+
+function Container({ width, height, depth }: { width: number; height: number; depth: number }) {
+  const scale = 0.01
+  const position: [number, number, number] = [
+    (width / 2) * scale,
+    (height / 2) * scale,
+    (depth / 2) * scale
+  ]
+  const size: [number, number, number] = [width * scale, height * scale, depth * scale]
+
+  return (
+    <Box position={position} args={size}>
+      <meshBasicMaterial color="#e5e7eb" wireframe opacity={0.3} transparent />
+    </Box>
+  )
+}
+
+export default function ContainerViewer3D({ container, packingResult }: Props) {
+  const [cameraView, setCameraView] = useState<'perspective' | 'top' | 'front' | 'side'>('perspective')
+
+  const getCameraPosition = (): [number, number, number] => {
+    const scale = 0.01
+    const centerX = (container.width_inches / 2) * scale
+    const centerY = (container.height_inches / 2) * scale
+    const centerZ = (container.length_inches / 2) * scale
+    const distance = 20
+
+    switch (cameraView) {
+      case 'top':
+        return [centerX, centerY + distance, centerZ]
+      case 'front':
+        return [centerX, centerY, centerZ + distance]
+      case 'side':
+        return [centerX + distance, centerY, centerZ]
+      default:
+        return [centerX + distance, centerY + distance, centerZ + distance]
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Camera controls */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setCameraView('perspective')}
+          className={`px-3 py-1 rounded text-sm ${
+            cameraView === 'perspective' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+          }`}
+        >
+          3D View
+        </button>
+        <button
+          onClick={() => setCameraView('top')}
+          className={`px-3 py-1 rounded text-sm ${
+            cameraView === 'top' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+          }`}
+        >
+          Top
+        </button>
+        <button
+          onClick={() => setCameraView('front')}
+          className={`px-3 py-1 rounded text-sm ${
+            cameraView === 'front' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+          }`}
+        >
+          Front
+        </button>
+        <button
+          onClick={() => setCameraView('side')}
+          className={`px-3 py-1 rounded text-sm ${
+            cameraView === 'side' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+          }`}
+        >
+          Side
+        </button>
+      </div>
+
+      {/* 3D Canvas */}
+      <div className="border rounded-lg overflow-hidden" style={{ height: '600px' }}>
+        <Canvas>
+          <PerspectiveCamera
+            makeDefault
+            position={getCameraPosition()}
+            fov={50}
+          />
+          
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+          <directionalLight position={[-10, -10, -5]} intensity={0.5} />
+
+          <Container
+            width={container.width_inches}
+            height={container.height_inches}
+            depth={container.length_inches}
+          />
+
+          {packingResult.items.map((item, index) => (
+            <Item key={item.id} item={item} index={index} />
+          ))}
+
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            target={[
+              (container.width_inches / 2) * 0.01,
+              (container.height_inches / 2) * 0.01,
+              (container.length_inches / 2) * 0.01
+            ]}
+          />
+
+          <Environment preset="sunset" />
+        </Canvas>
+      </div>
+
+      {/* Instructions */}
+      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+        <p><strong>Controls:</strong> Left click + drag to rotate | Right click + drag to pan | Scroll to zoom | Hover over items to see names</p>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## Step 4.6: Create Item Selector Modal
+
+**Prompt for Augment**:
+```
+Create item selector component in /apps/web/src/components/ItemSelector.tsx:
+
+'use client'
+
+import { useState } from 'react'
+
+type Product = {
+  id: string
+  name: string
+  sku: string
+  dimensions_inches: any
+  weight_lbs: number
+  image_url: string | null
+}
+
+type Props = {
+  products: Product[]
+  onAddItem: (product: Product, quantity: number) => void
+}
+
+export default function ItemSelector({ products, onAddItem }: Props) {
+  const [showModal, setShowModal] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [quantity, setQuantity] = useState(1)
+
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const handleAdd = () => {
+    if (selectedProduct) {
+      onAddItem(selectedProduct, quantity)
+      setSelectedProduct(null)
+      setQuantity(1)
+      setShowModal(false)
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="w-full border-2 border-dashed border-gray-300 rounded-lg py-4 text-gray-600 hover:border-blue-500 hover:text-blue-600"
+      >
+        + Add Items
+      </button>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Select Products</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+
+            {/* Product list */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-2">
+                {filteredProducts.map(product => (
+                  <div
+                    key={product.id}
+                    onClick={() => setSelectedProduct(product)}
+                    className={`border rounded p-3 cursor-pointer hover:bg-blue-50 ${
+                      selectedProduct?.id === product.id ? 'bg-blue-50 border-blue-500' : ''
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      {product.image_url && (
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-gray-600">{product.sku}</p>
+                        {product.dimensions_inches && (
+                          <p className="text-xs text-gray-500">
+                            {product.dimensions_inches.width}" × {product.dimensions_inches.height}" × {product.dimensions_inches.length}"
+                          </p>
+                        )}
+                        {!product.dimensions_inches && (
+                          <p className="text-xs text-red-600">⚠️ No dimensions configured</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                </div>
+                <div className="flex-1">
+                  <button
+                    onClick={handleAdd}
+                    disabled={!selectedProduct}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mt-5"
+                  >
+                    Add to Pack List
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+```
+
+---
+
+## Step 4.7: Add Loading Instructions Generator
+
+**Prompt for Augment**:
+```
+Create loading instructions component in /apps/web/src/components/LoadingInstructions.tsx:
+
+'use client'
+
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer'
+
+type PackedItem = {
+  id: string
+  name: string
+  sku: string
+  x: number
+  y: number
+  z: number
+  width: number
+  height: number
+  depth: number
+}
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 30,
+    fontSize: 12,
+  },
+  header: {
+    fontSize: 24,
+    marginBottom: 20,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 10,
+  },
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  itemText: {
+    fontSize: 11,
+    marginLeft: 15,
+    marginBottom: 3,
+  },
+  summary: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: '#f3f4f6',
+  }
+})
+
+function LoadingInstructionsPDF({ items }: { items: PackedItem[] }) {
+  // Sort items by z (depth) position for front-to-back loading
+  const sortedItems = [...items].sort((a, b) => a.z - b.z)
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.header}>Loading Instructions</Text>
+        
+        <View style={styles.summary}>
+          <Text>Total Items: {items.length}</Text>
+          <Text>Load from front to back as indicated below</Text>
+        </View>
+
+        {sortedItems.map((item, index) => (
+          <View key={item.id} style={styles.section}>
+            <Text style={styles.stepNumber}>Step {index + 1}</Text>
+            <Text style={styles.itemText}>Item: {item.name}</Text>
+            <Text style={styles.itemText}>SKU: {item.sku}</Text>
+            <Text style={styles.itemText}>
+              Position: X: {item.x.toFixed(1)}" Y: {item.y.toFixed(1)}" Z: {item.z.toFixed(1)}"
+            </Text>
+            <Text style={styles.itemText}>
+              Size: {item.width}" × {item.height}" × {item.depth}"
+            </Text>
+          </View>
+        ))}
+      </Page>
+    </Document>
+  )
+}
+
+export default function LoadingInstructions({ items }: { items: PackedItem[] }) {
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-6 border rounded-lg p-6">
+      <h2 className="text-xl font-semibold mb-4">Loading Instructions</h2>
+      
+      <div className="mb-4">
+        <PDFDownloadLink
+          document={<LoadingInstructionsPDF items={items} />}
+          fileName="loading-instructions.pdf"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 inline-block"
+        >
+          {({ loading }) => (loading ? 'Generating PDF...' : 'Download PDF Instructions')}
+        </PDFDownloadLink>
+      </div>
+
+      <div className="bg-gray-50 rounded p-4">
+        <p className="text-sm text-gray-600 mb-3">Load items in this order (front to back):</p>
+        <ol className="list-decimal list-inside space-y-2">
+          {[...items]
+            .sort((a, b) => a.z - b.z)
+            .map((item, index) => (
+              <li key={item.id} className="text-sm">
+                <strong>{item.name}</strong> ({item.sku}) at position X:{item.x.toFixed(1)}" Y:{item.y.toFixed(1)}" Z:{item.z.toFixed(1)}"
+              </li>
+            ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
+Update the ContainerBuilderPage to include LoadingInstructions:
+
+import LoadingInstructions from '@/components/LoadingInstructions'
+
+// Inside the component, after the 3D viewer:
+{packingResult && (
+  <LoadingInstructions items={packingResult.bins[0].items} />
+)}
+```
+
+---
+
+## Step 4.8: Mobile 3D Viewer (React Native)
+
+**Prompt for Augment**:
+```
+Create simplified mobile 3D viewer in /apps/mobile/components/ContainerViewer3DMobile.tsx:
+
+import React from 'react'
+import { View, StyleSheet } from 'react-native'
+import { Canvas } from '@react-three/fiber/native'
+import { useFrame } from '@react-three/fiber'
+
+function Box({ position, size, color }: any) {
+  const meshRef = React.useRef<any>()
+
+  return (
+    <mesh ref={meshRef} position={position}>
+      <boxGeometry args={size} />
+      <meshStandardMaterial color={color} opacity={0.7} transparent />
+    </mesh>
+  )
+}
+
+function Container({ width, height, depth }: any) {
+  return (
+    <mesh>
+      <boxGeometry args={[width * 0.01, height * 0.01, depth * 0.01]} />
+      <meshBasicMaterial color="#e5e7eb" wireframe opacity={0.3} transparent />
+    </mesh>
+  )
+}
+
+export default function ContainerViewer3DMobile({ container, packingResult }: any) {
+  return (
+    <View style={styles.container}>
+      <Canvas camera={{ position: [10, 10, 10], fov: 50 }}>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={1} />
+
+        <Container
+          width={container.width_inches}
+          height={container.height_inches}
+          depth={container.length_inches}
+        />
+
+        {packingResult.items.map((item: any, index: number) => (
+          <Box
+            key={item.id}
+            position={[
+              (item.x + item.width / 2) * 0.01,
+              (item.y + item.height / 2) * 0.01,
+              (item.z + item.depth / 2) * 0.01
+            ]}
+            size={[item.width * 0.01, item.height * 0.01, item.depth * 0.01]}
+            color={['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][index % 5]}
+          />
+        ))}
+      </Canvas>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    height: 400,
+  }
+})
+
+Note: Mobile 3D rendering is complex and resource-intensive. Consider making the container builder primarily a web feature, with mobile showing a simplified 2D top-down view or static images of the packing result. For production, generate static images of the 3D view on the server and display those on mobile.
+```
+
+---
+
+## Step 4.9: Add Analytics Dashboard
+
+**Prompt for Augment**:
+```
+Create analytics page in /apps/web/src/app/container-builder/analytics/page.tsx:
+
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+
+export default function AnalyticsPage() {
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadSessions()
+  }, [])
+
+  const loadSessions = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('container_sessions')
+      .select('*, container_types(name)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    setSessions(data || [])
+    setLoading(false)
+  }
+
+  if (loading) {
+    return <div className="container mx-auto px-4 py-8">Loading...</div>
+  }
+
+  // Calculate stats
+  const avgUtilization = sessions.length > 0
+    ? sessions.reduce((sum: number, s: any) => sum + parseFloat(s.utilization_percentage), 0) / sessions.length
+    : 0
+
+  const totalSessions = sessions.length
+  const totalItemsPacked = sessions.reduce((sum: number, s: any) => sum + s.fitted_items, 0)
+
+  // Prepare chart data
+  const utilizationData = sessions
+    .slice(0, 10)
+    .reverse()
+    .map((s: any, idx) => ({
+      name: `Session ${idx + 1}`,
+      utilization: parseFloat(s.utilization_percentage).toFixed(1)
+    }))
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Container Analytics</h1>
+
+      {/* Summary cards */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-blue-50 p-6 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">Average Utilization</p>
+          <p className="text-3xl font-bold text-blue-700">{avgUtilization.toFixed(1)}%</p>
+        </div>
+        <div className="bg-green-50 p-6 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">Total Sessions</p>
+          <p className="text-3xl font-bold text-green-700">{totalSessions}</p>
+        </div>
+        <div className="bg-purple-50 p-6 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">Items Packed</p>
+          <p className="text-3xl font-bold text-purple-700">{totalItemsPacked}</p>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Recent Session Utilization</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={utilizationData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="utilization" fill="#3b82f6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Session list */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-xl font-semibold">Session History</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Date</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Container</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Items</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Fitted</th>
+                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Utilization</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {sessions.map((session: any) => (
+                <tr key={session.id}>
+                  <td className="px-6 py-4 text-sm">
+                    {new Date(session.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm">{session.container_types.name}</td>
+                  <td className="px-6 py-4 text-sm">{session.total_items}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className={session.unfitted_items > 0 ? 'text-red-600' : 'text-green-600'}>
+                      {session.fitted_items} / {session.total_items}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-semibold">
+                    {parseFloat(session.utilization_percentage).toFixed(1)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+Install Recharts:
+cd apps/web
+npm install recharts
+```
+
+---
+
+## Step 4.10: Performance Optimization
+
+**Prompt for Augment**:
+```
+Optimize 3D performance in /apps/web/src/components/ContainerViewer3D.tsx:
+
+Add these optimizations:
+
+1. Use React.memo for item components:
+const Item = React.memo(({ item, index }: { item: PackedItem; index: number }) => {
+  // ... existing code
+})
+
+2. Reduce geometry complexity for large item counts:
+{packingResult.items.length > 50 ? (
+  // Simplified rendering for performance
+  <instancedMesh count={packingResult.items.length}>
+    <boxGeometry args={[1, 1, 1]} />
+    <meshStandardMaterial color="#3b82f6" />
+  </instancedMesh>
+) : (
+  // Full rendering with interactions
+  packingResult.items.map((item, index) => (
+    <Item key={item.id} item={item} index={index} />
+  ))
+)}
+
+3. Add loading indicator:
+const [loading, setLoading] = useState(true)
+
+<Canvas onCreated={() => setLoading(false)}>
+  {/* ... existing code */}
+</Canvas>
+
+{loading && (
+  <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+    <p>Loading 3D view...</p>
+  </div>
+)}
+
+4. Implement level-of-detail (LOD) for mobile:
+import { useDetectGPU } from '@react-three/drei'
+
+const gpu = useDetectGPU()
+const quality = gpu.tier >= 2 ? 'high' : 'low'
+
+// Adjust shadows and details based on quality
+<directionalLight castShadow={quality === 'high'} />
+
+5. Add error boundary:
+import { ErrorBoundary } from 'react-error-boundary'
+
+<ErrorBoundary
+  fallback={<div className="p-8 text-center">3D viewer failed to load. Try refreshing the page.</div>}
+>
+  <ContainerViewer3D {...props} />
+</ErrorBoundary>
+```
+
+---
+
+## Phase 4 Complete ✅
+
+You now have:
+- ✅ 3D container visualization with React Three Fiber
+- ✅ Bin packing algorithm (binpackingjs)
+- ✅ Interactive 3D controls (orbit, zoom, rotate)
+- ✅ Item selection and configuration
+- ✅ Loading instructions PDF export
+- ✅ Container utilization analytics
+- ✅ Session saving and history
+- ✅ Performance optimizations
+
+**Final Costs**:
+- Supabase Pro: $25/month
+- OpenAI (embeddings + GPT-4o-mini): $50-100/month
+- Twilio: ~$8/month
+- Resend: $0/month
+- Expo Notifications: $0/month
+- **Total: ~$83-133/month**
+
+---
+
+## Complete Platform Features ✅
+
+After completing all 4 phases, your B2B+ platform has:
+
+### Core Features (Phase 1)
+- Multi-tenant authentication (web + mobile)
+- Product catalog with images
+- Basic cart and ordering
+- Row-level security
+
+### B2B Essentials (Phase 2)
+- Order history with filtering
+- Quick reorder
+- Multiple shipping addresses
+- PO tracking
+- SMS/Email/Push notifications
+- Invoice management
+
+### Advanced Features (Phase 3)
+- CSV bulk order upload
+- AI-enhanced Excel import
+- Role-based pricing
+- OpenAI semantic search
+- Offline capability (mobile)
+- Product recommendations
+
+### Container Builder (Phase 4)
+- 3D visualization
+- Bin packing optimization
+- Loading instructions
+- Session analytics
+- PDF export
+
+---
+
+## Next Steps & Deployment
+
+1. **Testing**: Run comprehensive tests on all features
+2. **EAS Build**: Create production builds for mobile
+   ```bash
+   cd apps/mobile
+   eas build --profile production --platform all
+   ```
+3. **Vercel Deploy**: Deploy web app to Vercel
+   ```bash
+   cd apps/web
+   vercel --prod
+   ```
+4. **Supabase Production**: Migrate from local to production Supabase
+5. **App Store**: Submit mobile apps to App Store and Google Play
+6. **Monitoring**: Set up error tracking (Sentry) and analytics
+
+**Congratulations!** You've built a complete B2B+ platform with advanced features in 3-4 months for ~$83-133/month in baseline costs.

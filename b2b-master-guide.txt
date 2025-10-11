@@ -1,0 +1,567 @@
+# B2B+ Implementation Master Guide
+
+## Project Overview
+
+**B2B+** is a food service disposables ordering platform with a unique container optimization feature. This guide provides sequential, actionable prompts for building the platform from scratch using Augment or similar AI coding assistants.
+
+### Tech Stack
+- **Frontend**: React (web) + React Native (mobile)
+- **Monorepo**: Turborepo
+- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)
+- **AI**: OpenAI (text-embedding-3-small for semantic search)
+- **3D Visualization**: React Three Fiber (R3F)
+- **Offline**: WatermelonDB (React Native)
+- **Communications**: Twilio (SMS) + Resend (email)
+- **Bin Packing**: binpackingjs (traditional algorithm)
+
+### Budget & Timeline
+- **Monthly Costs**: $111-161 (Supabase $25, OpenAI $50-100, Twilio+Resend $36)
+- **Timeline**: 3-4 months to MVP
+- **Target**: 80% mobile orders, B2B food service industry
+
+### Development Phases
+1. **Phase 0**: Initial Setup (1 week) - Project structure, dependencies, Supabase
+2. **Phase 1**: Core Platform (3-4 weeks) - Auth, products, basic ordering
+3. **Phase 2**: B2B Essentials (3-4 weeks) - Order history, quick reorder, multi-address
+4. **Phase 3**: Advanced Features (3-4 weeks) - Bulk ordering, pricing, offline
+5. **Phase 4**: Container Builder (3-4 weeks) - 3D visualization, bin packing
+
+---
+
+## Phase 0: Initial Setup & Project Structure
+
+### Step 0.1: Local Development Environment Setup
+
+**Location on computer**: `~/Projects/b2b-plus` (or your preferred projects directory)
+
+**Prerequisites**:
+```bash
+# Required software versions
+Node.js 18+ (use nvm: nvm install 18)
+npm 9+ (comes with Node.js)
+Git 2.40+
+Expo CLI (will be installed in project)
+Supabase CLI (will be installed globally)
+```
+
+**Prompt for Augment**:
+```
+Create a new directory at ~/Projects/b2b-plus and initialize a Turborepo monorepo with the following structure:
+
+/b2b-plus
+  /apps
+    /web          # Next.js 14 app (App Router)
+    /mobile       # Expo/React Native app
+  /packages
+    /shared       # Shared business logic
+    /ui           # Shared UI components (React Native primitives)
+    /supabase     # Supabase client & types
+  /supabase       # Supabase local development files
+  package.json
+  turbo.json
+  .gitignore
+  README.md
+
+Initialize with:
+- npm workspaces for package management
+- Turborepo for build orchestration
+- TypeScript 5+ for all packages
+- ESLint + Prettier configuration
+
+Generate the root package.json with workspace configuration and these scripts:
+- "dev": "turbo run dev"
+- "build": "turbo run build"
+- "lint": "turbo run lint"
+- "type-check": "turbo run type-check"
+- "clean": "turbo run clean"
+```
+
+### Step 0.2: Configure Turborepo
+
+**Prompt for Augment**:
+```
+Create turbo.json in the root with this pipeline configuration:
+
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env"],
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "type-check": {
+      "dependsOn": ["^build"]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}
+
+Enable caching for build outputs and configure proper dependency ordering so shared packages build before apps.
+```
+
+### Step 0.3: Initialize Web App (Next.js)
+
+**Prompt for Augment**:
+```
+In /apps/web, create a Next.js 14 application with:
+- App Router (not Pages Router)
+- TypeScript
+- Tailwind CSS 3+
+- src/ directory structure
+- These environment variables in .env.local:
+  NEXT_PUBLIC_SUPABASE_URL=
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=
+  OPENAI_API_KEY=
+
+Project structure:
+/apps/web
+  /src
+    /app
+      /api          # API routes
+      /auth         # Auth pages (login, register)
+      /products     # Product pages
+      /orders       # Order pages
+      /cart         # Cart page
+      layout.tsx
+      page.tsx      # Homepage
+    /components     # Web-specific components
+    /lib            # Web-specific utilities
+  /public           # Static assets
+  next.config.js
+  tailwind.config.js
+  tsconfig.json
+  package.json
+
+The package.json should reference workspace packages:
+"@b2b-plus/shared": "workspace:*"
+"@b2b-plus/ui": "workspace:*"
+"@b2b-plus/supabase": "workspace:*"
+
+Install these dependencies:
+- next@14
+- react@18
+- react-dom@18
+- @supabase/ssr (for Next.js App Router)
+- tailwindcss@3
+- @tailwindcss/forms
+- lucide-react (icons)
+```
+
+### Step 0.4: Initialize Mobile App (Expo)
+
+**Prompt for Augment**:
+```
+In /apps/mobile, create an Expo application with:
+- Expo SDK 51+
+- TypeScript
+- Expo Router for navigation
+- React Native 0.74+
+- These environment variables in .env:
+  EXPO_PUBLIC_SUPABASE_URL=
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
+Project structure:
+/apps/mobile
+  /app              # Expo Router file-based routing
+    /(tabs)         # Bottom tab navigation
+      index.tsx     # Products tab
+      orders.tsx    # Orders tab
+      cart.tsx      # Cart tab
+      account.tsx   # Account tab
+    /auth
+      login.tsx
+      register.tsx
+    _layout.tsx     # Root layout
+  /components       # Mobile-specific components
+  /lib              # Mobile-specific utilities
+  app.json
+  eas.json          # EAS Build configuration
+  metro.config.js   # Metro bundler config
+  tsconfig.json
+  package.json
+
+Install these dependencies:
+- expo@^51.0.0
+- expo-router@^3.5.0
+- react-native@0.74.5
+- @supabase/supabase-js
+- expo-secure-store (for token storage)
+- expo-dev-client (for local development)
+- @react-native-async-storage/async-storage
+
+Install these dev dependencies:
+- @expo/metro-config
+- @babel/core
+
+The package.json should reference workspace packages:
+"@b2b-plus/shared": "workspace:*"
+"@b2b-plus/ui": "workspace:*"
+"@b2b-plus/supabase": "workspace:*"
+```
+
+### Step 0.5: Configure Metro for Monorepo
+
+**Prompt for Augment**:
+```
+In /apps/mobile/metro.config.js, configure Metro to work with the monorepo structure:
+
+const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
+
+// Get the project root
+const projectRoot = __dirname;
+// Get the monorepo root
+const monorepoRoot = path.resolve(projectRoot, '../..');
+
+const config = getDefaultConfig(projectRoot);
+
+// 1. Watch all files in the monorepo
+config.watchFolders = [monorepoRoot];
+
+// 2. Let Metro discover workspace packages
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(monorepoRoot, 'node_modules'),
+];
+
+// 3. Enable symlinks for workspace packages
+config.resolver.unstable_enableSymlinks = true;
+config.resolver.unstable_enablePackageExports = true;
+
+module.exports = config;
+
+Explanation:
+- watchFolders tells Metro to watch the entire monorepo for changes
+- nodeModulesPaths helps Metro resolve workspace dependencies
+- unstable_enableSymlinks allows Metro to follow symlinks (required for npm workspaces)
+```
+
+### Step 0.6: Configure EAS Build
+
+**Prompt for Augment**:
+```
+In /apps/mobile/eas.json, create EAS Build configuration for development, preview, and production builds:
+
+{
+  "cli": {
+    "version": ">= 5.9.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+
+Also update /apps/mobile/app.json with:
+- Proper bundle identifiers (com.b2bplus.app)
+- Version numbers (1.0.0)
+- App icons and splash screens
+- Permissions needed:
+  - Camera (for barcode scanning)
+  - Notifications (for push)
+  - Network (for API calls)
+
+Add these scripts to /apps/mobile/package.json:
+"scripts": {
+  "start": "expo start",
+  "android": "expo start --android",
+  "ios": "expo start --ios",
+  "web": "expo start --web",
+  "build:dev": "eas build --profile development --platform all",
+  "build:preview": "eas build --profile preview --platform all",
+  "build:prod": "eas build --profile production --platform all",
+  "submit": "eas submit --platform all"
+}
+```
+
+### Step 0.7: Create Shared Packages
+
+**Prompt for Augment**:
+```
+Create three shared packages:
+
+1. /packages/shared - Business logic (TypeScript)
+Structure:
+/packages/shared
+  /src
+    /utils        # Helper functions
+    /types        # Shared TypeScript types
+    /constants    # Constants (API endpoints, etc.)
+    /validation   # Zod schemas for validation
+    index.ts      # Export all
+  package.json
+  tsconfig.json
+
+package.json should have:
+{
+  "name": "@b2b-plus/shared",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "zod": "^3.22.4"
+  }
+}
+
+2. /packages/ui - Shared UI components (React Native primitives)
+Structure:
+/packages/ui
+  /src
+    /components
+      Button.tsx
+      Input.tsx
+      Card.tsx
+      Text.tsx
+    index.ts
+  package.json
+  tsconfig.json
+
+package.json should have:
+{
+  "name": "@b2b-plus/ui",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  },
+  "peerDependencies": {
+    "react": "18.2.0",
+    "react-native": "0.74.5"
+  }
+}
+
+3. /packages/supabase - Supabase client & types
+Structure:
+/packages/supabase
+  /src
+    client.ts       # Supabase client initialization
+    types.ts        # Generated database types
+    index.ts
+  package.json
+  tsconfig.json
+
+package.json should have:
+{
+  "name": "@b2b-plus/supabase",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
+
+All tsconfig.json files should extend a base config from the root.
+```
+
+### Step 0.8: Setup Supabase Project
+
+**Manual steps** (cannot be fully automated):
+
+1. Go to https://supabase.com and create a new project
+2. Choose a project name: "b2b-plus-dev"
+3. Set a strong database password (save in password manager)
+4. Choose region closest to your location
+5. Wait 2-3 minutes for project provisioning
+
+**Once project is ready**:
+
+**Prompt for Augment**:
+```
+Install Supabase CLI globally:
+npm install -g supabase
+
+Initialize Supabase in the project:
+cd ~/Projects/b2b-plus
+supabase init
+
+This creates /supabase directory with:
+/supabase
+  /migrations      # Database migrations
+  /functions       # Edge Functions
+  /seed           # Seed data
+  config.toml     # Supabase config
+
+Link to remote project (you'll need project ID from Supabase dashboard):
+supabase link --project-ref YOUR_PROJECT_REF
+
+Create .env files in root:
+.env.local (for local development with Supabase local):
+SUPABASE_URL=http://localhost:54321
+SUPABASE_ANON_KEY=<from supabase start output>
+SUPABASE_SERVICE_ROLE_KEY=<from supabase start output>
+
+.env.production (for production Supabase):
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=<from Supabase dashboard>
+SUPABASE_SERVICE_ROLE_KEY=<from Supabase dashboard>
+
+Add to .gitignore:
+.env.local
+.env.production
+.env
+```
+
+### Step 0.9: Initialize Supabase Client
+
+**Prompt for Augment**:
+```
+In /packages/supabase/src/client.ts, create Supabase client initialization:
+
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from './types'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables')
+}
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+})
+
+// For React Native, we'll create a separate client with proper storage
+// This will be done in Phase 1 when we implement auth
+```
+
+### Step 0.10: Setup Testing Framework
+
+**Prompt for Augment**:
+```
+Install testing dependencies in root package.json:
+
+npm install -D -W jest @testing-library/react @testing-library/react-native @testing-library/jest-native jest-expo
+
+Create jest.config.js in root:
+
+module.exports = {
+  projects: [
+    '<rootDir>/apps/web/jest.config.js',
+    '<rootDir>/apps/mobile/jest.config.js',
+    '<rootDir>/packages/*/jest.config.js',
+  ],
+}
+
+For /apps/web/jest.config.js:
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+}
+
+For /apps/mobile/jest.config.js:
+module.exports = {
+  preset: 'jest-expo',
+  transformIgnorePatterns: [
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)',
+  ],
+}
+
+Add test scripts to root package.json:
+"test": "turbo run test",
+"test:watch": "turbo run test:watch"
+```
+
+---
+
+## Phase 0 Checklist
+
+Before proceeding to Phase 1, verify:
+
+- [ ] Turborepo monorepo is initialized and working
+- [ ] Web app (Next.js) runs with `cd apps/web && npm run dev`
+- [ ] Mobile app (Expo) runs with `cd apps/mobile && npm start`
+- [ ] Shared packages are linked and importable
+- [ ] Metro is configured for monorepo (no module resolution errors)
+- [ ] EAS Build is configured in eas.json
+- [ ] Supabase project is created and linked
+- [ ] Environment variables are set in .env files
+- [ ] Testing framework is installed
+- [ ] Git repository is initialized with proper .gitignore
+
+**Testing the setup**:
+```bash
+# From root directory
+npm run dev
+# This should start both web (port 3000) and mobile (Expo DevTools)
+
+# Test that shared packages work
+# In apps/web/src/app/page.tsx, add:
+import { testUtil } from '@b2b-plus/shared'
+// If this imports without error, monorepo is working
+
+# Test mobile build
+cd apps/mobile
+npm run build:dev
+# This should create a development build (may take 10-15 minutes first time)
+```
+
+---
+
+## Next Steps
+
+With Phase 0 complete, you have:
+- ✅ Properly structured monorepo
+- ✅ Web and mobile apps configured
+- ✅ Shared packages for code reuse
+- ✅ Supabase backend ready
+- ✅ EAS Build configured
+- ✅ Testing framework in place
+
+**Proceed to Phase 1** for:
+- Database schema creation
+- Authentication implementation
+- Product catalog
+- Basic ordering functionality
+
+See "B2B+ Phase 1 Implementation Guide" artifact for detailed prompts.

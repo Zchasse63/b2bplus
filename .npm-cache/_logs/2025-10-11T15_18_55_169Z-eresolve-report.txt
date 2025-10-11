@@ -1,0 +1,34 @@
+'Log files:
+/Users/zach/projects/b2b-plus/.npm-cache/_logs/2025-10-11T15_18_55_169Z-debug-0.log
+
+# npm resolution error report
+
+While resolving: b2b-plus@0.0.1
+Found: react@19.2.0
+node_modules/react
+  peer react@">=16.0.0" from @testing-library/jest-native@5.4.3
+  node_modules/@testing-library/jest-native
+    dev @testing-library/jest-native@"^5.4.3" from the root project
+  peer react@"^19.1.1" from react-native@0.82.0
+  node_modules/react-native
+    peer react-native@">=0.59" from @testing-library/jest-native@5.4.3
+    node_modules/@testing-library/jest-native
+      dev @testing-library/jest-native@"^5.4.3" from the root project
+  peer react@"^19.2.0" from react-test-renderer@19.2.0
+  node_modules/react-test-renderer
+    peer react-test-renderer@">=16.0.0" from @testing-library/jest-native@5.4.3
+    node_modules/@testing-library/jest-native
+      dev @testing-library/jest-native@"^5.4.3" from the root project
+
+Could not resolve dependency:
+dev @testing-library/react@"^14.1.2" from the root project
+
+Conflicting peer dependency: react@18.3.1
+node_modules/react
+  peer react@"^18.0.0" from @testing-library/react@14.3.1
+  node_modules/@testing-library/react
+    dev @testing-library/react@"^14.1.2" from the root project
+
+Fix the upstream dependency conflict, or retry
+this command with --force or --legacy-peer-deps
+to accept an incorrect (and potentially broken) dependency resolution.

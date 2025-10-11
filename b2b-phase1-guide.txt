@@ -1,0 +1,1613 @@
+# B2B+ Phase 1: Core Platform Implementation
+
+**Duration**: 3-4 weeks  
+**Goal**: Authentication, product catalog, basic ordering functionality
+
+## Phase 1 Overview
+
+By the end of Phase 1, you will have:
+- ✅ Multi-tenant database schema with RLS
+- ✅ Authentication (email/password + SSO ready)
+- ✅ Product catalog with full-text search
+- ✅ Basic cart functionality
+- ✅ Order placement
+- ✅ Working on both web and mobile
+
+---
+
+## Step 1.1: Create Database Schema
+
+**Location**: `/supabase/migrations/20240101000000_initial_schema.sql`
+
+**Prompt for Augment**:
+```
+Create the initial database migration file in /supabase/migrations/ with this SQL:
+
+-- Enable extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For fuzzy text search
+CREATE EXTENSION IF NOT EXISTS "vector"; -- For OpenAI embeddings (pgvector)
+
+-- Organizations table (multi-tenant)
+CREATE TABLE organizations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('distributor', 'restaurant', 'hotel', 'hospital', 'school')),
+  tax_id TEXT,
+  phone TEXT,
+  website TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Create index on slug for fast lookup
+CREATE INDEX idx_organizations_slug ON organizations(slug);
+
+-- Organization members (links users to organizations with roles)
+CREATE TABLE organization_members (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member', 'viewer')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(organization_id, user_id)
+);
+
+-- Indexes for membership lookups
+CREATE INDEX idx_org_members_user ON organization_members(user_id);
+CREATE INDEX idx_org_members_org ON organization_members(organization_id);
+
+-- User profiles (extends auth.users)
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  phone TEXT,
+  avatar_url TEXT,
+  current_organization_id UUID REFERENCES organizations(id),
+  expo_push_token TEXT, -- For mobile notifications
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Products table
+CREATE TABLE products (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  sku TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  brand TEXT,
+  base_price DECIMAL(10,2) NOT NULL,
+  unit_of_measure TEXT NOT NULL, -- 'case', 'each', 'box', etc.
+  units_per_case INTEGER,
+  weight_lbs DECIMAL(8,2),
+  dimensions_inches JSONB, -- {length, width, height}
+  in_stock BOOLEAN NOT NULL DEFAULT true,
+  image_url TEXT,
+  additional_images TEXT[], -- Array of URLs
+  specifications JSONB, -- Flexible product specs
+  allergens TEXT[],
+  nutritional_info JSONB,
+  search_vector tsvector, -- For full-text search
+  embedding vector(1536), -- For OpenAI semantic search
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(organization_id, sku)
+);
+
+-- Indexes for products
+CREATE INDEX idx_products_org ON products(organization_id);
+CREATE INDEX idx_products_sku ON products(sku);
+CREATE INDEX idx_products_category ON products(category);
+CREATE INDEX idx_products_in_stock ON products(in_stock);
+CREATE INDEX idx_products_search_vector ON products USING GIN(search_vector);
+CREATE INDEX idx_products_embedding ON products USING ivfflat(embedding vector_cosine_ops) WITH (lists = 100);
+
+-- Function to update search_vector automatically
+CREATE OR REPLACE FUNCTION products_search_vector_trigger() RETURNS trigger AS $$
+BEGIN
+  NEW.search_vector := 
+    setweight(to_tsvector('english', COALESCE(NEW.name, '')), 'A') ||
+    setweight(to_tsvector('english', COALESCE(NEW.description, '')), 'B') ||
+    setweight(to_tsvector('english', COALESCE(NEW.category, '')), 'C') ||
+    setweight(to_tsvector('english', COALESCE(NEW.brand, '')), 'C');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER products_search_vector_update 
+  BEFORE INSERT OR UPDATE ON products
+  FOR EACH ROW EXECUTE FUNCTION products_search_vector_trigger();
+
+-- Shipping addresses
+CREATE TABLE shipping_addresses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  label TEXT NOT NULL, -- 'Main Kitchen', 'Downtown Location', etc.
+  contact_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  street_address TEXT NOT NULL,
+  street_address2 TEXT,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  postal_code TEXT NOT NULL,
+  country TEXT NOT NULL DEFAULT 'US',
+  delivery_instructions TEXT,
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  last_used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_addresses_org ON shipping_addresses(organization_id);
+
+-- Orders table
+CREATE TABLE orders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  order_number TEXT NOT NULL UNIQUE, -- Generated: ORD-20240101-0001
+  po_number TEXT, -- Customer's purchase order number
+  status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'processing', 'shipped', 'delivered', 'cancelled')),
+  subtotal DECIMAL(10,2) NOT NULL,
+  tax DECIMAL(10,2) NOT NULL DEFAULT 0,
+  shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total DECIMAL(10,2) NOT NULL,
+  shipping_address_id UUID REFERENCES shipping_addresses(id),
+  shipping_tracking_number TEXT,
+  shipping_carrier TEXT,
+  notes TEXT,
+  submitted_at TIMESTAMPTZ,
+  shipped_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for orders
+CREATE INDEX idx_orders_org ON orders(organization_id);
+CREATE INDEX idx_orders_user ON orders(user_id);
+CREATE INDEX idx_orders_number ON orders(order_number);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_submitted_at ON orders(submitted_at);
+
+-- Order line items
+CREATE TABLE order_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES products(id),
+  sku TEXT NOT NULL,
+  name TEXT NOT NULL,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price DECIMAL(10,2) NOT NULL,
+  line_total DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_product ON order_items(product_id);
+
+-- Cart items (temporary, not in order yet)
+CREATE TABLE cart_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, product_id)
+);
+
+CREATE INDEX idx_cart_items_user ON cart_items(user_id);
+
+-- Function to generate order numbers
+CREATE OR REPLACE FUNCTION generate_order_number() RETURNS TEXT AS $$
+DECLARE
+  new_number TEXT;
+  date_part TEXT;
+  counter INTEGER;
+BEGIN
+  date_part := TO_CHAR(NOW(), 'YYYYMMDD');
+  
+  -- Get the count of orders today
+  SELECT COUNT(*) + 1 INTO counter
+  FROM orders
+  WHERE order_number LIKE 'ORD-' || date_part || '-%';
+  
+  new_number := 'ORD-' || date_part || '-' || LPAD(counter::TEXT, 4, '0');
+  
+  RETURN new_number;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-generate order numbers
+CREATE OR REPLACE FUNCTION set_order_number() RETURNS trigger AS $$
+BEGIN
+  IF NEW.order_number IS NULL THEN
+    NEW.order_number := generate_order_number();
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_order_number_trigger
+  BEFORE INSERT ON orders
+  FOR EACH ROW EXECUTE FUNCTION set_order_number();
+
+-- Updated_at triggers for all tables
+CREATE OR REPLACE FUNCTION update_updated_at() RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+Save this migration and run it:
+supabase db reset
+
+This will create all tables and functions.
+```
+
+---
+
+## Step 1.2: Create Row Level Security (RLS) Policies
+
+**Location**: `/supabase/migrations/20240101000001_rls_policies.sql`
+
+**Prompt for Augment**:
+```
+Create RLS policies migration in /supabase/migrations/ with this SQL:
+
+-- Enable RLS on all tables
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shipping_addresses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
+
+-- Helper function: Check if user is member of organization
+CREATE OR REPLACE FUNCTION is_organization_member(org_id UUID) RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM organization_members
+    WHERE organization_id = org_id 
+    AND user_id = auth.uid()
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Helper function: Get user's current organization
+CREATE OR REPLACE FUNCTION get_user_organization() RETURNS UUID AS $$
+  SELECT current_organization_id FROM profiles WHERE id = auth.uid();
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Organizations policies
+CREATE POLICY "Users can view their organizations" ON organizations
+  FOR SELECT USING (
+    id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Owners can update their organization" ON organizations
+  FOR UPDATE USING (
+    id IN (
+      SELECT organization_id FROM organization_members 
+      WHERE user_id = auth.uid() AND role = 'owner'
+    )
+  );
+
+-- Organization members policies
+CREATE POLICY "Users can view members of their organizations" ON organization_members
+  FOR SELECT USING (is_organization_member(organization_id));
+
+CREATE POLICY "Owners and admins can manage members" ON organization_members
+  FOR ALL USING (
+    organization_id IN (
+      SELECT organization_id FROM organization_members 
+      WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
+    )
+  );
+
+-- Profiles policies
+CREATE POLICY "Users can view all profiles" ON profiles
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can update their own profile" ON profiles
+  FOR UPDATE USING (id = auth.uid());
+
+-- Products policies
+CREATE POLICY "Members can view their organization's products" ON products
+  FOR SELECT USING (is_organization_member(organization_id));
+
+CREATE POLICY "Admins can manage products" ON products
+  FOR ALL USING (
+    organization_id IN (
+      SELECT organization_id FROM organization_members 
+      WHERE user_id = auth.uid() AND role IN ('owner', 'admin')
+    )
+  );
+
+-- Shipping addresses policies
+CREATE POLICY "Members can view their organization's addresses" ON shipping_addresses
+  FOR SELECT USING (is_organization_member(organization_id));
+
+CREATE POLICY "Members can insert addresses" ON shipping_addresses
+  FOR INSERT WITH CHECK (is_organization_member(organization_id));
+
+CREATE POLICY "Members can update their organization's addresses" ON shipping_addresses
+  FOR UPDATE USING (is_organization_member(organization_id));
+
+-- Orders policies
+CREATE POLICY "Members can view their organization's orders" ON orders
+  FOR SELECT USING (is_organization_member(organization_id));
+
+CREATE POLICY "Members can create orders" ON orders
+  FOR INSERT WITH CHECK (
+    is_organization_member(organization_id) AND
+    user_id = auth.uid()
+  );
+
+CREATE POLICY "Members can update their own orders" ON orders
+  FOR UPDATE USING (
+    is_organization_member(organization_id) AND
+    user_id = auth.uid() AND
+    status = 'draft'
+  );
+
+-- Order items policies (inherit from orders)
+CREATE POLICY "Users can view order items for their orders" ON order_items
+  FOR SELECT USING (
+    order_id IN (
+      SELECT id FROM orders 
+      WHERE is_organization_member(organization_id)
+    )
+  );
+
+CREATE POLICY "Users can manage items in their draft orders" ON order_items
+  FOR ALL USING (
+    order_id IN (
+      SELECT id FROM orders 
+      WHERE user_id = auth.uid() AND status = 'draft'
+    )
+  );
+
+-- Cart items policies
+CREATE POLICY "Users can view their own cart" ON cart_items
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Users can manage their own cart" ON cart_items
+  FOR ALL USING (
+    user_id = auth.uid() AND
+    is_organization_member(organization_id)
+  );
+
+Run this migration:
+supabase db reset
+
+Test that RLS is working by trying to query as an unauthenticated user (should return nothing).
+```
+
+---
+
+## Step 1.3: Generate TypeScript Types
+
+**Prompt for Augment**:
+```
+Generate TypeScript types from the Supabase database:
+
+supabase gen types typescript --local > packages/supabase/src/types.ts
+
+This creates a types.ts file with all database types. Update packages/supabase/src/client.ts to use these types:
+
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from './types'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Type exports for convenience
+export type Organization = Database['public']['Tables']['organizations']['Row']
+export type Product = Database['public']['Tables']['products']['Row']
+export type Order = Database['public']['Tables']['orders']['Row']
+export type OrderItem = Database['public']['Tables']['order_items']['Row']
+export type CartItem = Database['public']['Tables']['cart_items']['Row']
+export type ShippingAddress = Database['public']['Tables']['shipping_addresses']['Row']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+
+Update packages/supabase/src/index.ts to export everything:
+export * from './client'
+export * from './types'
+```
+
+---
+
+## Step 1.4: Implement Authentication - Web (Next.js)
+
+**Prompt for Augment**:
+```
+Create authentication utilities for Next.js App Router:
+
+1. Create /apps/web/src/lib/supabase/server.ts:
+
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import type { Database } from '@b2b-plus/supabase'
+
+export function createClient() {
+  const cookieStore = cookies()
+
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // Handle middleware cookie setting
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // Handle middleware cookie removal
+          }
+        },
+      },
+    }
+  )
+}
+
+2. Create /apps/web/src/lib/supabase/client.ts:
+
+import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from '@b2b-plus/supabase'
+
+export function createClient() {
+  return createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+3. Create /apps/web/src/lib/supabase/middleware.ts:
+
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function updateSession(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
+
+  await supabase.auth.getUser()
+
+  return response
+}
+
+4. Create /apps/web/src/middleware.ts:
+
+import { type NextRequest } from 'next/server'
+import { updateSession } from '@/lib/supabase/middleware'
+
+export async function middleware(request: NextRequest) {
+  return await updateSession(request)
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+
+5. Create login page /apps/web/src/app/auth/login/page.tsx:
+
+'use client'
+
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+
+export default function Login() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      router.push('/products')
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow">
+        <h2 className="text-center text-3xl font-bold">Sign in to B2B+</h2>
+        {error && (
+          <div className="rounded bg-red-50 p-4 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+6. Create register page /apps/web/src/app/auth/register/page.tsx (similar structure, but using signUp)
+```
+
+---
+
+## Step 1.5: Implement Authentication - Mobile (React Native)
+
+**Prompt for Augment**:
+```
+Create authentication for React Native with secure token storage:
+
+1. Install dependencies in /apps/mobile:
+npm install expo-secure-store expo-web-browser expo-auth-session
+
+2. Create /apps/mobile/lib/supabase.ts:
+
+import 'react-native-url-polyfill/auto'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createClient } from '@supabase/supabase-js'
+import * as SecureStore from 'expo-secure-store'
+import type { Database } from '@b2b-plus/supabase'
+
+// Custom storage adapter using SecureStore for tokens
+const ExpoSecureStoreAdapter = {
+  getItem: (key: string) => {
+    return SecureStore.getItemAsync(key)
+  },
+  setItem: (key: string, value: string) => {
+    SecureStore.setItemAsync(key, value)
+  },
+  removeItem: (key: string) => {
+    SecureStore.deleteItemAsync(key)
+  },
+}
+
+export const supabase = createClient<Database>(
+  process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      storage: ExpoSecureStoreAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  }
+)
+
+3. Create /apps/mobile/contexts/AuthContext.tsx:
+
+import { createContext, useContext, useEffect, useState } from 'react'
+import { Session, User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
+
+type AuthContextType = {
+  session: Session | null
+  user: User | null
+  loading: boolean
+  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signUp: (email: string, password: string) => Promise<{ error: any }>
+  signOut: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const signIn = async (email: string, password: string) => {
+    return await supabase.auth.signInWithPassword({ email, password })
+  }
+
+  const signUp = async (email: string, password: string) => {
+    return await supabase.auth.signUp({ email, password })
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}
+
+4. Create /apps/mobile/app/auth/login.tsx:
+
+import { useState } from 'react'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { useAuth } from '@/contexts/AuthContext'
+import { router } from 'expo-router'
+
+export default function Login() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { signIn } = useAuth()
+
+  const handleLogin = async () => {
+    setLoading(true)
+    setError(null)
+
+    const { error } = await signIn(email, password)
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+    } else {
+      router.replace('/(tabs)')
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Sign in to B2B+</Text>
+      {error && (
+        <View style={styles.error}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Signing in...' : 'Sign in'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  button: {
+    height: 50,
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  error: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+  },
+})
+
+5. Wrap app in AuthProvider in /apps/mobile/app/_layout.tsx:
+
+import { Slot } from 'expo-router'
+import { AuthProvider } from '@/contexts/AuthContext'
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <Slot />
+    </AuthProvider>
+  )
+}
+
+6. Create protected route wrapper /apps/mobile/app/(tabs)/_layout.tsx:
+
+import { Redirect, Tabs } from 'expo-router'
+import { useAuth } from '@/contexts/AuthContext'
+
+export default function TabsLayout() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return null // Or loading screen
+  }
+
+  if (!user) {
+    return <Redirect href="/auth/login" />
+  }
+
+  return (
+    <Tabs>
+      <Tabs.Screen name="index" options={{ title: 'Products' }} />
+      <Tabs.Screen name="orders" options={{ title: 'Orders' }} />
+      <Tabs.Screen name="cart" options={{ title: 'Cart' }} />
+      <Tabs.Screen name="account" options={{ title: 'Account' }} />
+    </Tabs>
+  )
+}
+```
+
+---
+
+## Step 1.6: Create Seed Data for Testing
+
+**Location**: `/supabase/seed.sql`
+
+**Prompt for Augment**:
+```
+Create seed data file in /supabase/seed.sql:
+
+-- Create a test organization
+INSERT INTO organizations (id, name, slug, type)
+VALUES 
+  ('550e8400-e29b-41d4-a716-446655440000', 'Acme Distributor', 'acme', 'distributor'),
+  ('550e8400-e29b-41d4-a716-446655440001', 'Best Restaurant Group', 'best-restaurant', 'restaurant');
+
+-- Create test user profiles (you'll need to create users via Supabase Auth UI first)
+-- Then link them to organizations
+
+-- Create test products for Acme Distributor
+INSERT INTO products (organization_id, sku, name, description, category, subcategory, brand, base_price, unit_of_measure, units_per_case, weight_lbs, dimensions_inches, in_stock, image_url)
+VALUES
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'CUP-16OZ-WHT-1000',
+    '16oz White Paper Hot Cup',
+    'Premium quality 16oz white paper hot cups, perfect for coffee and tea service. Double-walled insulation keeps drinks hot.',
+    'Cups',
+    'Hot Cups',
+    'Solo',
+    89.99,
+    'case',
+    1000,
+    12.5,
+    '{"length": 18, "width": 12, "height": 10}',
+    true,
+    'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'LID-16OZ-BLK-1000',
+    '16oz Black Dome Lid',
+    'Black dome lid for 16oz cups with sip hole. Compatible with most 16oz hot cups.',
+    'Lids',
+    'Hot Lids',
+    'Solo',
+    45.99,
+    'case',
+    1000,
+    8.0,
+    '{"length": 16, "width": 10, "height": 8}',
+    true,
+    'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'FORK-PLT-WHT-1000',
+    'Heavy Weight White Plastic Fork',
+    'Durable heavy-weight plastic forks. Perfect for catering and takeout. BPA-free.',
+    'Utensils',
+    'Forks',
+    'Dart',
+    34.99,
+    'case',
+    1000,
+    6.5,
+    '{"length": 12, "width": 10, "height": 4}',
+    true,
+    'https://images.pexels.com/photos/2762247/pexels-photo-2762247.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'PLATE-9IN-WHT-500',
+    '9 Inch White Paper Plate',
+    'Sturdy 9 inch paper plates. Grease-resistant coating. Perfect for hot and cold foods.',
+    'Plates',
+    'Paper Plates',
+    'Hefty',
+    64.99,
+    'case',
+    500,
+    15.0,
+    '{"length": 20, "width": 20, "height": 12}',
+    true,
+    'https://images.pexels.com/photos/4393426/pexels-photo-4393426.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'CONT-32OZ-CLR-240',
+    '32oz Clear Deli Container with Lid',
+    'Crystal clear 32oz deli containers with secure snap-on lids. Microwave and freezer safe.',
+    'Containers',
+    'Deli Containers',
+    'Pactiv',
+    119.99,
+    'case',
+    240,
+    18.0,
+    '{"length": 24, "width": 18, "height": 14}',
+    true,
+    'https://images.pexels.com/photos/4393668/pexels-photo-4393668.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'NAP-WHT-6000',
+    '1-Ply White Beverage Napkin',
+    'Standard 1-ply white beverage napkins. 9.5" x 9.5" size. Quarter-fold.',
+    'Napkins',
+    'Beverage Napkins',
+    'Hoffmaster',
+    42.99,
+    'case',
+    6000,
+    10.0,
+    '{"length": 16, "width": 12, "height": 10}',
+    true,
+    'https://images.pexels.com/photos/4397900/pexels-photo-4397900.jpeg'
+  ),
+  (
+    '550e8400-e29b-41d4-a716-446655440000',
+    'STRAW-BLK-10000',
+    '7.75" Black Unwrapped Straw',
+    'Standard 7.75 inch black plastic straws. Individually unwrapped. Ideal for high-volume operations.',
+    'Straws',
+    'Plastic Straws',
+    'Aardvark',
+    28.99,
+    'case',
+    10000,
+    8.0,
+    '{"length": 18, "width": 10, "height": 8}',
+    true,
+    'https://images.pexels.com/photos/2531188/pexels-photo-2531188.jpeg'
+  );
+
+-- Create a test shipping address
+INSERT INTO shipping_addresses (organization_id, label, contact_name, phone, street_address, city, state, postal_code, is_default)
+VALUES
+  (
+    '550e8400-e29b-41d4-a716-446655440001',
+    'Main Kitchen',
+    'John Doe',
+    '555-0123',
+    '123 Main Street',
+    'San Francisco',
+    'CA',
+    '94102',
+    true
+  );
+
+Run the seed:
+supabase db reset
+
+This will create test data for development.
+```
+
+---
+
+## Step 1.7: Implement Product Catalog - Web
+
+**Prompt for Augment**:
+```
+Create product catalog page in /apps/web/src/app/products/page.tsx:
+
+import { createClient } from '@/lib/supabase/server'
+import ProductCard from '@/components/ProductCard'
+
+export default async function ProductsPage() {
+  const supabase = createClient()
+  
+  // Get user's organization products
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('in_stock', true)
+    .order('name')
+
+  if (error) {
+    return <div>Error loading products</div>
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Products</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {products?.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+Create ProductCard component in /apps/web/src/components/ProductCard.tsx:
+
+'use client'
+
+import { Product } from '@b2b-plus/supabase'
+import Image from 'next/image'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+export default function ProductCard({ product }: { product: Product }) {
+  const [quantity, setQuantity] = useState(1)
+  const [adding, setAdding] = useState(false)
+  const supabase = createClient()
+
+  const addToCart = async () => {
+    setAdding(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      alert('Please login to add items to cart')
+      setAdding(false)
+      return
+    }
+
+    const { error } = await supabase
+      .from('cart_items')
+      .upsert({
+        user_id: user.id,
+        product_id: product.id,
+        organization_id: product.organization_id,
+        quantity
+      }, {
+        onConflict: 'user_id,product_id',
+        ignoreDuplicates: false
+      })
+
+    if (error) {
+      alert('Error adding to cart')
+      console.error(error)
+    } else {
+      alert('Added to cart!')
+    }
+    
+    setAdding(false)
+  }
+
+  return (
+    <div className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
+      {product.image_url && (
+        <div className="relative h-48 mb-4">
+          <Image
+            src={product.image_url}
+            alt={product.name}
+            fill
+            className="object-cover rounded"
+          />
+        </div>
+      )}
+      <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+      <p className="text-sm text-gray-600 mb-2">{product.sku}</p>
+      <p className="text-sm text-gray-500 mb-4 line-clamp-2">{product.description}</p>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-2xl font-bold">${product.base_price}</span>
+        <span className="text-sm text-gray-500">per {product.unit_of_measure}</span>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="number"
+          min="1"
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value))}
+          className="w-20 border rounded px-2 py-1"
+        />
+        <button
+          onClick={addToCart}
+          disabled={adding}
+          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {adding ? 'Adding...' : 'Add to Cart'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+Add Next.js image configuration in /apps/web/next.config.js to allow external images:
+
+module.exports = {
+  images: {
+    domains: ['images.pexels.com', 'supabase.co'],
+  },
+}
+```
+
+---
+
+## Step 1.8: Implement Product Catalog - Mobile
+
+**Prompt for Augment**:
+```
+Create products screen in /apps/mobile/app/(tabs)/index.tsx:
+
+import { useState, useEffect } from 'react'
+import { View, Text, FlatList, Image, StyleSheet, TextInput, TouchableOpacity } from 'react-native'
+import { supabase } from '@/lib/supabase'
+import { Product } from '@b2b-plus/supabase'
+import { useAuth } from '@/contexts/AuthContext'
+
+export default function ProductsScreen() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('in_stock', true)
+      .order('name')
+
+    if (data) {
+      setProducts(data)
+    }
+    setLoading(false)
+  }
+
+  const addToCart = async (product: Product, quantity: number) => {
+    if (!user) return
+
+    const { error } = await supabase
+      .from('cart_items')
+      .upsert({
+        user_id: user.id,
+        product_id: product.id,
+        organization_id: product.organization_id,
+        quantity
+      }, {
+        onConflict: 'user_id,product_id',
+        ignoreDuplicates: false
+      })
+
+    if (!error) {
+      alert('Added to cart!')
+    }
+  }
+
+  const renderProduct = ({ item }: { item: Product }) => (
+    <View style={styles.productCard}>
+      {item.image_url && (
+        <Image
+          source={{ uri: item.image_url }}
+          style={styles.productImage}
+        />
+      )}
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productSku}>{item.sku}</Text>
+      <Text style={styles.productDescription} numberOfLines={2}>
+        {item.description}
+      </Text>
+      <View style={styles.priceRow}>
+        <Text style={styles.price}>${item.base_price}</Text>
+        <Text style={styles.unit}>per {item.unit_of_measure}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => addToCart(item, 1)}
+      >
+        <Text style={styles.addButtonText}>Add to Cart</Text>
+      </TouchableOpacity>
+    </View>
+  )
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading products...</Text>
+      </View>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={products}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={styles.list}
+      />
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  list: {
+    padding: 8,
+  },
+  productCard: {
+    flex: 1,
+    margin: 8,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    maxWidth: '48%',
+  },
+  productImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  productSku: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  productDescription: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  unit: {
+    fontSize: 12,
+    color: '#666',
+  },
+  addButton: {
+    backgroundColor: '#2563eb',
+    padding: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+})
+```
+
+---
+
+## Step 1.9: Implement Basic Cart Functionality
+
+This will be expanded significantly in Phase 2, but for now create a minimal cart view.
+
+**Prompt for Augment**:
+```
+Create cart page for web in /apps/web/src/app/cart/page.tsx:
+
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import CartView from '@/components/CartView'
+
+export default async function CartPage() {
+  const supabase = createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    redirect('/auth/login')
+  }
+
+  const { data: cartItems } = await supabase
+    .from('cart_items')
+    .select(`
+      *,
+      products (*)
+    `)
+    .eq('user_id', user.id)
+
+  return <CartView initialCartItems={cartItems || []} />
+}
+
+Create CartView component in /apps/web/src/components/CartView.tsx:
+
+'use client'
+
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+
+type CartItemWithProduct = {
+  id: string
+  quantity: number
+  products: {
+    id: string
+    name: string
+    sku: string
+    base_price: number
+    image_url: string | null
+  }
+}
+
+export default function CartView({ 
+  initialCartItems 
+}: { 
+  initialCartItems: CartItemWithProduct[] 
+}) {
+  const [cartItems, setCartItems] = useState(initialCartItems)
+  const [loading, setLoading] = useState(false)
+  const supabase = createClient()
+  const router = useRouter()
+
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return
+
+    const { error } = await supabase
+      .from('cart_items')
+      .update({ quantity: newQuantity })
+      .eq('id', itemId)
+
+    if (!error) {
+      setCartItems(items =>
+        items.map(item =>
+          item.id === itemId ? { ...item, quantity: newQuantity } : item
+        )
+      )
+    }
+  }
+
+  const removeItem = async (itemId: string) => {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', itemId)
+
+    if (!error) {
+      setCartItems(items => items.filter(item => item.id !== itemId))
+    }
+  }
+
+  const total = cartItems.reduce(
+    (sum, item) => sum + item.quantity * item.products.base_price,
+    0
+  )
+
+  const handleCheckout = () => {
+    router.push('/checkout')
+  }
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+        <p className="text-gray-600">Your cart is empty</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+      <div className="space-y-4">
+        {cartItems.map((item) => (
+          <div key={item.id} className="flex items-center gap-4 p-4 border rounded">
+            {item.products.image_url && (
+              <img
+                src={item.products.image_url}
+                alt={item.products.name}
+                className="w-20 h-20 object-cover rounded"
+              />
+            )}
+            <div className="flex-1">
+              <h3 className="font-semibold">{item.products.name}</h3>
+              <p className="text-sm text-gray-600">{item.products.sku}</p>
+              <p className="text-sm font-semibold">${item.products.base_price}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                className="px-2 py-1 border rounded"
+              >
+                -
+              </button>
+              <span className="w-12 text-center">{item.quantity}</span>
+              <button
+                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                className="px-2 py-1 border rounded"
+              >
+                +
+              </button>
+            </div>
+            <div className="text-right">
+              <p className="font-bold">
+                ${(item.quantity * item.products.base_price).toFixed(2)}
+              </p>
+            </div>
+            <button
+              onClick={() => removeItem(item.id)}
+              className="text-red-600 hover:text-red-700"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-8 border-t pt-4">
+        <div className="flex justify-between items-center text-2xl font-bold">
+          <span>Total:</span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+        <button
+          onClick={handleCheckout}
+          disabled={loading}
+          className="mt-4 w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? 'Processing...' : 'Proceed to Checkout'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+Similar implementation for mobile in /apps/mobile/app/(tabs)/cart.tsx (use React Native components)
+```
+
+---
+
+## Step 1.10: Test Phase 1 Functionality
+
+**Manual testing checklist**:
+
+1. **Authentication**:
+   - [ ] Register new account on web
+   - [ ] Register new account on mobile
+   - [ ] Login on web
+   - [ ] Login on mobile
+   - [ ] Session persists on app restart
+
+2. **Products**:
+   - [ ] View products on web
+   - [ ] View products on mobile
+   - [ ] Products show correct images
+   - [ ] Products show correct pricing
+
+3. **Cart**:
+   - [ ] Add product to cart on web
+   - [ ] Add product to cart on mobile
+   - [ ] Update quantities
+   - [ ] Remove items
+   - [ ] Cart persists across sessions
+
+4. **Database**:
+   - [ ] RLS is preventing unauthorized access
+   - [ ] Organization isolation is working
+   - [ ] Full-text search returns results
+
+**Testing queries** (run in Supabase SQL Editor):
+```sql
+-- Verify products are searchable
+SELECT name, ts_rank(search_vector, websearch_to_tsquery('english', 'cup')) as rank
+FROM products
+WHERE search_vector @@ websearch_to_tsquery('english', 'cup')
+ORDER BY rank DESC;
+
+-- Verify RLS is working (should return nothing when not authenticated)
+SELECT * FROM products;
+
+-- Check cart items are properly linked
+SELECT ci.*, p.name, p.base_price
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.id;
+```
+
+---
+
+## Phase 1 Complete ✅
+
+You now have:
+- ✅ Multi-tenant database with RLS
+- ✅ Authentication on web and mobile
+- ✅ Product catalog with images
+- ✅ Basic cart functionality
+- ✅ Order schema ready for Phase 2
+
+**Next**: Proceed to Phase 2 for order history, quick reorder, multi-address shipping, and more B2B essentials.
+
+See "B2B+ Phase 2 Implementation Guide" artifact.
