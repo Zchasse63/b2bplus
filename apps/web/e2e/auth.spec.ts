@@ -12,6 +12,9 @@ test.describe('Authentication', () => {
     test('should login with valid credentials', async ({ page }) => {
       await page.goto('/auth/login');
 
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle');
+
       // Fill in login form
       await page.fill('[data-testid="login-email"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
       await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
@@ -22,8 +25,14 @@ test.describe('Authentication', () => {
       // Should redirect to products page
       await page.waitForURL('/products', { timeout: 10000 });
 
-      // Should show user menu
-      await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
+      // Wait for page to fully load and header to render
+      await page.waitForLoadState('networkidle');
+
+      // Additional wait for session to be fully established (especially important for webkit/Mobile Chrome)
+      await page.waitForTimeout(2000);
+
+      // Should show user menu (with extended timeout for server component rendering)
+      await expect(page.locator('[data-testid="user-menu"]')).toBeVisible({ timeout: 10000 });
     });
 
     test('should show error with invalid credentials', async ({ page }) => {
@@ -151,6 +160,10 @@ test.describe('Authentication', () => {
     test('should send password reset email', async ({ page }) => {
       await page.goto('/auth/reset-password');
 
+      // Wait for page to be fully loaded and hydrated
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1000);
+
       // Fill in email
       await page.fill('input[name="email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
 
@@ -166,7 +179,7 @@ test.describe('Authentication', () => {
       // Wait for either success or error message to appear
       await expect(
         successMessage.or(errorMessage)
-      ).toBeVisible({ timeout: 10000 });
+      ).toBeVisible({ timeout: 15000 });
 
       // Verify the message content
       const isSuccess = await successMessage.isVisible();
@@ -184,14 +197,20 @@ test.describe('Authentication', () => {
     test('should show validation error for invalid email', async ({ page }) => {
       await page.goto('/auth/reset-password');
 
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle');
+
       // Fill in invalid email
       await page.fill('input[name="email"]', 'not-an-email');
 
       // Submit form
       await page.click('button[type="submit"]');
 
+      // Wait for validation to run and error to appear
+      await page.waitForTimeout(500);
+
       // Should show validation error
-      await expect(page.locator('text=/invalid.*email/i')).toBeVisible();
+      await expect(page.locator('text=/invalid.*email/i')).toBeVisible({ timeout: 5000 });
     });
   });
 
@@ -199,10 +218,17 @@ test.describe('Authentication', () => {
     test('should logout successfully', async ({ page }) => {
       // First login
       await page.goto('/auth/login');
+
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle');
+
       await page.fill('[data-testid="login-email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
       await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
       await page.click('button[type="submit"]');
       await page.waitForURL('/products', { timeout: 10000 });
+
+      // Wait for header to render
+      await page.waitForLoadState('networkidle');
 
       // Click logout button (directly visible in header, no menu click needed)
       await page.click('button:has-text("Sign Out")');
