@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ShoppingCart, Package, User, LogOut } from 'lucide-react'
+import { ShoppingCart, Package, User, LogOut, FileText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -73,6 +73,12 @@ export default function Header() {
                 variant={isActive('/orders') ? 'default' : 'ghost'}
               >
                 <Link href="/orders">Orders</Link>
+              </Button>
+              <Button
+                asChild
+                variant={isActive('/invoices') ? 'default' : 'ghost'}
+              >
+                <Link href="/invoices">Invoices</Link>
               </Button>
               <Button
                 asChild
