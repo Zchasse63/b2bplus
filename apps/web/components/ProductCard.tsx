@@ -4,6 +4,12 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@b2b-plus/supabase'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/hooks/use-toast'
+import { ShoppingCart, Package } from 'lucide-react'
 
 interface ProductCardProps {
   product: Product
@@ -12,18 +18,21 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const supabase = createClient()
+  const { toast } = useToast()
 
   const handleAddToCart = async () => {
     setLoading(true)
-    setMessage(null)
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
-        setMessage({ type: 'error', text: 'Please sign in to add items to cart' })
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "Please sign in to add items to cart",
+        })
         setLoading(false)
         return
       }
@@ -36,7 +45,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         .single()
 
       if (!profile?.current_organization_id) {
-        setMessage({ type: 'error', text: 'No organization found' })
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No organization found",
+        })
         setLoading(false)
         return
       }
@@ -71,93 +84,99 @@ export default function ProductCard({ product }: ProductCardProps) {
         if (error) throw error
       }
 
-      setMessage({ type: 'success', text: 'Added to cart!' })
+      toast({
+        title: "Added to Cart",
+        description: `${quantity} ${product.name} added to your cart`,
+      })
       setQuantity(1)
     } catch (error) {
       console.error('Error adding to cart:', error)
-      setMessage({ type: 'error', text: 'Failed to add to cart' })
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add to cart",
+      })
     } finally {
       setLoading(false)
-      setTimeout(() => setMessage(null), 3000)
     }
   }
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow transition-shadow hover:shadow-lg">
-      <div className="relative h-48 w-full bg-gray-200">
+    <Card className="overflow-hidden transition-all hover:shadow-lg group">
+      <div className="relative h-48 w-full bg-neutral-100 overflow-hidden">
         {product.image_url ? (
           <Image
             src={product.image_url}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
-            No image
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            <Package className="h-12 w-12" />
           </div>
         )}
       </div>
       
-      <div className="p-4">
-        <div className="mb-2">
-          <span className="inline-block rounded bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+      <CardHeader className="space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <Badge variant="secondary" className="shrink-0">
             {product.category}
-          </span>
-        </div>
-        
-        <h3 className="mb-2 text-lg font-semibold text-gray-900">{product.name}</h3>
-        
-        {product.description && (
-          <p className="mb-3 line-clamp-2 text-sm text-gray-600">{product.description}</p>
-        )}
-        
-        <div className="mb-3 flex items-baseline justify-between">
-          <div>
-            <span className="text-2xl font-bold text-gray-900">
-              ${product.base_price.toFixed(2)}
-            </span>
-            <span className="ml-1 text-sm text-gray-500">/ {product.unit_of_measure}</span>
-          </div>
+          </Badge>
           {product.units_per_case && (
-            <span className="text-xs text-gray-500">{product.units_per_case} units</span>
+            <span className="text-xs text-muted-foreground">
+              {product.units_per_case} units/case
+            </span>
           )}
         </div>
-
-        <div className="mb-3 text-xs text-gray-500">
-          SKU: {product.sku}
-          {product.brand && ` • ${product.brand}`}
-        </div>
-
-        {message && (
-          <div className={`mb-3 rounded p-2 text-sm ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-700' 
-              : 'bg-red-50 text-red-700'
-          }`}>
-            {message.text}
-          </div>
+        
+        <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+          {product.name}
+        </h3>
+        
+        {product.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {product.description}
+          </p>
         )}
+      </CardHeader>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-20 rounded border border-gray-300 px-3 py-2 text-center"
-          />
-          <button
-            onClick={handleAddToCart}
-            disabled={loading}
-            className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Adding...' : 'Add to Cart'}
-          </button>
+      <CardContent className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <div>
+            <span className="text-2xl font-bold text-primary">
+              ${product.base_price.toFixed(2)}
+            </span>
+            <span className="ml-1 text-sm text-muted-foreground">
+              / {product.unit_of_measure}
+            </span>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div className="text-xs text-muted-foreground space-y-1">
+          <div>SKU: {product.sku}</div>
+          {product.brand && <div>Brand: {product.brand}</div>}
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex gap-2">
+        <Input
+          type="number"
+          min="1"
+          value={quantity}
+          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+          className="w-20"
+        />
+        <Button
+          onClick={handleAddToCart}
+          disabled={loading}
+          className="flex-1 gap-2"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          {loading ? 'Adding...' : 'Add to Cart'}
+        </Button>
+      </CardFooter>
+    </Card>
   )
 }
-

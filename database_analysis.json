@@ -1,0 +1,2019 @@
+{
+  "migrations": [
+    {
+      "file": "20240101000000_initial_schema.sql",
+      "tables": [
+        {
+          "name": "organizations",
+          "column_count": 9,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "slug",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": true
+            },
+            {
+              "name": "type",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "tax_id",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "website",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "organization_members",
+          "column_count": 5,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "role",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "profiles",
+          "column_count": 9,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": true,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "email",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "full_name",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "avatar_url",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "current_organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "expo_push_token",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "products",
+          "column_count": 23,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "sku",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "description",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "category",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "subcategory",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "brand",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "base_price",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "unit_of_measure",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "units_per_case",
+              "type": "INTEGER",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "weight_lbs",
+              "type": "DECIMAL(8,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "dimensions_inches",
+              "type": "JSONB",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "in_stock",
+              "type": "BOOLEAN",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "image_url",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "additional_images",
+              "type": "TEXT[]",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "specifications",
+              "type": "JSONB",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "allergens",
+              "type": "TEXT[]",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "nutritional_info",
+              "type": "JSONB",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "search_vector",
+              "type": "tsvector",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "embedding",
+              "type": "vector(1536)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "shipping_addresses",
+          "column_count": 15,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "label",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "contact_name",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "street_address",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "street_address2",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "city",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "state",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "postal_code",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "country",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "delivery_instructions",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "is_default",
+              "type": "BOOLEAN",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "last_used_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "orders",
+          "column_count": 19,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "order_number",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": true
+            },
+            {
+              "name": "po_number",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "status",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "subtotal",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "tax",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "shipping_cost",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "total",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "shipping_address_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "shipping_tracking_number",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "shipping_carrier",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "notes",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "submitted_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "shipped_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "delivered_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "order_items",
+          "column_count": 9,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "order_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "sku",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "quantity",
+              "type": "INTEGER",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "unit_price",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "line_total",
+              "type": "DECIMAL(10,2)",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        },
+        {
+          "name": "cart_items",
+          "column_count": 7,
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "is_primary_key": true,
+              "is_foreign_key": false,
+              "is_not_null": false,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "is_primary_key": false,
+              "is_foreign_key": true,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "quantity",
+              "type": "INTEGER",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": false,
+              "is_unique": false
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "is_primary_key": false,
+              "is_foreign_key": false,
+              "is_not_null": true,
+              "has_default": true,
+              "is_unique": false
+            }
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_organizations_slug",
+          "table": "organizations"
+        },
+        {
+          "name": "idx_org_members_user",
+          "table": "organization_members"
+        },
+        {
+          "name": "idx_org_members_org",
+          "table": "organization_members"
+        },
+        {
+          "name": "idx_products_org",
+          "table": "products"
+        },
+        {
+          "name": "idx_products_sku",
+          "table": "products"
+        },
+        {
+          "name": "idx_products_category",
+          "table": "products"
+        },
+        {
+          "name": "idx_products_in_stock",
+          "table": "products"
+        },
+        {
+          "name": "idx_products_search_vector",
+          "table": "products"
+        },
+        {
+          "name": "idx_products_embedding",
+          "table": "products"
+        },
+        {
+          "name": "idx_addresses_org",
+          "table": "shipping_addresses"
+        },
+        {
+          "name": "idx_orders_org",
+          "table": "orders"
+        },
+        {
+          "name": "idx_orders_user",
+          "table": "orders"
+        },
+        {
+          "name": "idx_orders_number",
+          "table": "orders"
+        },
+        {
+          "name": "idx_orders_status",
+          "table": "orders"
+        },
+        {
+          "name": "idx_orders_submitted_at",
+          "table": "orders"
+        },
+        {
+          "name": "idx_order_items_order",
+          "table": "order_items"
+        },
+        {
+          "name": "idx_order_items_product",
+          "table": "order_items"
+        },
+        {
+          "name": "idx_cart_items_user",
+          "table": "cart_items"
+        }
+      ],
+      "functions": [
+        "products_search_vector_trigger",
+        "generate_order_number",
+        "set_order_number",
+        "update_updated_at"
+      ],
+      "triggers": [
+        {
+          "name": "products_search_vector_update",
+          "table": "products"
+        },
+        {
+          "name": "set_order_number_trigger",
+          "table": "orders"
+        },
+        {
+          "name": "update_organizations_updated_at",
+          "table": "organizations"
+        },
+        {
+          "name": "update_profiles_updated_at",
+          "table": "profiles"
+        },
+        {
+          "name": "update_products_updated_at",
+          "table": "products"
+        },
+        {
+          "name": "update_orders_updated_at",
+          "table": "orders"
+        },
+        {
+          "name": "update_cart_items_updated_at",
+          "table": "cart_items"
+        }
+      ]
+    },
+    {
+      "file": "20240101000001_rls_policies.sql",
+      "tables": [],
+      "indexes": [],
+      "functions": [
+        "is_organization_member",
+        "get_user_organization"
+      ],
+      "triggers": []
+    },
+    {
+      "file": "20251031000000_create_categories_table.sql",
+      "tables": [],
+      "indexes": [
+        {
+          "name": "idx_products_category_id",
+          "table": "products"
+        }
+      ],
+      "functions": [
+        "update_updated_at_column"
+      ],
+      "triggers": [
+        {
+          "name": "update_categories_updated_at",
+          "table": "categories"
+        }
+      ]
+    },
+    {
+      "file": "20251031000001_seed_categories.sql",
+      "tables": [],
+      "indexes": [],
+      "functions": [],
+      "triggers": []
+    },
+    {
+      "file": "20251031000001_seed_categories_fixed.sql",
+      "tables": [],
+      "indexes": [],
+      "functions": [],
+      "triggers": []
+    },
+    {
+      "file": "99999999999998_comprehensive_seed_data.sql",
+      "tables": [],
+      "indexes": [],
+      "functions": [],
+      "triggers": []
+    },
+    {
+      "file": "99999999999999_seed_test_data.sql",
+      "tables": [],
+      "indexes": [],
+      "functions": [],
+      "triggers": []
+    }
+  ],
+  "summary": {
+    "total_migrations": 7,
+    "total_tables": 8,
+    "total_indexes": 19,
+    "total_functions": 7,
+    "total_triggers": 8
+  },
+  "tables": [
+    {
+      "name": "organizations",
+      "column_count": 9,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "slug",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": true
+        },
+        {
+          "name": "type",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "tax_id",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "phone",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "website",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "organization_members",
+      "column_count": 5,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "user_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "role",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "profiles",
+      "column_count": 9,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": true,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "email",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "full_name",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "phone",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "avatar_url",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "current_organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "expo_push_token",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "products",
+      "column_count": 23,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "sku",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "category",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "subcategory",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "brand",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "base_price",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "unit_of_measure",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "units_per_case",
+          "type": "INTEGER",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "weight_lbs",
+          "type": "DECIMAL(8,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "dimensions_inches",
+          "type": "JSONB",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "in_stock",
+          "type": "BOOLEAN",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "image_url",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "additional_images",
+          "type": "TEXT[]",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "specifications",
+          "type": "JSONB",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "allergens",
+          "type": "TEXT[]",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "nutritional_info",
+          "type": "JSONB",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "search_vector",
+          "type": "tsvector",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "embedding",
+          "type": "vector(1536)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "shipping_addresses",
+      "column_count": 15,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "label",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "contact_name",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "phone",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "street_address",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "street_address2",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "city",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "state",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "postal_code",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "country",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "delivery_instructions",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "is_default",
+          "type": "BOOLEAN",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "last_used_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "column_count": 19,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "user_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "order_number",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": true
+        },
+        {
+          "name": "po_number",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "status",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "subtotal",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "tax",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "shipping_cost",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "total",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "shipping_address_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "shipping_tracking_number",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "shipping_carrier",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "notes",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "submitted_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "shipped_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "delivered_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "order_items",
+      "column_count": 9,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "order_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "product_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "sku",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "name",
+          "type": "TEXT",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "quantity",
+          "type": "INTEGER",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "unit_price",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "line_total",
+          "type": "DECIMAL(10,2)",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    },
+    {
+      "name": "cart_items",
+      "column_count": 7,
+      "columns": [
+        {
+          "name": "id",
+          "type": "UUID",
+          "is_primary_key": true,
+          "is_foreign_key": false,
+          "is_not_null": false,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "organization_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "user_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "product_id",
+          "type": "UUID",
+          "is_primary_key": false,
+          "is_foreign_key": true,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "quantity",
+          "type": "INTEGER",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": false,
+          "is_unique": false
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMPTZ",
+          "is_primary_key": false,
+          "is_foreign_key": false,
+          "is_not_null": true,
+          "has_default": true,
+          "is_unique": false
+        }
+      ]
+    }
+  ],
+  "table_names": [
+    "cart_items",
+    "order_items",
+    "orders",
+    "organization_members",
+    "organizations",
+    "products",
+    "profiles",
+    "shipping_addresses"
+  ]
+}

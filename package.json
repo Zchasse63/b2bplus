@@ -16,12 +16,15 @@
     "test:watch": "turbo run test:watch"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.78.0",
     "turbo": "^1.13.0",
     "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
   }
 }
-

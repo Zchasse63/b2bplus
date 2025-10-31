@@ -5,18 +5,23 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import DemoCredentials from '@/components/auth/DemoCredentials'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<{
     email?: string
     password?: string
   }>({})
   const router = useRouter()
   const supabase = createClient()
+  const { toast } = useToast()
 
   const validateForm = () => {
     const errors: { email?: string; password?: string } = {}
@@ -39,12 +44,10 @@ export default function Login() {
     setEmail(demoEmail)
     setPassword(demoPassword)
     setValidationErrors({})
-    setError(null)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
 
     if (!validateForm()) {
       return
@@ -52,133 +55,128 @@ export default function Login() {
 
     setLoading(true)
 
-    console.log('Attempting login with:', email)
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      console.log('Login response:', { data: !!data, error: error?.message })
-
       if (error) {
-        console.error('Login error:', error)
-        setError(error.message)
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        })
         setLoading(false)
       } else {
-        console.log('Login successful, navigating to /products')
+        toast({
+          title: "Success!",
+          description: "You have been signed in successfully.",
+        })
         router.push('/products')
         router.refresh()
       }
     } catch (err) {
-      console.error('Unexpected login error:', err)
-      setError('An unexpected error occurred')
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      })
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-lg bg-white p-8 shadow">
-        <div>
-          <h2 className="text-center text-3xl font-bold">Sign in to B2B+</h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-neutral-50 via-primary-50 to-accent-50 px-4 py-12">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-3xl font-bold text-center">Sign in to B2B+</CardTitle>
+          <CardDescription className="text-center">
             Food service disposables ordering platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Demo Credentials - Only show in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <DemoCredentials onFillCredentials={handleFillCredentials} />
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4" noValidate>
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                data-testid="login-email"
+                required
+                aria-required="true"
+                aria-invalid={!!validationErrors.email}
+                aria-describedby={validationErrors.email ? 'email-error' : undefined}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (validationErrors.email) {
+                    setValidationErrors({ ...validationErrors, email: undefined })
+                  }
+                }}
+                className={validationErrors.email ? 'border-destructive' : ''}
+              />
+              {validationErrors.email && (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.email}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                data-testid="login-password"
+                required
+                aria-required="true"
+                aria-invalid={!!validationErrors.password}
+                aria-describedby={validationErrors.password ? 'password-error' : undefined}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (validationErrors.password) {
+                    setValidationErrors({ ...validationErrors, password: undefined })
+                  }
+                }}
+                className={validationErrors.password ? 'border-destructive' : ''}
+              />
+              {validationErrors.password && (
+                <p id="password-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.password}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Don't have an account?{' '}
+            <Link href="/auth/register" className="font-medium text-primary hover:underline">
+              Sign up
+            </Link>
           </p>
-        </div>
-
-        {/* Demo Credentials - Only show in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <DemoCredentials onFillCredentials={handleFillCredentials} />
-        )}
-
-        {error && (
-          <div className="rounded bg-red-50 p-4 text-sm text-red-600" role="alert" aria-live="polite">
-            {error}
-          </div>
-        )}
-        <form onSubmit={handleLogin} className="space-y-6" noValidate>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email <span className="text-red-600" aria-label="required">*</span>
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              data-testid="login-email"
-              required
-              aria-required="true"
-              aria-invalid={!!validationErrors.email}
-              aria-describedby={validationErrors.email ? 'email-error' : undefined}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (validationErrors.email) {
-                  setValidationErrors({ ...validationErrors, email: undefined })
-                }
-              }}
-              className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                validationErrors.email
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-              }`}
-            />
-            {validationErrors.email && (
-              <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
-                {validationErrors.email}
-              </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password <span className="text-red-600" aria-label="required">*</span>
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              data-testid="login-password"
-              required
-              aria-required="true"
-              aria-invalid={!!validationErrors.password}
-              aria-describedby={validationErrors.password ? 'password-error' : undefined}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (validationErrors.password) {
-                  setValidationErrors({ ...validationErrors, password: undefined })
-                }
-              }}
-              className={`mt-1 block w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                validationErrors.password
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                  : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-              }`}
-            />
-            {validationErrors.password && (
-              <p id="password-error" className="mt-1 text-sm text-red-600" role="alert">
-                {validationErrors.password}
-              </p>
-            )}
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link href="/auth/register" className="font-medium text-blue-600 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded">
-            Sign up
-          </Link>
-        </p>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
