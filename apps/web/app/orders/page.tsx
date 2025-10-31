@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Loader2, Package, Search, Eye, ShoppingCart } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
+import FilterPanel, { FilterState } from '@/components/FilterPanel'
 
 interface Order {
   id: string
@@ -44,22 +45,79 @@ export default function OrdersPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [reorderingId, setReorderingId] = useState<string | null>(null)
+  const [filters, setFilters] = useState<FilterState>({
+    dateRange: { preset: 'all', startDate: '', endDate: '' },
+    statuses: [],
+    amountRange: { min: '', max: '' },
+  })
 
   useEffect(() => {
     loadOrders()
   }, [])
 
   useEffect(() => {
+    applyFilters()
+  }, [searchQuery, orders, filters])
+
+  const applyFilters = () => {
+    let filtered = [...orders]
+
+    // Apply search query
     if (searchQuery) {
-      const filtered = orders.filter(order =>
+      filtered = filtered.filter(order =>
         order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.po_number?.toLowerCase().includes(searchQuery.toLowerCase())
       )
-      setFilteredOrders(filtered)
-    } else {
-      setFilteredOrders(orders)
     }
-  }, [searchQuery, orders])
+
+    // Apply date range filter
+    if (filters.dateRange.startDate) {
+      filtered = filtered.filter(order => {
+        const orderDate = new Date(order.submitted_at || order.created_at)
+        return orderDate >= new Date(filters.dateRange.startDate)
+      })
+    }
+    if (filters.dateRange.endDate) {
+      filtered = filtered.filter(order => {
+        const orderDate = new Date(order.submitted_at || order.created_at)
+        return orderDate <= new Date(filters.dateRange.endDate + 'T23:59:59')
+      })
+    }
+
+    // Apply status filter
+    if (filters.statuses.length > 0) {
+      filtered = filtered.filter(order => filters.statuses.includes(order.status))
+    }
+
+    // Apply amount range filter
+    if (filters.amountRange.min) {
+      const minAmount = parseFloat(filters.amountRange.min)
+      filtered = filtered.filter(order => order.total >= minAmount)
+    }
+    if (filters.amountRange.max) {
+      const maxAmount = parseFloat(filters.amountRange.max)
+      filtered = filtered.filter(order => order.total <= maxAmount)
+    }
+
+    setFilteredOrders(filtered)
+  }
+
+  const getActiveFilterCount = () => {
+    let count = 0
+    if (filters.dateRange.preset !== 'all') count++
+    if (filters.statuses.length > 0) count++
+    if (filters.amountRange.min || filters.amountRange.max) count++
+    return count
+  }
+
+  const handleClearFilters = () => {
+    setFilters({
+      dateRange: { preset: 'all', startDate: '', endDate: '' },
+      statuses: [],
+      amountRange: { min: '', max: '' },
+    })
+    setSearchQuery('')
+  }
 
   const loadOrders = async () => {
     try {
@@ -159,6 +217,14 @@ export default function OrdersPage() {
           <h1 className="text-3xl font-bold text-secondary-500 mb-2">Order History</h1>
           <p className="text-muted-foreground">View and track your orders</p>
         </div>
+
+        {/* Filters */}
+        <FilterPanel
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={handleClearFilters}
+          activeFilterCount={getActiveFilterCount()}
+        />
 
         {/* Search */}
         <div className="mb-6">
