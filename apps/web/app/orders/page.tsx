@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Package, Search, Eye, ShoppingCart } from 'lucide-react'
+import { Loader2, Package, Search, Eye, ShoppingCart, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import FilterPanel, { FilterState } from '@/components/FilterPanel'
+import CopyButton from '@/components/CopyButton'
 
 interface Order {
   id: string
@@ -263,18 +264,22 @@ export default function OrdersPage() {
               <Card key={order.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">
-                        Order {order.order_number}
-                      </CardTitle>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">
+                          Order {order.order_number}
+                        </CardTitle>
+                        {order.po_number && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <FileText className="h-4 w-4" />
+                            <span className="font-medium">PO: {order.po_number}</span>
+                            <CopyButton text={order.po_number} label="PO Number" size="icon" />
+                          </div>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground mt-1">
                         Placed on {format(new Date(order.submitted_at || order.created_at), 'MMM dd, yyyy')}
                       </p>
-                      {order.po_number && (
-                        <p className="text-sm text-muted-foreground">
-                          PO: {order.po_number}
-                        </p>
-                      )}
                     </div>
                     <Badge className={statusColors[order.status]}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}

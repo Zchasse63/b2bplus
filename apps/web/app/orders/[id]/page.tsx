@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Package, MapPin, FileText, ArrowLeft, Truck, ShoppingCart } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import CopyButton from '@/components/CopyButton'
 import { format } from 'date-fns'
 
 interface OrderItem {
@@ -293,20 +294,24 @@ export default function OrderDetailsPage() {
               </Card>
             )}
 
-            {/* Additional Info */}
+            {/* Purchase Order & Additional Info */}
             {(order.po_number || order.notes) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
-                    Additional Information
+                    {order.po_number ? 'Purchase Order & Notes' : 'Additional Information'}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-4">
                   {order.po_number && (
-                    <p className="text-sm">
-                      <span className="font-medium">PO Number:</span> {order.po_number}
-                    </p>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Purchase Order Number</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-semibold">{order.po_number}</p>
+                        <CopyButton text={order.po_number} label="PO Number" />
+                      </div>
+                    </div>
                   )}
                   {order.notes && (
                     <p className="text-sm">

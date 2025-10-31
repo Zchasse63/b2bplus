@@ -316,13 +316,27 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="po-number">PO Number (Optional)</Label>
-                  <Input
-                    id="po-number"
-                    placeholder="Enter purchase order number"
-                    value={poNumber}
-                    onChange={(e) => setPoNumber(e.target.value)}
-                  />
+                  <Label htmlFor="po-number" className="text-base font-semibold">
+                    Purchase Order Number
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Enter your PO number for tracking and reference
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      id="po-number"
+                      placeholder="e.g., PO-2025-001"
+                      value={poNumber}
+                      onChange={(e) => setPoNumber(e.target.value)}
+                      className="flex-1"
+                      maxLength={50}
+                    />
+                  </div>
+                  {poNumber && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {poNumber.length}/50 characters
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="notes">Order Notes (Optional)</Label>
