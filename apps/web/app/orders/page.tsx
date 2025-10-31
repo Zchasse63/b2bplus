@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Package, Search, Eye } from 'lucide-react'
+import { Loader2, Package, Search, Eye, ShoppingCart } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 
 interface Order {
@@ -41,6 +42,8 @@ export default function OrdersPage() {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const supabase = createClient()
   const router = useRouter()
+  const { toast } = useToast()
+  const [reorderingId, setReorderingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadOrders()
@@ -101,6 +104,44 @@ export default function OrdersPage() {
 
   const getTotalItems = (order: Order) => {
     return order.order_items.reduce((sum, item) => sum + item.quantity, 0)
+  }
+
+  const handleReorder = async (orderId: string) => {
+    setReorderingId(orderId)
+    try {
+      const response = await fetch('/api/orders/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reorder')
+      }
+
+      toast({
+        title: 'Success!',
+        description: data.message,
+      })
+
+      // Redirect to cart after a short delay
+      setTimeout(() => {
+        router.push('/cart')
+      }, 1000)
+    } catch (error) {
+      console.error('Reorder error:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to reorder. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setReorderingId(null)
+    }
   }
 
   if (loading) {
@@ -184,13 +225,27 @@ export default function OrdersPage() {
                         ${order.total.toFixed(2)}
                       </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => router.push(`/orders/${order.id}`)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => handleReorder(order.id)}
+                        disabled={reorderingId === order.id}
+                      >
+                        {reorderingId === order.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                        )}
+                        Reorder
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push(`/orders/${order.id}`)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

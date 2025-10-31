@@ -6,7 +6,8 @@ import { useRouter, useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Package, MapPin, FileText, ArrowLeft, Truck } from 'lucide-react'
+import { Loader2, Package, MapPin, FileText, ArrowLeft, Truck, ShoppingCart } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 
 interface OrderItem {
@@ -65,6 +66,8 @@ export default function OrderDetailsPage() {
   const router = useRouter()
   const params = useParams()
   const orderId = params.id as string
+  const { toast } = useToast()
+  const [reordering, setReordering] = useState(false)
 
   useEffect(() => {
     loadOrder()
@@ -94,6 +97,44 @@ export default function OrderDetailsPage() {
       console.error('Error loading order:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleReorder = async () => {
+    setReordering(true)
+    try {
+      const response = await fetch('/api/orders/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reorder')
+      }
+
+      toast({
+        title: 'Success!',
+        description: data.message,
+      })
+
+      // Redirect to cart after a short delay
+      setTimeout(() => {
+        router.push('/cart')
+      }, 1000)
+    } catch (error) {
+      console.error('Reorder error:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to reorder. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -141,9 +182,23 @@ export default function OrderDetailsPage() {
                 Placed on {format(new Date(order.submitted_at || order.created_at), 'MMMM dd, yyyy')}
               </p>
             </div>
-            <Badge className={statusColors[order.status]} style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleReorder}
+                disabled={reordering}
+                className="bg-primary hover:bg-primary/90"
+              >
+                {reordering ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                )}
+                Reorder All Items
+              </Button>
+              <Badge className={statusColors[order.status]} style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
+                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+              </Badge>
+            </div>
           </div>
         </div>
 
