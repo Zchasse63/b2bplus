@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ShoppingCart, Package, User, LogOut, FileText } from 'lucide-react'
+import { ShoppingCart, Package, User, LogOut, FileText, Calculator } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -79,6 +79,15 @@ export default function Header() {
                 variant={isActive('/invoices') ? 'default' : 'ghost'}
               >
                 <Link href="/invoices">Invoices</Link>
+              </Button>
+              <Button
+                asChild
+                variant={isActive('/tools/container-calculator') ? 'default' : 'ghost'}
+              >
+                <Link href="/tools/container-calculator">
+                  <Calculator className="h-4 w-4 mr-2" />
+                  Calculator
+                </Link>
               </Button>
               <Button
                 asChild
