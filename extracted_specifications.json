@@ -1,0 +1,1534 @@
+{
+  "documents": [
+    {
+      "file": "b2b-master-guide.txt",
+      "phase": "Master",
+      "line_count": 568,
+      "tables": [],
+      "features": [
+        {
+          "phase": "Master",
+          "title": "Local Development Environment Setup\n\n**Location on computer**: `~/Projects/b2b-plus` (or your preferred projects directory)\n\n**Prerequisites**:\n```bash\n# Required software versions\nNode.js 18+ (use nv",
+          "description": "### Step 0.1: Local Development Environment Setup\n\n**Location on computer**: `~/Projects/b2b-plus` (or your preferred projects directory)\n\n**Prerequisites**:\n```bash\n# Required software versions\nNode.js 18+ (use nvm: nvm install 18)\nnpm 9+ (comes with Node.js)\nGit 2.40+\nExpo CLI (will be installed in project)\nSupabase CLI (will be installed globally)\n```\n\n**Prompt for Augment**:\n```\nCreate a new directory at ~/Projects/b2b-plus and initialize a Turborepo monorepo with the following structure:\n\n/",
+          "has_code": true,
+          "code_blocks_count": 2
+        },
+        {
+          "phase": "Master",
+          "title": "Configure Turborepo\n\n**Prompt for Augment**:\n```\nCreate turbo.json in the root with this pipeline configuration:\n\n{\n  \"$schema\": \"https://turbo.build/schema.json\",\n  \"globalDependencies\": [\"**/.env\"],",
+          "description": "### Step 0.2: Configure Turborepo\n\n**Prompt for Augment**:\n```\nCreate turbo.json in the root with this pipeline configuration:\n\n{\n  \"$schema\": \"https://turbo.build/schema.json\",\n  \"globalDependencies\": [\"**/.env\"],\n  \"pipeline\": {\n    \"build\": {\n      \"dependsOn\": [\"^build\"],\n      \"outputs\": [\".next/**\", \"!.next/cache/**\", \"dist/**\"]\n    },\n    \"dev\": {\n      \"cache\": false,\n      \"persistent\": true\n    },\n    \"lint\": {\n      \"dependsOn\": [\"^build\"]\n    },\n    \"type-check\": {\n      \"dependsOn\":",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Initialize Web App (Next.js)\n\n**Prompt for Augment**:\n```\nIn /apps/web, create a Next.js 14 application with:\n- App Router (not Pages Router)\n- TypeScript\n- Tailwind CSS 3+\n- src/ directory structure\n",
+          "description": "### Step 0.3: Initialize Web App (Next.js)\n\n**Prompt for Augment**:\n```\nIn /apps/web, create a Next.js 14 application with:\n- App Router (not Pages Router)\n- TypeScript\n- Tailwind CSS 3+\n- src/ directory structure\n- These environment variables in .env.local:\n  NEXT_PUBLIC_SUPABASE_URL=\n  NEXT_PUBLIC_SUPABASE_ANON_KEY=\n  OPENAI_API_KEY=\n\nProject structure:\n/apps/web\n  /src\n    /app\n      /api          # API routes\n      /auth         # Auth pages (login, register)\n      /products     # Product pa",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Initialize Mobile App (Expo)\n\n**Prompt for Augment**:\n```\nIn /apps/mobile, create an Expo application with:\n- Expo SDK 51+\n- TypeScript\n- Expo Router for navigation\n- React Native 0.74+\n- These enviro",
+          "description": "### Step 0.4: Initialize Mobile App (Expo)\n\n**Prompt for Augment**:\n```\nIn /apps/mobile, create an Expo application with:\n- Expo SDK 51+\n- TypeScript\n- Expo Router for navigation\n- React Native 0.74+\n- These environment variables in .env:\n  EXPO_PUBLIC_SUPABASE_URL=\n  EXPO_PUBLIC_SUPABASE_ANON_KEY=\n\nProject structure:\n/apps/mobile\n  /app              # Expo Router file-based routing\n    /(tabs)         # Bottom tab navigation\n      index.tsx     # Products tab\n      orders.tsx    # Orders tab\n  ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Configure Metro for Monorepo\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/metro.config.js, configure Metro to work with the monorepo structure:\n\nconst { getDefaultConfig } = require('expo/metro-config",
+          "description": "### Step 0.5: Configure Metro for Monorepo\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/metro.config.js, configure Metro to work with the monorepo structure:\n\nconst { getDefaultConfig } = require('expo/metro-config');\nconst path = require('path');\n\n// Get the project root\nconst projectRoot = __dirname;\n// Get the monorepo root\nconst monorepoRoot = path.resolve(projectRoot, '../..');\n\nconst config = getDefaultConfig(projectRoot);\n\n// 1. Watch all files in the monorepo\nconfig.watchFolders = [monor",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Configure EAS Build\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/eas.json, create EAS Build configuration for development, preview, and production builds:\n\n{\n  \"cli\": {\n    \"version\": \">= 5.9.0\"\n  },\n",
+          "description": "### Step 0.6: Configure EAS Build\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/eas.json, create EAS Build configuration for development, preview, and production builds:\n\n{\n  \"cli\": {\n    \"version\": \">= 5.9.0\"\n  },\n  \"build\": {\n    \"development\": {\n      \"developmentClient\": true,\n      \"distribution\": \"internal\",\n      \"ios\": {\n        \"simulator\": true\n      },\n      \"android\": {\n        \"buildType\": \"apk\"\n      }\n    },\n    \"preview\": {\n      \"distribution\": \"internal\",\n      \"ios\": {\n        ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Create Shared Packages\n\n**Prompt for Augment**:\n```\nCreate three shared packages:\n\n1. /packages/shared - Business logic (TypeScript)\nStructure:\n/packages/shared\n  /src\n    /utils        # Helper funct",
+          "description": "### Step 0.7: Create Shared Packages\n\n**Prompt for Augment**:\n```\nCreate three shared packages:\n\n1. /packages/shared - Business logic (TypeScript)\nStructure:\n/packages/shared\n  /src\n    /utils        # Helper functions\n    /types        # Shared TypeScript types\n    /constants    # Constants (API endpoints, etc.)\n    /validation   # Zod schemas for validation\n    index.ts      # Export all\n  package.json\n  tsconfig.json\n\npackage.json should have:\n{\n  \"name\": \"@b2b-plus/shared\",\n  \"version\": \"0.0",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Setup Supabase Project\n\n**Manual steps** (cannot be fully automated):\n\n1. Go to https://supabase.com and create a new project\n2. Choose a project name: \"b2b-plus-dev\"\n3. Set a strong database password",
+          "description": "### Step 0.8: Setup Supabase Project\n\n**Manual steps** (cannot be fully automated):\n\n1. Go to https://supabase.com and create a new project\n2. Choose a project name: \"b2b-plus-dev\"\n3. Set a strong database password (save in password manager)\n4. Choose region closest to your location\n5. Wait 2-3 minutes for project provisioning\n\n**Once project is ready**:\n\n**Prompt for Augment**:\n```\nInstall Supabase CLI globally:\nnpm install -g supabase\n\nInitialize Supabase in the project:\ncd ~/Projects/b2b-plus",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Initialize Supabase Client\n\n**Prompt for Augment**:\n```\nIn /packages/supabase/src/client.ts, create Supabase client initialization:\n\nimport { createClient } from '@supabase/supabase-js'\nimport type { ",
+          "description": "### Step 0.9: Initialize Supabase Client\n\n**Prompt for Augment**:\n```\nIn /packages/supabase/src/client.ts, create Supabase client initialization:\n\nimport { createClient } from '@supabase/supabase-js'\nimport type { Database } from './types'\n\nconst supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || ''\nconst supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''\n\nif (!supabaseUrl || !supabaseAnonKey) ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Setup Testing Framework\n\n**Prompt for Augment**:\n```\nInstall testing dependencies in root package.json:\n\nnpm install -D -W jest @testing-library/react @testing-library/react-native @testing-library/je",
+          "description": "### Step 0.10: Setup Testing Framework\n\n**Prompt for Augment**:\n```\nInstall testing dependencies in root package.json:\n\nnpm install -D -W jest @testing-library/react @testing-library/react-native @testing-library/jest-native jest-expo\n\nCreate jest.config.js in root:\n\nmodule.exports = {\n  projects: [\n    '<rootDir>/apps/web/jest.config.js',\n    '<rootDir>/apps/mobile/jest.config.js',\n    '<rootDir>/packages/*/jest.config.js',\n  ],\n}\n\nFor /apps/web/jest.config.js:\nmodule.exports = {\n  preset: 'ts-",
+          "has_code": true,
+          "code_blocks_count": 2
+        },
+        {
+          "phase": "Master",
+          "title": "Tech Stack\n- **Frontend**: React (web) + React Native (mobile)\n- **Monorepo**: Turborepo\n- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)\n- **AI**: OpenAI (text-embedding-3-small for ",
+          "description": "### Tech Stack\n- **Frontend**: React (web) + React Native (mobile)\n- **Monorepo**: Turborepo\n- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)\n- **AI**: OpenAI (text-embedding-3-small for semantic search)\n- **3D Visualization**: React Three Fiber (R3F)\n- **Offline**: WatermelonDB (React Native)\n- **Communications**: Twilio (SMS) + Resend (email)\n- **Bin Packing**: binpackingjs (traditional algorithm)\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Budget & Timeline\n- **Monthly Costs**: $111-161 (Supabase $25, OpenAI $50-100, Twilio+Resend $36)\n- **Timeline**: 3-4 months to MVP\n- **Target**: 80% mobile orders, B2B food service industry",
+          "description": "### Budget & Timeline\n- **Monthly Costs**: $111-161 (Supabase $25, OpenAI $50-100, Twilio+Resend $36)\n- **Timeline**: 3-4 months to MVP\n- **Target**: 80% mobile orders, B2B food service industry\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Development Phases\n1. **Phase 0**: Initial Setup (1 week) - Project structure, dependencies, Supabase\n2. **Phase 1**: Core Platform (3-4 weeks) - Auth, products, basic ordering\n3. **Phase 2**: B2B Ess",
+          "description": "### Development Phases\n1. **Phase 0**: Initial Setup (1 week) - Project structure, dependencies, Supabase\n2. **Phase 1**: Core Platform (3-4 weeks) - Auth, products, basic ordering\n3. **Phase 2**: B2B Essentials (3-4 weeks) - Order history, quick reorder, multi-address\n4. **Phase 3**: Advanced Features (3-4 weeks) - Bulk ordering, pricing, offline\n5. **Phase 4**: Container Builder (3-4 weeks) - 3D visualization, bin packing\n\n---\n\n## Phase 0: Initial Setup & Project Structure\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.1: Local Development Environment Setup\n\n**Location on computer**: `~/Projects/b2b-plus` (or your preferred projects directory)\n\n**Prerequisites**:\n```bash\n# Required software versions\nNode.js 1",
+          "description": "### Step 0.1: Local Development Environment Setup\n\n**Location on computer**: `~/Projects/b2b-plus` (or your preferred projects directory)\n\n**Prerequisites**:\n```bash\n# Required software versions\nNode.js 18+ (use nvm: nvm install 18)\nnpm 9+ (comes with Node.js)\nGit 2.40+\nExpo CLI (will be installed in project)\nSupabase CLI (will be installed globally)\n```\n\n**Prompt for Augment**:\n```\nCreate a new directory at ~/Projects/b2b-plus and initialize a Turborepo monorepo with the following structure:\n\n/",
+          "has_code": true,
+          "code_blocks_count": 2
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.2: Configure Turborepo\n\n**Prompt for Augment**:\n```\nCreate turbo.json in the root with this pipeline configuration:\n\n{\n  \"$schema\": \"https://turbo.build/schema.json\",\n  \"globalDependencies\": [\"",
+          "description": "### Step 0.2: Configure Turborepo\n\n**Prompt for Augment**:\n```\nCreate turbo.json in the root with this pipeline configuration:\n\n{\n  \"$schema\": \"https://turbo.build/schema.json\",\n  \"globalDependencies\": [\"**/.env\"],\n  \"pipeline\": {\n    \"build\": {\n      \"dependsOn\": [\"^build\"],\n      \"outputs\": [\".next/**\", \"!.next/cache/**\", \"dist/**\"]\n    },\n    \"dev\": {\n      \"cache\": false,\n      \"persistent\": true\n    },\n    \"lint\": {\n      \"dependsOn\": [\"^build\"]\n    },\n    \"type-check\": {\n      \"dependsOn\":",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.3: Initialize Web App (Next.js)\n\n**Prompt for Augment**:\n```\nIn /apps/web, create a Next.js 14 application with:\n- App Router (not Pages Router)\n- TypeScript\n- Tailwind CSS 3+\n- src/ directory ",
+          "description": "### Step 0.3: Initialize Web App (Next.js)\n\n**Prompt for Augment**:\n```\nIn /apps/web, create a Next.js 14 application with:\n- App Router (not Pages Router)\n- TypeScript\n- Tailwind CSS 3+\n- src/ directory structure\n- These environment variables in .env.local:\n  NEXT_PUBLIC_SUPABASE_URL=\n  NEXT_PUBLIC_SUPABASE_ANON_KEY=\n  OPENAI_API_KEY=\n\nProject structure:\n/apps/web\n  /src\n    /app\n      /api          # API routes\n      /auth         # Auth pages (login, register)\n      /products     # Product pa",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.4: Initialize Mobile App (Expo)\n\n**Prompt for Augment**:\n```\nIn /apps/mobile, create an Expo application with:\n- Expo SDK 51+\n- TypeScript\n- Expo Router for navigation\n- React Native 0.74+\n- Th",
+          "description": "### Step 0.4: Initialize Mobile App (Expo)\n\n**Prompt for Augment**:\n```\nIn /apps/mobile, create an Expo application with:\n- Expo SDK 51+\n- TypeScript\n- Expo Router for navigation\n- React Native 0.74+\n- These environment variables in .env:\n  EXPO_PUBLIC_SUPABASE_URL=\n  EXPO_PUBLIC_SUPABASE_ANON_KEY=\n\nProject structure:\n/apps/mobile\n  /app              # Expo Router file-based routing\n    /(tabs)         # Bottom tab navigation\n      index.tsx     # Products tab\n      orders.tsx    # Orders tab\n  ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.5: Configure Metro for Monorepo\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/metro.config.js, configure Metro to work with the monorepo structure:\n\nconst { getDefaultConfig } = require('expo/me",
+          "description": "### Step 0.5: Configure Metro for Monorepo\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/metro.config.js, configure Metro to work with the monorepo structure:\n\nconst { getDefaultConfig } = require('expo/metro-config');\nconst path = require('path');\n\n// Get the project root\nconst projectRoot = __dirname;\n// Get the monorepo root\nconst monorepoRoot = path.resolve(projectRoot, '../..');\n\nconst config = getDefaultConfig(projectRoot);\n\n// 1. Watch all files in the monorepo\nconfig.watchFolders = [monor",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.6: Configure EAS Build\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/eas.json, create EAS Build configuration for development, preview, and production builds:\n\n{\n  \"cli\": {\n    \"version\": \">= 5.",
+          "description": "### Step 0.6: Configure EAS Build\n\n**Prompt for Augment**:\n```\nIn /apps/mobile/eas.json, create EAS Build configuration for development, preview, and production builds:\n\n{\n  \"cli\": {\n    \"version\": \">= 5.9.0\"\n  },\n  \"build\": {\n    \"development\": {\n      \"developmentClient\": true,\n      \"distribution\": \"internal\",\n      \"ios\": {\n        \"simulator\": true\n      },\n      \"android\": {\n        \"buildType\": \"apk\"\n      }\n    },\n    \"preview\": {\n      \"distribution\": \"internal\",\n      \"ios\": {\n        ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.7: Create Shared Packages\n\n**Prompt for Augment**:\n```\nCreate three shared packages:\n\n1. /packages/shared - Business logic (TypeScript)\nStructure:\n/packages/shared\n  /src\n    /utils        # He",
+          "description": "### Step 0.7: Create Shared Packages\n\n**Prompt for Augment**:\n```\nCreate three shared packages:\n\n1. /packages/shared - Business logic (TypeScript)\nStructure:\n/packages/shared\n  /src\n    /utils        # Helper functions\n    /types        # Shared TypeScript types\n    /constants    # Constants (API endpoints, etc.)\n    /validation   # Zod schemas for validation\n    index.ts      # Export all\n  package.json\n  tsconfig.json\n\npackage.json should have:\n{\n  \"name\": \"@b2b-plus/shared\",\n  \"version\": \"0.0",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.8: Setup Supabase Project\n\n**Manual steps** (cannot be fully automated):\n\n1. Go to https://supabase.com and create a new project\n2. Choose a project name: \"b2b-plus-dev\"\n3. Set a strong databas",
+          "description": "### Step 0.8: Setup Supabase Project\n\n**Manual steps** (cannot be fully automated):\n\n1. Go to https://supabase.com and create a new project\n2. Choose a project name: \"b2b-plus-dev\"\n3. Set a strong database password (save in password manager)\n4. Choose region closest to your location\n5. Wait 2-3 minutes for project provisioning\n\n**Once project is ready**:\n\n**Prompt for Augment**:\n```\nInstall Supabase CLI globally:\nnpm install -g supabase\n\nInitialize Supabase in the project:\ncd ~/Projects/b2b-plus",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.9: Initialize Supabase Client\n\n**Prompt for Augment**:\n```\nIn /packages/supabase/src/client.ts, create Supabase client initialization:\n\nimport { createClient } from '@supabase/supabase-js'\nimpo",
+          "description": "### Step 0.9: Initialize Supabase Client\n\n**Prompt for Augment**:\n```\nIn /packages/supabase/src/client.ts, create Supabase client initialization:\n\nimport { createClient } from '@supabase/supabase-js'\nimport type { Database } from './types'\n\nconst supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || ''\nconst supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''\n\nif (!supabaseUrl || !supabaseAnonKey) ",
+          "has_code": true,
+          "code_blocks_count": 1
+        },
+        {
+          "phase": "Master",
+          "title": "Step 0.10: Setup Testing Framework\n\n**Prompt for Augment**:\n```\nInstall testing dependencies in root package.json:\n\nnpm install -D -W jest @testing-library/react @testing-library/react-native @testing",
+          "description": "### Step 0.10: Setup Testing Framework\n\n**Prompt for Augment**:\n```\nInstall testing dependencies in root package.json:\n\nnpm install -D -W jest @testing-library/react @testing-library/react-native @testing-library/jest-native jest-expo\n\nCreate jest.config.js in root:\n\nmodule.exports = {\n  projects: [\n    '<rootDir>/apps/web/jest.config.js',\n    '<rootDir>/apps/mobile/jest.config.js',\n    '<rootDir>/packages/*/jest.config.js',\n  ],\n}\n\nFor /apps/web/jest.config.js:\nmodule.exports = {\n  preset: 'ts-",
+          "has_code": true,
+          "code_blocks_count": 2
+        },
+        {
+          "phase": "Master",
+          "title": "Frontend",
+          "description": "- **Frontend**: React (web) + React Native (mobile)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Monorepo",
+          "description": "- **Monorepo**: Turborepo",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Backend",
+          "description": "- **Backend**: Supabase (Postgres, Auth, Storage, Edge Functions)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "AI",
+          "description": "- **AI**: OpenAI (text-embedding-3-small for semantic search)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "3D Visualization",
+          "description": "- **3D Visualization**: React Three Fiber (R3F)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Offline",
+          "description": "- **Offline**: WatermelonDB (React Native)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Communications",
+          "description": "- **Communications**: Twilio (SMS) + Resend (email)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Bin Packing",
+          "description": "- **Bin Packing**: binpackingjs (traditional algorithm)\n\n### Budget & Timeline",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Monthly Costs",
+          "description": "- **Monthly Costs**: $111-161 (Supabase $25, OpenAI $50-100, Twilio+Resend $36)",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Timeline",
+          "description": "- **Timeline**: 3-4 months to MVP",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Master",
+          "title": "Target",
+          "description": "- **Target**: 80% mobile orders, B2B food service industry\n\n### Development Phases\n1. **Phase 0**: Initial Setup (1 week) - Project structure, dependencies, Supabase\n2. **Phase 1**: Core Platform (3-4 weeks) - Auth, products, basic ordering\n3. **Phase 2**: B2B Essentials (3-4 weeks) - Order history, quick reorder, multi-address\n4. **Phase 3**: Advanced Features (3-4 weeks) - Bulk ordering, pricing, offline\n5. **Phase 4**: Container Builder (3-4 weeks) - 3D visualization, bin packing\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        }
+      ],
+      "components": [
+        "Button.ts",
+        "Button.tsx",
+        "Card.ts",
+        "Card.tsx",
+        "Input.ts",
+        "Input.tsx",
+        "Text.ts",
+        "Text.tsx",
+        "_layout.ts",
+        "_layout.tsx",
+        "account.ts",
+        "account.tsx",
+        "cart.ts",
+        "cart.tsx",
+        "client.ts",
+        "createClient",
+        "from",
+        "index.ts",
+        "index.tsx",
+        "layout.ts",
+        "layout.tsx",
+        "login.ts",
+        "login.tsx",
+        "orders.ts",
+        "orders.tsx",
+        "page.ts",
+        "page.tsx",
+        "register.ts",
+        "register.tsx",
+        "testUtil",
+        "type",
+        "types.ts"
+      ]
+    },
+    {
+      "file": "b2b-phase1-guide.txt",
+      "phase": "Phase 1",
+      "line_count": 1614,
+      "tables": [
+        {
+          "name": "organizations",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "slug",
+              "type": "TEXT",
+              "definition": "slug TEXT UNIQUE NOT NULL,"
+            },
+            {
+              "name": "type",
+              "type": "TEXT",
+              "definition": "type TEXT NOT NULL CHECK (type IN ('distributor', 'restaurant', 'hotel', 'hospital', 'school')),"
+            },
+            {
+              "name": "tax_id",
+              "type": "TEXT",
+              "definition": "tax_id TEXT,"
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "definition": "phone TEXT,"
+            },
+            {
+              "name": "website",
+              "type": "TEXT",
+              "definition": "website TEXT,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE organizations (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  name TEXT NOT NULL,\n  slug TEXT UNIQUE NOT NULL,\n  type TEXT NOT NULL CHECK (type IN ('distributor', 'restaurant', 'hotel', 'hospital', 'school')),\n  tax_id TEXT,\n  phone TEXT,\n  website TEXT,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "organization_members",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "definition": "user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "role",
+              "type": "TEXT",
+              "definition": "role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member', 'viewer')),"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "UNIQUE(organization_id",
+              "type": "user_id)",
+              "definition": "UNIQUE(organization_id, user_id)"
+            }
+          ],
+          "full_definition": "CREATE TABLE organization_members (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,\n  role TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member', 'viewer')),\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  UNIQUE(organization_id, user_id)\n);"
+        },
+        {
+          "name": "profiles",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "email",
+              "type": "TEXT",
+              "definition": "email TEXT NOT NULL,"
+            },
+            {
+              "name": "full_name",
+              "type": "TEXT",
+              "definition": "full_name TEXT,"
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "definition": "phone TEXT,"
+            },
+            {
+              "name": "avatar_url",
+              "type": "TEXT",
+              "definition": "avatar_url TEXT,"
+            },
+            {
+              "name": "current_organization_id",
+              "type": "UUID",
+              "definition": "current_organization_id UUID REFERENCES organizations(id),"
+            },
+            {
+              "name": "expo_push_token",
+              "type": "TEXT",
+              "definition": "expo_push_token TEXT, -- For mobile notifications"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE profiles (\n  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,\n  email TEXT NOT NULL,\n  full_name TEXT,\n  phone TEXT,\n  avatar_url TEXT,\n  current_organization_id UUID REFERENCES organizations(id),\n  expo_push_token TEXT, -- For mobile notifications\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "products",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "sku",
+              "type": "TEXT",
+              "definition": "sku TEXT NOT NULL,"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "description",
+              "type": "TEXT",
+              "definition": "description TEXT,"
+            },
+            {
+              "name": "category",
+              "type": "TEXT",
+              "definition": "category TEXT NOT NULL,"
+            },
+            {
+              "name": "subcategory",
+              "type": "TEXT",
+              "definition": "subcategory TEXT,"
+            },
+            {
+              "name": "brand",
+              "type": "TEXT",
+              "definition": "brand TEXT,"
+            },
+            {
+              "name": "base_price",
+              "type": "DECIMAL(10,2)",
+              "definition": "base_price DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "unit_of_measure",
+              "type": "TEXT",
+              "definition": "unit_of_measure TEXT NOT NULL, -- 'case', 'each', 'box', etc."
+            },
+            {
+              "name": "units_per_case",
+              "type": "INTEGER",
+              "definition": "units_per_case INTEGER,"
+            },
+            {
+              "name": "weight_lbs",
+              "type": "DECIMAL(8,2)",
+              "definition": "weight_lbs DECIMAL(8,2),"
+            },
+            {
+              "name": "dimensions_inches",
+              "type": "JSONB",
+              "definition": "dimensions_inches JSONB, -- {length, width, height}"
+            },
+            {
+              "name": "in_stock",
+              "type": "BOOLEAN",
+              "definition": "in_stock BOOLEAN NOT NULL DEFAULT true,"
+            },
+            {
+              "name": "image_url",
+              "type": "TEXT",
+              "definition": "image_url TEXT,"
+            },
+            {
+              "name": "additional_images",
+              "type": "TEXT[]",
+              "definition": "additional_images TEXT[], -- Array of URLs"
+            },
+            {
+              "name": "specifications",
+              "type": "JSONB",
+              "definition": "specifications JSONB, -- Flexible product specs"
+            },
+            {
+              "name": "allergens",
+              "type": "TEXT[]",
+              "definition": "allergens TEXT[],"
+            },
+            {
+              "name": "nutritional_info",
+              "type": "JSONB",
+              "definition": "nutritional_info JSONB,"
+            },
+            {
+              "name": "search_vector",
+              "type": "tsvector",
+              "definition": "search_vector tsvector, -- For full-text search"
+            },
+            {
+              "name": "embedding",
+              "type": "vector(1536)",
+              "definition": "embedding vector(1536), -- For OpenAI semantic search"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "UNIQUE(organization_id",
+              "type": "sku)",
+              "definition": "UNIQUE(organization_id, sku)"
+            }
+          ],
+          "full_definition": "CREATE TABLE products (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  sku TEXT NOT NULL,\n  name TEXT NOT NULL,\n  description TEXT,\n  category TEXT NOT NULL,\n  subcategory TEXT,\n  brand TEXT,\n  base_price DECIMAL(10,2) NOT NULL,\n  unit_of_measure TEXT NOT NULL, -- 'case', 'each', 'box', etc.\n  units_per_case INTEGER,\n  weight_lbs DECIMAL(8,2),\n  dimensions_inches JSONB, -- {length, width, height}\n  in_stock BOOLEAN NOT NULL DEFAULT true,\n  image_url TEXT,\n  additional_images TEXT[], -- Array of URLs\n  specifications JSONB, -- Flexible product specs\n  allergens TEXT[],\n  nutritional_info JSONB,\n  search_vector tsvector, -- For full-text search\n  embedding vector(1536), -- For OpenAI semantic search\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  UNIQUE(organization_id, sku)\n);"
+        },
+        {
+          "name": "shipping_addresses",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "label",
+              "type": "TEXT",
+              "definition": "label TEXT NOT NULL, -- 'Main Kitchen', 'Downtown Location', etc."
+            },
+            {
+              "name": "contact_name",
+              "type": "TEXT",
+              "definition": "contact_name TEXT NOT NULL,"
+            },
+            {
+              "name": "phone",
+              "type": "TEXT",
+              "definition": "phone TEXT NOT NULL,"
+            },
+            {
+              "name": "street_address",
+              "type": "TEXT",
+              "definition": "street_address TEXT NOT NULL,"
+            },
+            {
+              "name": "street_address2",
+              "type": "TEXT",
+              "definition": "street_address2 TEXT,"
+            },
+            {
+              "name": "city",
+              "type": "TEXT",
+              "definition": "city TEXT NOT NULL,"
+            },
+            {
+              "name": "state",
+              "type": "TEXT",
+              "definition": "state TEXT NOT NULL,"
+            },
+            {
+              "name": "postal_code",
+              "type": "TEXT",
+              "definition": "postal_code TEXT NOT NULL,"
+            },
+            {
+              "name": "country",
+              "type": "TEXT",
+              "definition": "country TEXT NOT NULL DEFAULT 'US',"
+            },
+            {
+              "name": "delivery_instructions",
+              "type": "TEXT",
+              "definition": "delivery_instructions TEXT,"
+            },
+            {
+              "name": "is_default",
+              "type": "BOOLEAN",
+              "definition": "is_default BOOLEAN NOT NULL DEFAULT false,"
+            },
+            {
+              "name": "last_used_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "last_used_at TIMESTAMPTZ,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE shipping_addresses (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  label TEXT NOT NULL, -- 'Main Kitchen', 'Downtown Location', etc.\n  contact_name TEXT NOT NULL,\n  phone TEXT NOT NULL,\n  street_address TEXT NOT NULL,\n  street_address2 TEXT,\n  city TEXT NOT NULL,\n  state TEXT NOT NULL,\n  postal_code TEXT NOT NULL,\n  country TEXT NOT NULL DEFAULT 'US',\n  delivery_instructions TEXT,\n  is_default BOOLEAN NOT NULL DEFAULT false,\n  last_used_at TIMESTAMPTZ,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "orders",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "definition": "user_id UUID NOT NULL REFERENCES auth.users(id),"
+            },
+            {
+              "name": "order_number",
+              "type": "TEXT",
+              "definition": "order_number TEXT NOT NULL UNIQUE, -- Generated: ORD-20240101-0001"
+            },
+            {
+              "name": "po_number",
+              "type": "TEXT",
+              "definition": "po_number TEXT, -- Customer's purchase order number"
+            },
+            {
+              "name": "status",
+              "type": "TEXT",
+              "definition": "status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'processing', 'shipped', 'delivered', 'cancelled')),"
+            },
+            {
+              "name": "subtotal",
+              "type": "DECIMAL(10,2)",
+              "definition": "subtotal DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "tax",
+              "type": "DECIMAL(10,2)",
+              "definition": "tax DECIMAL(10,2) NOT NULL DEFAULT 0,"
+            },
+            {
+              "name": "shipping_cost",
+              "type": "DECIMAL(10,2)",
+              "definition": "shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0,"
+            },
+            {
+              "name": "total",
+              "type": "DECIMAL(10,2)",
+              "definition": "total DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "shipping_address_id",
+              "type": "UUID",
+              "definition": "shipping_address_id UUID REFERENCES shipping_addresses(id),"
+            },
+            {
+              "name": "shipping_tracking_number",
+              "type": "TEXT",
+              "definition": "shipping_tracking_number TEXT,"
+            },
+            {
+              "name": "shipping_carrier",
+              "type": "TEXT",
+              "definition": "shipping_carrier TEXT,"
+            },
+            {
+              "name": "notes",
+              "type": "TEXT",
+              "definition": "notes TEXT,"
+            },
+            {
+              "name": "submitted_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "submitted_at TIMESTAMPTZ,"
+            },
+            {
+              "name": "shipped_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "shipped_at TIMESTAMPTZ,"
+            },
+            {
+              "name": "delivered_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "delivered_at TIMESTAMPTZ,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE orders (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  user_id UUID NOT NULL REFERENCES auth.users(id),\n  order_number TEXT NOT NULL UNIQUE, -- Generated: ORD-20240101-0001\n  po_number TEXT, -- Customer's purchase order number\n  status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('draft', 'submitted', 'processing', 'shipped', 'delivered', 'cancelled')),\n  subtotal DECIMAL(10,2) NOT NULL,\n  tax DECIMAL(10,2) NOT NULL DEFAULT 0,\n  shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0,\n  total DECIMAL(10,2) NOT NULL,\n  shipping_address_id UUID REFERENCES shipping_addresses(id),\n  shipping_tracking_number TEXT,\n  shipping_carrier TEXT,\n  notes TEXT,\n  submitted_at TIMESTAMPTZ,\n  shipped_at TIMESTAMPTZ,\n  delivered_at TIMESTAMPTZ,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "order_items",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "order_id",
+              "type": "UUID",
+              "definition": "order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "definition": "product_id UUID NOT NULL REFERENCES products(id),"
+            },
+            {
+              "name": "sku",
+              "type": "TEXT",
+              "definition": "sku TEXT NOT NULL,"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "quantity",
+              "type": "INTEGER",
+              "definition": "quantity INTEGER NOT NULL CHECK (quantity > 0),"
+            },
+            {
+              "name": "unit_price",
+              "type": "DECIMAL(10,2)",
+              "definition": "unit_price DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "line_total",
+              "type": "DECIMAL(10,2)",
+              "definition": "line_total DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE order_items (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,\n  product_id UUID NOT NULL REFERENCES products(id),\n  sku TEXT NOT NULL,\n  name TEXT NOT NULL,\n  quantity INTEGER NOT NULL CHECK (quantity > 0),\n  unit_price DECIMAL(10,2) NOT NULL,\n  line_total DECIMAL(10,2) NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "cart_items",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "definition": "user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "definition": "product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "quantity",
+              "type": "INTEGER",
+              "definition": "quantity INTEGER NOT NULL CHECK (quantity > 0),"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "updated_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "UNIQUE(user_id",
+              "type": "product_id)",
+              "definition": "UNIQUE(user_id, product_id)"
+            }
+          ],
+          "full_definition": "CREATE TABLE cart_items (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,\n  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n  quantity INTEGER NOT NULL CHECK (quantity > 0),\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  UNIQUE(user_id, product_id)\n);"
+        }
+      ],
+      "features": [],
+      "components": [
+        "AsyncStorage",
+        "AuthContext.ts",
+        "AuthContext.tsx",
+        "AuthContextType",
+        "AuthProvider",
+        "CartView",
+        "CartView.ts",
+        "CartView.tsx",
+        "FlatList",
+        "Image",
+        "NextResponse",
+        "Product",
+        "ProductCard",
+        "ProductCard.ts",
+        "ProductCard.tsx",
+        "Redirect",
+        "Session",
+        "Slot",
+        "Text",
+        "TextInput",
+        "TouchableOpacity",
+        "User",
+        "View",
+        "_layout.ts",
+        "_layout.tsx",
+        "button",
+        "cart.ts",
+        "cart.tsx",
+        "client.ts",
+        "cookies",
+        "createBrowserClient",
+        "createClient",
+        "createContext",
+        "createServerClient",
+        "div",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "img",
+        "index.ts",
+        "index.tsx",
+        "input",
+        "label",
+        "login.ts",
+        "login.tsx",
+        "middleware.ts",
+        "p",
+        "page.ts",
+        "page.tsx",
+        "redirect",
+        "router",
+        "server.ts",
+        "span",
+        "string",
+        "supabase",
+        "supabase.ts",
+        "type",
+        "types.ts",
+        "updateSession",
+        "useAuth",
+        "useRouter",
+        "useState"
+      ]
+    },
+    {
+      "file": "b2b-phase2-guide.txt",
+      "phase": "Phase 2",
+      "line_count": 1646,
+      "tables": [
+        {
+          "name": "notifications_queue",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "type",
+              "type": "TEXT",
+              "definition": "type TEXT NOT NULL CHECK (type IN ('email', 'sms', 'push')),"
+            },
+            {
+              "name": "recipient",
+              "type": "TEXT",
+              "definition": "recipient TEXT NOT NULL, -- email/phone/expo_token"
+            },
+            {
+              "name": "subject",
+              "type": "TEXT",
+              "definition": "subject TEXT,"
+            },
+            {
+              "name": "message",
+              "type": "TEXT",
+              "definition": "message TEXT NOT NULL,"
+            },
+            {
+              "name": "order_id",
+              "type": "UUID",
+              "definition": "order_id UUID REFERENCES orders(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "status",
+              "type": "TEXT",
+              "definition": "status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),"
+            },
+            {
+              "name": "error_message",
+              "type": "TEXT",
+              "definition": "error_message TEXT,"
+            },
+            {
+              "name": "attempts",
+              "type": "INTEGER",
+              "definition": "attempts INTEGER NOT NULL DEFAULT 0,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "sent_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "sent_at TIMESTAMPTZ"
+            }
+          ],
+          "full_definition": "CREATE TABLE notifications_queue (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  type TEXT NOT NULL CHECK (type IN ('email', 'sms', 'push')),\n  recipient TEXT NOT NULL, -- email/phone/expo_token\n  subject TEXT,\n  message TEXT NOT NULL,\n  order_id UUID REFERENCES orders(id) ON DELETE CASCADE,\n  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed')),\n  error_message TEXT,\n  attempts INTEGER NOT NULL DEFAULT 0,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  sent_at TIMESTAMPTZ\n);"
+        }
+      ],
+      "features": [
+        {
+          "phase": "Phase 2",
+          "title": "Total: ~$33/month",
+          "description": "- **Total: ~$33/month**\n\n**Next**: Proceed to Phase 3 for bulk ordering, role-based pricing, and offline capability.\n\nSee \"B2B+ Phase 3 Implementation Guide\" artifact.\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        }
+      ],
+      "components": [
+        "AddressList",
+        "AddressList.ts",
+        "AddressList.tsx",
+        "AuthContext.ts",
+        "AuthContext.tsx",
+        "CheckoutForm",
+        "CheckoutForm.ts",
+        "CheckoutForm.tsx",
+        "Constants",
+        "Link",
+        "OrderDetail",
+        "OrderDetail.ts",
+        "OrderDetail.tsx",
+        "OrderList",
+        "OrderList.ts",
+        "OrderList.tsx",
+        "Platform",
+        "Slot",
+        "_layout.ts",
+        "_layout.tsx",
+        "button",
+        "createClient",
+        "div",
+        "form",
+        "h1",
+        "h2",
+        "h3",
+        "img",
+        "index.ts",
+        "input",
+        "label",
+        "notFound",
+        "notifications.ts",
+        "option",
+        "p",
+        "page.ts",
+        "page.tsx",
+        "redirect",
+        "registerForPushNotifications",
+        "router",
+        "select",
+        "serve",
+        "server.ts",
+        "span",
+        "textarea",
+        "useEffect",
+        "useRouter",
+        "useState"
+      ]
+    },
+    {
+      "file": "b2b-phase3-guide.txt",
+      "phase": "Phase 3",
+      "line_count": 1402,
+      "tables": [
+        {
+          "name": "pricing_tiers",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "discount_percentage",
+              "type": "DECIMAL(5,2)",
+              "definition": "discount_percentage DECIMAL(5,2) NOT NULL,"
+            },
+            {
+              "name": "min_order_value",
+              "type": "DECIMAL(10,2)",
+              "definition": "min_order_value DECIMAL(10,2),"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE pricing_tiers (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  name TEXT NOT NULL,\n  discount_percentage DECIMAL(5,2) NOT NULL,\n  min_order_value DECIMAL(10,2),\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "volume_pricing",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "definition": "product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "min_quantity",
+              "type": "INTEGER",
+              "definition": "min_quantity INTEGER NOT NULL,"
+            },
+            {
+              "name": "price",
+              "type": "DECIMAL(10,2)",
+              "definition": "price DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE volume_pricing (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n  min_quantity INTEGER NOT NULL,\n  price DECIMAL(10,2) NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "customer_product_prices",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "definition": "product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "price",
+              "type": "DECIMAL(10,2)",
+              "definition": "price DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "effective_date",
+              "type": "DATE",
+              "definition": "effective_date DATE NOT NULL DEFAULT CURRENT_DATE,"
+            },
+            {
+              "name": "expiration_date",
+              "type": "DATE",
+              "definition": "expiration_date DATE,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),"
+            },
+            {
+              "name": "UNIQUE(organization_id",
+              "type": "product_id",
+              "definition": "UNIQUE(organization_id, product_id, effective_date)"
+            }
+          ],
+          "full_definition": "CREATE TABLE customer_product_prices (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n  price DECIMAL(10,2) NOT NULL,\n  effective_date DATE NOT NULL DEFAULT CURRENT_DATE,\n  expiration_date DATE,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n  UNIQUE(organization_id, product_id, effective_date)\n);"
+        },
+        {
+          "name": "contracts",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "contract_number",
+              "type": "TEXT",
+              "definition": "contract_number TEXT UNIQUE NOT NULL,"
+            },
+            {
+              "name": "start_date",
+              "type": "DATE",
+              "definition": "start_date DATE NOT NULL,"
+            },
+            {
+              "name": "end_date",
+              "type": "DATE",
+              "definition": "end_date DATE NOT NULL,"
+            },
+            {
+              "name": "discount_percentage",
+              "type": "DECIMAL(5,2)",
+              "definition": "discount_percentage DECIMAL(5,2),"
+            },
+            {
+              "name": "notes",
+              "type": "TEXT",
+              "definition": "notes TEXT,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE contracts (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,\n  name TEXT NOT NULL,\n  contract_number TEXT UNIQUE NOT NULL,\n  start_date DATE NOT NULL,\n  end_date DATE NOT NULL,\n  discount_percentage DECIMAL(5,2),\n  notes TEXT,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "contract_prices",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "contract_id",
+              "type": "UUID",
+              "definition": "contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "product_id",
+              "type": "UUID",
+              "definition": "product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,"
+            },
+            {
+              "name": "price",
+              "type": "DECIMAL(10,2)",
+              "definition": "price DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "UNIQUE(contract_id",
+              "type": "product_id)",
+              "definition": "UNIQUE(contract_id, product_id)"
+            }
+          ],
+          "full_definition": "CREATE TABLE contract_prices (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE,\n  product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,\n  price DECIMAL(10,2) NOT NULL,\n  UNIQUE(contract_id, product_id)\n);"
+        }
+      ],
+      "features": [
+        {
+          "phase": "Phase 3",
+          "title": "Total: ~$83-133/month",
+          "description": "- **Total: ~$83-133/month**\n\n**Next**: Proceed to Phase 4 for the container builder with 3D visualization and bin packing.\n\nSee \"B2B+ Phase 4 Implementation Guide\" artifact.\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        }
+      ],
+      "components": [
+        "CartItem",
+        "CartItem.ts",
+        "Database",
+        "File",
+        "FlatList",
+        "Image",
+        "Model",
+        "NextRequest",
+        "OpenAI",
+        "Papa",
+        "Product",
+        "Product.ts",
+        "ProductCard",
+        "ProductCard.ts",
+        "ProductCard.tsx",
+        "SQLiteAdapter",
+        "Text",
+        "View",
+        "appSchema",
+        "button",
+        "createClient",
+        "database",
+        "database.ts",
+        "div",
+        "field",
+        "h1",
+        "h2",
+        "h3",
+        "index.ts",
+        "index.tsx",
+        "input",
+        "label",
+        "ol",
+        "option",
+        "p",
+        "page",
+        "page.ts",
+        "page.tsx",
+        "route.ts",
+        "schema",
+        "schema.ts",
+        "select",
+        "serve",
+        "server.ts",
+        "span",
+        "supabase",
+        "sync",
+        "sync.ts",
+        "synchronize",
+        "table",
+        "td",
+        "th",
+        "thead",
+        "tr",
+        "useEffect",
+        "useRouter",
+        "useState",
+        "with",
+        "withObservables"
+      ]
+    },
+    {
+      "file": "b2b-phase4-guide.txt",
+      "phase": "Phase 4",
+      "line_count": 1395,
+      "tables": [
+        {
+          "name": "container_types",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT NOT NULL,"
+            },
+            {
+              "name": "length_inches",
+              "type": "DECIMAL(8,2)",
+              "definition": "length_inches DECIMAL(8,2) NOT NULL,"
+            },
+            {
+              "name": "width_inches",
+              "type": "DECIMAL(8,2)",
+              "definition": "width_inches DECIMAL(8,2) NOT NULL,"
+            },
+            {
+              "name": "height_inches",
+              "type": "DECIMAL(8,2)",
+              "definition": "height_inches DECIMAL(8,2) NOT NULL,"
+            },
+            {
+              "name": "max_weight_lbs",
+              "type": "DECIMAL(10,2)",
+              "definition": "max_weight_lbs DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "volume_cubic_ft",
+              "type": "DECIMAL(10,2)",
+              "definition": "volume_cubic_ft DECIMAL(10,2) NOT NULL,"
+            },
+            {
+              "name": "is_default",
+              "type": "BOOLEAN",
+              "definition": "is_default BOOLEAN NOT NULL DEFAULT false,"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE container_types (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  name TEXT NOT NULL,\n  length_inches DECIMAL(8,2) NOT NULL,\n  width_inches DECIMAL(8,2) NOT NULL,\n  height_inches DECIMAL(8,2) NOT NULL,\n  max_weight_lbs DECIMAL(10,2) NOT NULL,\n  volume_cubic_ft DECIMAL(10,2) NOT NULL,\n  is_default BOOLEAN NOT NULL DEFAULT false,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        },
+        {
+          "name": "container_sessions",
+          "columns": [
+            {
+              "name": "id",
+              "type": "UUID",
+              "definition": "id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),"
+            },
+            {
+              "name": "user_id",
+              "type": "UUID",
+              "definition": "user_id UUID NOT NULL REFERENCES auth.users(id),"
+            },
+            {
+              "name": "organization_id",
+              "type": "UUID",
+              "definition": "organization_id UUID NOT NULL REFERENCES organizations(id),"
+            },
+            {
+              "name": "container_type_id",
+              "type": "UUID",
+              "definition": "container_type_id UUID NOT NULL REFERENCES container_types(id),"
+            },
+            {
+              "name": "name",
+              "type": "TEXT",
+              "definition": "name TEXT,"
+            },
+            {
+              "name": "total_items",
+              "type": "INTEGER",
+              "definition": "total_items INTEGER NOT NULL,"
+            },
+            {
+              "name": "fitted_items",
+              "type": "INTEGER",
+              "definition": "fitted_items INTEGER NOT NULL,"
+            },
+            {
+              "name": "unfitted_items",
+              "type": "INTEGER",
+              "definition": "unfitted_items INTEGER NOT NULL,"
+            },
+            {
+              "name": "utilization_percentage",
+              "type": "DECIMAL(5,2)",
+              "definition": "utilization_percentage DECIMAL(5,2) NOT NULL,"
+            },
+            {
+              "name": "packing_data",
+              "type": "JSONB",
+              "definition": "packing_data JSONB NOT NULL, -- Full packing result from binpackingjs"
+            },
+            {
+              "name": "created_at",
+              "type": "TIMESTAMPTZ",
+              "definition": "created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()"
+            }
+          ],
+          "full_definition": "CREATE TABLE container_sessions (\n  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),\n  user_id UUID NOT NULL REFERENCES auth.users(id),\n  organization_id UUID NOT NULL REFERENCES organizations(id),\n  container_type_id UUID NOT NULL REFERENCES container_types(id),\n  name TEXT,\n  total_items INTEGER NOT NULL,\n  fitted_items INTEGER NOT NULL,\n  unfitted_items INTEGER NOT NULL,\n  utilization_percentage DECIMAL(5,2) NOT NULL,\n  packing_data JSONB NOT NULL, -- Full packing result from binpackingjs\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);"
+        }
+      ],
+      "features": [
+        {
+          "phase": "Phase 4",
+          "title": "Core Features (Phase 1)\n- Multi-tenant authentication (web + mobile)\n- Product catalog with images\n- Basic cart and ordering\n- Row-level security",
+          "description": "### Core Features (Phase 1)\n- Multi-tenant authentication (web + mobile)\n- Product catalog with images\n- Basic cart and ordering\n- Row-level security\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Phase 4",
+          "title": "B2B Essentials (Phase 2)\n- Order history with filtering\n- Quick reorder\n- Multiple shipping addresses\n- PO tracking\n- SMS/Email/Push notifications\n- Invoice management",
+          "description": "### B2B Essentials (Phase 2)\n- Order history with filtering\n- Quick reorder\n- Multiple shipping addresses\n- PO tracking\n- SMS/Email/Push notifications\n- Invoice management\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Phase 4",
+          "title": "Advanced Features (Phase 3)\n- CSV bulk order upload\n- AI-enhanced Excel import\n- Role-based pricing\n- OpenAI semantic search\n- Offline capability (mobile)\n- Product recommendations",
+          "description": "### Advanced Features (Phase 3)\n- CSV bulk order upload\n- AI-enhanced Excel import\n- Role-based pricing\n- OpenAI semantic search\n- Offline capability (mobile)\n- Product recommendations\n\n",
+          "has_code": false,
+          "code_blocks_count": 0
+        },
+        {
+          "phase": "Phase 4",
+          "title": "Container Builder (Phase 4)\n- 3D visualization\n- Bin packing optimization\n- Loading instructions\n- Session analytics\n- PDF export\n\n---\n\n## Next Steps & Deployment\n\n1. **Testing**: Run comprehensive te",
+          "description": "### Container Builder (Phase 4)\n- 3D visualization\n- Bin packing optimization\n- Loading instructions\n- Session analytics\n- PDF export\n\n---\n\n## Next Steps & Deployment\n\n1. **Testing**: Run comprehensive tests on all features\n2. **EAS Build**: Create production builds for mobile\n   ```bash\n   cd apps/mobile\n   eas build --profile production --platform all\n   ```\n3. **Vercel Deploy**: Deploy web app to Vercel\n   ```bash\n   cd apps/web\n   vercel --prod\n   ```\n4. **Supabase Production**: Migrate from",
+          "has_code": true,
+          "code_blocks_count": 2
+        },
+        {
+          "phase": "Phase 4",
+          "title": "Total: ~$83-133/month",
+          "description": "- **Total: ~$83-133/month**\n\n---\n\n## Complete Platform Features \u2705\n\nAfter completing all 4 phases, your B2B+ platform has:\n\n### Core Features (Phase 1)",
+          "has_code": false,
+          "code_blocks_count": 0
+        }
+      ],
+      "components": [
+        "Bar",
+        "BarChart",
+        "Box",
+        "Canvas",
+        "CartesianGrid",
+        "Container",
+        "ContainerViewer3D",
+        "ContainerViewer3D.ts",
+        "ContainerViewer3D.tsx",
+        "ContainerViewer3DMobile.ts",
+        "ContainerViewer3DMobile.tsx",
+        "Document",
+        "Environment",
+        "ErrorBoundary",
+        "Item",
+        "ItemSelector",
+        "ItemSelector.ts",
+        "ItemSelector.tsx",
+        "LineChart",
+        "LoadingInstructions",
+        "LoadingInstructions.ts",
+        "LoadingInstructions.tsx",
+        "LoadingInstructionsPDF",
+        "OrbitControls",
+        "PDFDownloadLink",
+        "Packer",
+        "Page",
+        "PerspectiveCamera",
+        "Product",
+        "React",
+        "ResponsiveContainer",
+        "Text",
+        "Tooltip",
+        "View",
+        "XAxis",
+        "YAxis",
+        "ambientLight",
+        "binPacking.ts",
+        "boxGeometry",
+        "button",
+        "createClient",
+        "directionalLight",
+        "div",
+        "h1",
+        "h2",
+        "img",
+        "input",
+        "instancedMesh",
+        "label",
+        "li",
+        "mesh",
+        "meshBasicMaterial",
+        "meshStandardMaterial",
+        "ol",
+        "option",
+        "p",
+        "packItems",
+        "page.ts",
+        "page.tsx",
+        "select",
+        "span",
+        "table",
+        "tbody",
+        "td",
+        "th",
+        "thead",
+        "tr",
+        "ul",
+        "useDetectGPU",
+        "useFrame",
+        "useState"
+      ]
+    }
+  ],
+  "summary": {
+    "total_documents": 5,
+    "total_tables": 16,
+    "total_features": 41,
+    "total_components": 273
+  }
+}

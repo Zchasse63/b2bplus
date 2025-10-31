@@ -1,0 +1,152 @@
+{
+  "structure": {
+    "apps": {
+      "web": {
+        "pages": [
+          "layout.tsx",
+          "page.tsx",
+          "auth/login/page.tsx",
+          "auth/register/page.tsx",
+          "cart/page.tsx",
+          "products/page.tsx"
+        ],
+        "components": [
+          "CartView.test.tsx",
+          "CartView.tsx",
+          "ProductCard.test.tsx",
+          "ProductCard.tsx",
+          "ProductCardWithPricing.tsx",
+          "SearchBar.tsx",
+          "FilterSidebar.tsx",
+          "CategoryMenu.tsx",
+          "Breadcrumbs.tsx",
+          "PromoCodeInput.tsx",
+          "CartViewWithPricing.tsx",
+          "Header.tsx",
+          "Footer.tsx",
+          "ProductCardSkeleton.tsx",
+          "EmptyState.tsx",
+          "auth/DemoCredentials.tsx",
+          "ui/button.tsx",
+          "ui/input.tsx",
+          "ui/card.tsx",
+          "ui/badge.tsx",
+          "ui/toast.tsx",
+          "ui/toaster.tsx",
+          "ui/label.tsx",
+          "ui/skeleton.tsx",
+          "ui/dialog.tsx"
+        ],
+        "api_routes": [
+          "pricing/calculate/route.ts"
+        ],
+        "hooks": [
+          "usePricing.ts",
+          "useDebounce.ts",
+          "use-toast.ts"
+        ],
+        "lib": [
+          "utils.ts",
+          "supabase/client.test.ts",
+          "supabase/client.ts",
+          "supabase/middleware.ts",
+          "supabase/server.ts"
+        ]
+      },
+      "mobile": {
+        "screens": [
+          "_layout.tsx",
+          "index.tsx",
+          "(tabs)/_layout.tsx",
+          "(tabs)/cart.tsx",
+          "(tabs)/index.tsx",
+          "auth/login.tsx",
+          "auth/register.tsx"
+        ],
+        "components": [],
+        "contexts": [
+          "AuthContext.test.tsx",
+          "AuthContext.tsx"
+        ],
+        "lib": [
+          "supabase.test.ts",
+          "supabase.ts"
+        ]
+      }
+    },
+    "packages": {
+      "shared": {
+        "files": [
+          "index.ts",
+          "constants/index.ts",
+          "types/index.ts",
+          "utils/index.ts",
+          "utils/search.utils.ts",
+          "utils/error-handler.ts",
+          "utils/performance.utils.ts",
+          "validation/index.ts",
+          "services/pricing.service.ts"
+        ]
+      },
+      "ui": {
+        "files": [
+          "index.ts",
+          "components/Button.tsx",
+          "components/Card.tsx",
+          "components/Input.tsx",
+          "components/Text.tsx"
+        ]
+      },
+      "supabase": {
+        "files": [
+          "client.ts",
+          "index.ts",
+          "types.ts"
+        ]
+      }
+    },
+    "database": {
+      "migrations": [
+        "20240101000000_initial_schema.sql",
+        "20240101000001_rls_policies.sql",
+        "20251031000000_create_categories_table.sql",
+        "20251031000001_seed_categories.sql",
+        "20251031000001_seed_categories_fixed.sql",
+        "99999999999998_comprehensive_seed_data.sql",
+        "99999999999999_seed_test_data.sql"
+      ],
+      "seed_files": [
+        "seed_organizations.sql",
+        "seed_members_addresses.sql",
+        "seed_products.sql",
+        "seed_pricing.sql",
+        "seed_orders.sql",
+        "seed_carts_templates.sql",
+        "seed_containers_campaigns.sql",
+        "seed_notifications.sql",
+        "seed_final.sql",
+        "seed_promotional_codes.sql",
+        "seed_categories_final.sql",
+        "comprehensive_seed_data.sql"
+      ]
+    }
+  },
+  "counts": {
+    "total_pages": 5,
+    "total_components": 25,
+    "total_api_routes": 1,
+    "total_hooks": 3,
+    "total_migrations": 7,
+    "total_packages": 3,
+    "total_tests": 169
+  },
+  "summary": {
+    "web_pages": 6,
+    "web_components": 25,
+    "mobile_screens": 7,
+    "api_routes": 1,
+    "database_migrations": 7,
+    "shared_files": 9,
+    "ui_components": 5
+  }
+}
