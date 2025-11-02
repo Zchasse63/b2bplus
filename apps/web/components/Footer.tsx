@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Package } from 'lucide-react'
+import { Package } from 'react-icons/md'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()

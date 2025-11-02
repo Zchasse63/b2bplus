@@ -14,9 +14,9 @@ export default function ProductCardSkeleton() {
         
         <Skeleton className="h-6 w-full" />
         <Skeleton className="h-4 w-3/4" />
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="space-y-3">
         <div className="flex items-baseline justify-between">
           <Skeleton className="h-8 w-24" />
         </div>
@@ -25,7 +25,7 @@ export default function ProductCardSkeleton() {
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-28" />
         </div>
-      </CardContent>
+      </div>
 
       <CardFooter className="flex gap-2">
         <Skeleton className="h-10 w-20" />

@@ -1,368 +1,443 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter, useParams } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Loader2, Package, MapPin, FileText, ArrowLeft, Truck, ShoppingCart } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import CopyButton from '@/components/CopyButton'
-import { format } from 'date-fns'
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/horizon/card';
+import Button from '@/components/horizon/button/Button';
+import DataTable from '@/components/horizon/table/DataTable';
+import Modal from '@/components/horizon/modal/Modal';
+import {
+  MdArrowBack,
+  MdShoppingCart,
+  MdLocalShipping,
+  MdCheckCircle,
+  MdReceipt,
+  MdContentCopy,
+} from 'react-icons/md';
+import { format } from 'date-fns';
 
 interface OrderItem {
-  id: string
-  sku: string
-  name: string
-  quantity: number
-  unit_price: number
-  line_total: number
+  id: string;
+  sku: string;
+  name: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
 }
 
 interface ShippingAddress {
-  label: string
-  contact_name: string
-  phone: string
-  street_address: string
-  street_address2?: string
-  city: string
-  state: string
-  postal_code: string
+  label: string;
+  contact_name: string;
+  phone: string;
+  street_address: string;
+  street_address2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
 }
 
 interface Order {
-  id: string
-  order_number: string
-  status: string
-  subtotal: number
-  tax: number
-  shipping_cost: number
-  total: number
-  po_number?: string
-  notes?: string
-  submitted_at: string
-  shipped_at?: string
-  delivered_at?: string
-  shipping_tracking_number?: string
-  shipping_carrier?: string
-  created_at: string
-  order_items: OrderItem[]
-  shipping_addresses: ShippingAddress
+  id: string;
+  order_number: string;
+  status: string;
+  subtotal: number;
+  tax: number;
+  shipping_cost: number;
+  total: number;
+  po_number?: string;
+  notes?: string;
+  submitted_at: string;
+  shipped_at?: string;
+  delivered_at?: string;
+  shipping_tracking_number?: string;
+  shipping_carrier?: string;
+  created_at: string;
+  order_items: OrderItem[];
+  shipping_addresses: ShippingAddress;
 }
 
-const statusColors: Record<string, string> = {
-  draft: 'bg-neutral-200 text-neutral-800',
-  submitted: 'bg-blue-100 text-blue-800',
-  processing: 'bg-yellow-100 text-yellow-800',
-  shipped: 'bg-purple-100 text-purple-800',
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-}
+const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
+  draft: { label: 'Draft', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: MdShoppingCart },
+  submitted: { label: 'Submitted', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: MdReceipt },
+  processing: { label: 'Processing', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: MdShoppingCart },
+  shipped: { label: 'Shipped', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: MdLocalShipping },
+  delivered: { label: 'Delivered', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: MdCheckCircle },
+  cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: MdArrowBack },
+};
 
-export default function OrderDetailsPage() {
-  const [order, setOrder] = useState<Order | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-  const router = useRouter()
-  const params = useParams()
-  const orderId = params.id as string
-  const { toast } = useToast()
-  const [reordering, setReordering] = useState(false)
+export default function OrderDetailsPage({ params }: { params: { id: string } }) {
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reordering, setReordering] = useState(false);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [hasInvoice, setHasInvoice] = useState(false);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  const [reorderModal, setReorderModal] = useState(false);
+  const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
-    loadOrder()
-  }, [orderId])
+    loadOrder();
+    checkInvoice();
+  }, [params.id]);
 
-  const loadOrder = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
+  async function loadOrder() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (*),
-          shipping_addresses (*)
-        `)
-        .eq('id', orderId)
-        .single()
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        `
+        *,
+        order_items (
+          id,
+          product_id,
+          quantity,
+          unit_price,
+          line_total,
+          products (sku, name)
+        ),
+        shipping_addresses (*)
+      `
+      )
+      .eq('id', params.id)
+      .eq('user_id', user.id)
+      .single();
 
-      if (error) throw error
-      setOrder(data)
-    } catch (error) {
-      console.error('Error loading order:', error)
-    } finally {
-      setLoading(false)
+    if (error || !data) {
+      console.error('Error loading order:', error);
+      router.push('/orders');
+      return;
+    }
+
+    const formattedOrder: Order = {
+      ...data,
+      order_items: data.order_items.map((item: any) => ({
+        id: item.id,
+        sku: item.products.sku,
+        name: item.products.name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.line_total,
+      })),
+    };
+
+    setOrder(formattedOrder);
+    setLoading(false);
+  }
+
+  async function checkInvoice() {
+    const { data } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('order_id', params.id)
+      .maybeSingle();
+
+    if (data) {
+      setHasInvoice(true);
+      setInvoiceId(data.id);
     }
   }
 
-  const handleReorder = async () => {
-    setReordering(true)
+  async function handleReorder() {
+    if (!order) return;
+
+    setReordering(true);
+
     try {
-      const response = await fetch('/api/orders/reorder', {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      for (const item of order.order_items) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('id')
+          .eq('sku', item.sku)
+          .single();
+
+        if (product) {
+          await supabase.from('cart_items').upsert(
+            {
+              user_id: user.id,
+              product_id: product.id,
+              quantity: item.quantity,
+            },
+            { onConflict: 'user_id,product_id' }
+          );
+        }
+      }
+
+      setReorderModal(true);
+    } catch (error) {
+      console.error('Error reordering:', error);
+      alert('Failed to add items to cart');
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  async function handleGenerateInvoice() {
+    setGeneratingInvoice(true);
+
+    try {
+      const response = await fetch('/api/invoices/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderId }),
-      })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: params.id }),
+      });
 
-      const data = await response.json()
+      if (!response.ok) throw new Error('Failed to generate invoice');
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reorder')
-      }
-
-      toast({
-        title: 'Success!',
-        description: data.message,
-      })
-
-      // Redirect to cart after a short delay
-      setTimeout(() => {
-        router.push('/cart')
-      }, 1000)
+      const { invoiceId: newInvoiceId } = await response.json();
+      setHasInvoice(true);
+      setInvoiceId(newInvoiceId);
+      router.push(`/invoices/${newInvoiceId}`);
     } catch (error) {
-      console.error('Reorder error:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to reorder. Please try again.',
-        variant: 'destructive',
-      })
+      console.error('Error generating invoice:', error);
+      alert('Failed to generate invoice');
     } finally {
-      setReordering(false)
+      setGeneratingInvoice(false);
     }
   }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Loading order...</div>
       </div>
-    )
+    );
   }
 
   if (!order) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-secondary-500 mb-2">Order Not Found</h1>
-          <p className="text-muted-foreground mb-4">The order you're looking for doesn't exist.</p>
-          <Button onClick={() => router.push('/orders')}>
-            Back to Orders
-          </Button>
-        </div>
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Order not found</div>
       </div>
-    )
+    );
   }
 
+  const statusInfo = statusConfig[order.status] || statusConfig.draft;
+  const StatusIcon = statusInfo.icon;
+
+  const columns = [
+    { key: 'sku', label: 'SKU' },
+    { key: 'name', label: 'Product' },
+    {
+      key: 'quantity',
+      label: 'Quantity',
+      render: (item: OrderItem) => <span className="font-semibold">{item.quantity}</span>,
+    },
+    {
+      key: 'unit_price',
+      label: 'Unit Price',
+      render: (item: OrderItem) => `$${item.unit_price.toFixed(2)}`,
+    },
+    {
+      key: 'line_total',
+      label: 'Total',
+      render: (item: OrderItem) => (
+        <span className="font-bold text-brand-500">${item.line_total.toFixed(2)}</span>
+      ),
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Header */}
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/orders')}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Orders
-          </Button>
-          <div className="flex items-start justify-between">
+    <div className="mt-3 animate-fadeIn">
+      {/* Header */}
+      <Card extra="mb-5 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<MdArrowBack />}
+              onClick={() => router.push('/orders')}
+            />
             <div>
-              <h1 className="text-3xl font-bold text-secondary-500 mb-2">
-                Order {order.order_number}
-              </h1>
-              <p className="text-muted-foreground">
-                Placed on {format(new Date(order.submitted_at || order.created_at), 'MMMM dd, yyyy')}
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
+                  Order #{order.order_number}
+                </h1>
+                <div className={`flex items-center gap-2 rounded-full px-4 py-1 text-sm font-semibold ${statusInfo.color}`}>
+                  <StatusIcon className="h-4 w-4" />
+                  {statusInfo.label}
+                </div>
+              </div>
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                Placed on {format(new Date(order.created_at), 'MMMM d, yyyy')}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+          </div>
+          <div className="flex gap-3">
+            {hasInvoice && invoiceId && (
               <Button
-                onClick={handleReorder}
-                disabled={reordering}
-                className="bg-primary hover:bg-primary/90"
+                variant="outline"
+                icon={<MdReceipt />}
+                onClick={() => router.push(`/invoices/${invoiceId}`)}
               >
-                {reordering ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                )}
-                Reorder All Items
+                View Invoice
               </Button>
-              <Badge className={statusColors[order.status]} style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-              </Badge>
-            </div>
+            )}
+            {!hasInvoice && order.status !== 'draft' && (
+              <Button
+                variant="outline"
+                icon={<MdReceipt />}
+                onClick={handleGenerateInvoice}
+                loading={generatingInvoice}
+              >
+                Generate Invoice
+              </Button>
+            )}
+            <Button variant="primary" icon={<MdShoppingCart />} onClick={handleReorder} loading={reordering}>
+              Reorder
+            </Button>
           </div>
         </div>
+      </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Order Items */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  Order Items
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {order.order_items.map(item => (
-                    <div key={item.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">SKU: {item.sku}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ${item.unit_price.toFixed(2)} × {item.quantity}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-lg">
-                        ${item.line_total.toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Order Items */}
+        <div className="lg:col-span-2">
+          <Card extra="p-6">
+            <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Order Items</h2>
+            <DataTable
+              data={order.order_items}
+              columns={columns}
+              searchable={false}
+              pagination={false}
+            />
+          </Card>
+        </div>
 
-            {/* Shipping Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Shipping Address
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  <p className="font-semibold">{order.shipping_addresses.label}</p>
-                  <p className="text-muted-foreground">{order.shipping_addresses.contact_name}</p>
-                  <p className="text-muted-foreground">{order.shipping_addresses.street_address}</p>
-                  {order.shipping_addresses.street_address2 && (
-                    <p className="text-muted-foreground">{order.shipping_addresses.street_address2}</p>
-                  )}
-                  <p className="text-muted-foreground">
-                    {order.shipping_addresses.city}, {order.shipping_addresses.state} {order.shipping_addresses.postal_code}
-                  </p>
-                  <p className="text-muted-foreground">{order.shipping_addresses.phone}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Shipping Info */}
-            {(order.shipping_tracking_number || order.shipped_at) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="h-5 w-5" />
-                    Shipping Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {order.shipped_at && (
-                    <p className="text-sm">
-                      <span className="font-medium">Shipped:</span>{' '}
-                      {format(new Date(order.shipped_at), 'MMMM dd, yyyy')}
-                    </p>
-                  )}
-                  {order.delivered_at && (
-                    <p className="text-sm">
-                      <span className="font-medium">Delivered:</span>{' '}
-                      {format(new Date(order.delivered_at), 'MMMM dd, yyyy')}
-                    </p>
-                  )}
-                  {order.shipping_carrier && (
-                    <p className="text-sm">
-                      <span className="font-medium">Carrier:</span> {order.shipping_carrier}
-                    </p>
-                  )}
-                  {order.shipping_tracking_number && (
-                    <p className="text-sm">
-                      <span className="font-medium">Tracking:</span> {order.shipping_tracking_number}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Purchase Order & Additional Info */}
-            {(order.po_number || order.notes) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    {order.po_number ? 'Purchase Order & Notes' : 'Additional Information'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {order.po_number && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Purchase Order Number</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-lg font-semibold">{order.po_number}</p>
-                        <CopyButton text={order.po_number} label="PO Number" />
-                      </div>
-                    </div>
-                  )}
-                  {order.notes && (
-                    <p className="text-sm">
-                      <span className="font-medium">Notes:</span> {order.notes}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
+        {/* Order Summary & Details */}
+        <div className="space-y-5">
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>${order.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Tax</span>
-                    <span>${order.tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Shipping</span>
-                    <span>
-                      {order.shipping_cost === 0 ? 'FREE' : `$${order.shipping_cost.toFixed(2)}`}
-                    </span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-primary">${order.total.toFixed(2)}</span>
+          <Card extra="p-6">
+            <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Order Summary</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <span>Subtotal</span>
+                <span>${order.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <span>Tax</span>
+                <span>${order.tax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                <span>Shipping</span>
+                <span>${order.shipping_cost.toFixed(2)}</span>
+              </div>
+              <div className="border-t border-gray-200 pt-3 dark:border-white/10">
+                <div className="flex justify-between text-lg font-bold text-navy-700 dark:text-white">
+                  <span>Total</span>
+                  <span className="text-brand-500">${order.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Shipping Address */}
+          {order.shipping_addresses && (
+            <Card extra="p-6">
+              <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
+                Shipping Address
+              </h2>
+              <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                <p className="font-semibold">{order.shipping_addresses.label}</p>
+                <p>{order.shipping_addresses.contact_name}</p>
+                <p>{order.shipping_addresses.phone}</p>
+                <p>{order.shipping_addresses.street_address}</p>
+                {order.shipping_addresses.street_address2 && (
+                  <p>{order.shipping_addresses.street_address2}</p>
+                )}
+                <p>
+                  {order.shipping_addresses.city}, {order.shipping_addresses.state}{' '}
+                  {order.shipping_addresses.postal_code}
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Tracking Info */}
+          {order.shipping_tracking_number && (
+            <Card extra="p-6">
+              <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
+                Tracking Information
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Carrier</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">
+                    {order.shipping_carrier}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Tracking Number</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-navy-700 dark:text-white">
+                      {order.shipping_tracking_number}
+                    </p>
+                    <button
+                      onClick={() => copyToClipboard(order.shipping_tracking_number!)}
+                      className="text-brand-500 hover:text-brand-600"
+                    >
+                      <MdContentCopy />
+                    </button>
                   </div>
                 </div>
-
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => router.push('/products')}
-                >
-                  Order Again
-                </Button>
-              </CardContent>
+              </div>
             </Card>
-          </div>
+          )}
+
+          {/* PO Number */}
+          {order.po_number && (
+            <Card extra="p-6">
+              <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">PO Number</h2>
+              <p className="font-mono text-navy-700 dark:text-white">{order.po_number}</p>
+            </Card>
+          )}
         </div>
       </div>
+
+      {/* Reorder Success Modal */}
+      <Modal
+        isOpen={reorderModal}
+        onClose={() => setReorderModal(false)}
+        title="Items Added to Cart!"
+        size="sm"
+      >
+        <div className="space-y-4 text-center">
+          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <p className="text-gray-700 dark:text-gray-300">
+            All items from this order have been added to your cart.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setReorderModal(false)}
+            >
+              Continue Shopping
+            </Button>
+            <Button variant="primary" className="flex-1" onClick={() => router.push('/cart')}>
+              View Cart
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
-  )
+  );
 }

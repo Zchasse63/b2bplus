@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { PricingService } from '@repo/shared/services/pricing.service';
+import { PricingService } from '@b2b-plus/shared';
 
 export async function POST(request: NextRequest) {
   try {

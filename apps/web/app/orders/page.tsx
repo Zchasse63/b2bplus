@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Package, Search, Eye, ShoppingCart, FileText } from 'lucide-react'
+import { RefreshCw, Package, Search, Eye, ShoppingCart, FileText } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import FilterPanel, { FilterState } from '@/components/FilterPanel'
@@ -206,7 +206,7 @@ export default function OrdersPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -227,7 +227,7 @@ export default function OrdersPage() {
           activeFilterCount={getActiveFilterCount()}
         />
 
-        {/* Search */}
+        {/* MdSearch */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -242,8 +242,8 @@ export default function OrdersPage() {
 
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
+          <Card extra="p-6">
+            <div className="flex flex-col items-center justify-center py-12">
               <Package className="h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">
                 {searchQuery ? 'No orders found' : 'No orders yet'}
@@ -256,19 +256,19 @@ export default function OrdersPage() {
                   Browse Products
                 </Button>
               )}
-            </CardContent>
+            </div>
           </Card>
         ) : (
           <div className="space-y-4">
             {filteredOrders.map(order => (
               <Card key={order.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
+                <div className="mb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">
+                        <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="text-lg">
                           Order {order.order_number}
-                        </CardTitle>
+                        </h2>
                         {order.po_number && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <FileText className="h-4 w-4" />
@@ -285,8 +285,8 @@ export default function OrdersPage() {
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+                <div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">
@@ -303,7 +303,7 @@ export default function OrdersPage() {
                         disabled={reorderingId === order.id}
                       >
                         {reorderingId === order.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
                           <ShoppingCart className="h-4 w-4 mr-2" />
                         )}
@@ -318,7 +318,7 @@ export default function OrdersPage() {
                       </Button>
                     </div>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             ))}
           </div>

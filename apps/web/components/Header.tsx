@@ -1,112 +1,156 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ShoppingCart, Package, User, LogOut, FileText, Calculator } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+  MdShoppingCart,
+  MdInventory,
+  MdPerson,
+  MdLogout,
+  MdCalculate,
+  MdSettings,
+  MdHome,
+  MdShoppingBag,
+  MdReceipt,
+} from 'react-icons/md';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Header() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClient()
-  const [user, setUser] = useState<any>(null)
-  const [cartCount, setCartCount] = useState(0)
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState<any>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+
       if (user) {
         // Get cart count
         const { count } = await supabase
           .from('cart_items')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-        
-        setCartCount(count || 0)
-      }
-    }
+          .eq('user_id', user.id);
 
-    getUser()
-  }, [pathname])
+        setCartCount(count || 0);
+
+        // Check if user is admin
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        setIsAdmin(profile?.role === 'admin' || profile?.role === 'super_admin');
+      }
+    };
+
+    getUser();
+  }, [pathname]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
-    router.refresh()
-  }
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+    router.refresh();
+  };
 
-  const isActive = (path: string) => pathname === path
+  const isActive = (path: string) => pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-navy-900/95">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-          <Package className="h-6 w-6 text-primary" />
-          <span className="hidden sm:inline">B2B+</span>
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+          <MdInventory className="h-6 w-6 text-brand-500" />
+          <span className="hidden bg-gradient-to-r from-brand-500 to-purple-600 bg-clip-text text-transparent sm:inline">
+            B2B+
+          </span>
         </Link>
 
         {/* Navigation */}
-        <nav className="flex items-center gap-1">
-          <Button
-            asChild
-            variant={isActive('/') ? 'default' : 'ghost'}
-          >
-            <Link href="/">Home</Link>
-          </Button>
-          <Button
-            asChild
-            variant={isActive('/products') ? 'default' : 'ghost'}
-          >
-            <Link href="/products">Products</Link>
-          </Button>
+        <nav className="flex items-center gap-2">
+          <Link href="/">
+            <Button
+              variant={isActive('/') ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<MdHome />}
+            >
+              Home
+            </Button>
+          </Link>
+          <Link href="/products">
+            <Button
+              variant={isActive('/products') ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<MdShoppingBag />}
+            >
+              Products
+            </Button>
+          </Link>
           {user && (
             <>
-              <Button
-                asChild
-                variant={isActive('/orders') ? 'default' : 'ghost'}
-              >
-                <Link href="/orders">Orders</Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive('/invoices') ? 'default' : 'ghost'}
-              >
-                <Link href="/invoices">Invoices</Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive('/tools/container-calculator') ? 'default' : 'ghost'}
-              >
-                <Link href="/tools/container-calculator">
-                  <Calculator className="h-4 w-4 mr-2" />
+              <Link href="/orders">
+                <Button
+                  variant={isActive('/orders') ? 'primary' : 'ghost'}
+                  size="sm"
+                  icon={<MdShoppingCart />}
+                >
+                  Orders
+                </Button>
+              </Link>
+              <Link href="/invoices">
+                <Button
+                  variant={isActive('/invoices') ? 'primary' : 'ghost'}
+                  size="sm"
+                  icon={<MdReceipt />}
+                >
+                  Invoices
+                </Button>
+              </Link>
+              <Link href="/tools/container-calculator">
+                <Button
+                  variant={isActive('/tools/container-calculator') ? 'primary' : 'ghost'}
+                  size="sm"
+                  icon={<MdCalculate />}
+                >
                   Calculator
+                </Button>
+              </Link>
+              {isAdmin && (
+                <Link href="/admin/products">
+                  <Button
+                    variant={pathname?.startsWith('/admin') ? 'primary' : 'ghost'}
+                    size="sm"
+                    icon={<MdSettings />}
+                  >
+                    Admin
+                  </Button>
                 </Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive('/cart') ? 'default' : 'ghost'}
-                className="relative"
-              >
-                <Link href="/cart">
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Cart
+              )}
+              <Link href="/cart">
+                <div className="relative">
+                  <Button
+                    variant={isActive('/cart') ? 'primary' : 'ghost'}
+                    size="sm"
+                    icon={<MdShoppingCart />}
+                  >
+                    Cart
+                  </Button>
                   {cartCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    >
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
                       {cartCount}
-                    </Badge>
+                    </span>
                   )}
-                </Link>
-              </Button>
+                </div>
+              </Link>
             </>
           )}
         </nav>
@@ -115,27 +159,31 @@ export default function Header() {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/profile">
-                  <User className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                <LogOut className="h-5 w-5" />
+              <Link href="/profile">
+                <Button variant="ghost" size="sm">
+                  <MdPerson className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <MdLogout className="h-5 w-5" />
               </Button>
             </>
           ) : (
             <>
-              <Button asChild variant="ghost">
-                <Link href="/auth/login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth/register">Sign Up</Link>
-              </Button>
+              <Link href="/auth/login">
+                <Button variant="outline" size="sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button variant="primary" size="sm">
+                  Sign Up
+                </Button>
+              </Link>
             </>
           )}
         </div>
       </div>
     </header>
-  )
+  );
 }

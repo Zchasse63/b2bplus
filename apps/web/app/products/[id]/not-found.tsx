@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PackageX } from 'lucide-react'
+import { PackageX } from 'react-icons/md'
 
 export default function ProductNotFound() {
   return (

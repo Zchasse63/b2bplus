@@ -108,7 +108,7 @@ export default function FilterSidebar({
         )}
       </div>
 
-      {/* Categories Filter */}
+      {/* Categories MdFilterList */}
       <div className="mb-6 border-b border-gray-200 pb-4">
         <button
           onClick={() => toggleSection('categories')}
@@ -146,7 +146,7 @@ export default function FilterSidebar({
         )}
       </div>
 
-      {/* Price Range Filter */}
+      {/* Price Range MdFilterList */}
       <div className="mb-6 border-b border-gray-200 pb-4">
         <button
           onClick={() => toggleSection('price')}
@@ -187,7 +187,7 @@ export default function FilterSidebar({
         )}
       </div>
 
-      {/* Brands Filter */}
+      {/* Brands MdFilterList */}
       <div className="mb-6 border-b border-gray-200 pb-4">
         <button
           onClick={() => toggleSection('brands')}
@@ -225,7 +225,7 @@ export default function FilterSidebar({
         )}
       </div>
 
-      {/* Stock Filter */}
+      {/* Stock MdFilterList */}
       <div>
         <button
           onClick={() => toggleSection('stock')}

@@ -5,11 +5,10 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@b2b-plus/supabase'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import Button from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { ShoppingCart, Package } from 'lucide-react'
+import { ShoppingCart, Package } from 'react-icons/md'
 
 interface ProductCardProps {
   product: Product
@@ -140,9 +139,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.description}
           </p>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-3">
+      <div className="space-y-3">
         <div className="flex items-baseline justify-between">
           <div>
             <span className="text-2xl font-bold text-primary">
@@ -158,7 +157,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div>SKU: {product.sku}</div>
           {product.brand && <div>Brand: {product.brand}</div>}
         </div>
-      </CardContent>
+      </div>
 
       <CardFooter className="flex gap-2">
         <Input

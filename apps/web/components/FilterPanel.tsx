@@ -2,11 +2,9 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import Button from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { MdFilterList, MdClose, MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 
 export interface FilterState {
   dateRange: {
@@ -122,18 +120,18 @@ export default function FilterPanel({
 
   return (
     <Card className="mb-6">
-      <CardHeader>
+      <div className="mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+            <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="text-lg flex items-center gap-2">
+              <MdFilterList className="h-5 w-5" />
               Filters
               {activeFilterCount > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {activeFilterCount}
                 </Badge>
               )}
-            </CardTitle>
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             {activeFilterCount > 0 && (
@@ -143,7 +141,7 @@ export default function FilterPanel({
                 onClick={onClearFilters}
                 className="text-muted-foreground hover:text-foreground"
               >
-                <X className="h-4 w-4 mr-1" />
+                <MdClose className="h-4 w-4 mr-1" />
                 Clear All
               </Button>
             )}
@@ -153,18 +151,18 @@ export default function FilterPanel({
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
+                <MdKeyboardArrowUp className="h-4 w-4" />
               ) : (
-                <ChevronDown className="h-4 w-4" />
+                <MdKeyboardArrowDown className="h-4 w-4" />
               )}
             </Button>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
       {isExpanded && (
-        <CardContent className="space-y-6">
-          {/* Date Range Filter */}
+        <div className="space-y-6">
+          {/* Date Range MdFilterList */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Date Range</Label>
             <div className="flex flex-wrap gap-2 mb-3">
@@ -205,7 +203,7 @@ export default function FilterPanel({
             )}
           </div>
 
-          {/* Status Filter */}
+          {/* Status MdFilterList */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Status</Label>
             <div className="flex flex-wrap gap-2">
@@ -226,7 +224,7 @@ export default function FilterPanel({
             </div>
           </div>
 
-          {/* Amount Range Filter */}
+          {/* Amount Range MdFilterList */}
           <div>
             <Label className="text-base font-semibold mb-3 block">Amount Range</Label>
             <div className="grid grid-cols-2 gap-4">
@@ -268,7 +266,7 @@ export default function FilterPanel({
               </div>
             </div>
           </div>
-        </CardContent>
+        </div>
       )}
     </Card>
   )

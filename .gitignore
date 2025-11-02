@@ -83,3 +83,34 @@ temp/
 # EAS
 eas-build-*/
 
+
+# Sensitive data files (added Nov 2, 2025)
+CUSTOMER_CREDENTIALS.txt
+customer_accounts.json
+distributor_accounts.json
+
+# Data upload logs and results
+product_upload_log.txt
+product_upload_errors.json
+product_upload_results.json
+orders_upload_log.txt
+import_log.txt
+import_results.json
+parsed_orders.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Data files (Excel, CSV)
+*.xlsx
+*.xls
+*.csv
+
+# Upload directory
+upload/
+
+# Test files with API keys
+test-*.ts
+**/test-*.ts

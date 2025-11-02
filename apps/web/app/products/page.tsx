@@ -1,147 +1,208 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import SearchBar from '@/components/SearchBar'
-import FilterSidebar, { FilterOptions } from '@/components/FilterSidebar'
-import ProductCardWithPricing from '@/components/ProductCardWithPricing'
-import type { Product, Category } from '@b2b-plus/supabase'
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/horizon/card';
+import ProductCard from '@/components/horizon/product/ProductCard';
+import Input from '@/components/horizon/input/Input';
+import Button from '@/components/horizon/button/Button';
+import Select from '@/components/horizon/input/Select';
+import { MdSearch, MdFilterList, MdGridView, MdViewList } from 'react-icons/md';
+import type { Product } from '@b2b-plus/supabase';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filters, setFilters] = useState<FilterOptions>({})
-  const [availableCategories, setAvailableCategories] = useState<any[]>([])
-  const [availableBrands, setAvailableBrands] = useState<any[]>([])
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 })
-  const supabase = createClient()
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [categories, setCategories] = useState<any[]>([]);
+  const supabase = createClient();
 
   useEffect(() => {
-    fetchProductsAndFacets()
-  }, [searchQuery, filters])
+    fetchProducts();
+    fetchCategories();
+  }, []);
 
-  const fetchProductsAndFacets = async () => {
-    setLoading(true)
-    setError(null)
+  useEffect(() => {
+    filterAndSortProducts();
+  }, [products, searchQuery, selectedCategory, sortBy]);
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        window.location.href = '/auth/login'
-        return
-      }
+  async function fetchProducts() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name', { ascending: true });
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_organization_id')
-        .eq('id', user.id)
-        .single()
+    if (!error && data) {
+      setProducts(data);
+    }
+    setLoading(false);
+  }
 
-      if (!profile?.current_organization_id) {
-        throw new Error('No organization found')
-      }
-
-      // Build query
-      let query = supabase
-        .from('products')
-        .select('*, categories (*)', { count: 'exact' })
-        .eq('organization_id', profile.current_organization_id)
-
-      // Search
-      if (searchQuery) {
-        query = query.textSearch('name', searchQuery, { type: 'websearch' })
-      }
-
-      // Filters
-      if (filters.inStockOnly) {
-        query = query.eq('in_stock', true)
-      }
-      if (filters.categories && filters.categories.length > 0) {
-        query = query.in('category_id', filters.categories)
-      }
-      if (filters.brands && filters.brands.length > 0) {
-        query = query.in('brand', filters.brands)
-      }
-      if (filters.priceRange) {
-        query = query.gte('base_price', filters.priceRange.min).lte('base_price', filters.priceRange.max)
-      }
-
-      // Execute query
-      const { data, error, count } = await query.order('name', { ascending: true })
-
-      if (error) throw error
-      setProducts(data || [])
-
-      // Fetch facets
-      const { data: categoryFacets } = await supabase.rpc('get_category_facets', { org_id: profile.current_organization_id })
-      const { data: brandFacets } = await supabase.rpc('get_brand_facets', { org_id: profile.current_organization_id })
-      const { data: priceRangeData } = await supabase.rpc('get_price_range', { org_id: profile.current_organization_id })
-
-      setAvailableCategories(categoryFacets || [])
-      setAvailableBrands(brandFacets || [])
-      if (priceRangeData) {
-        setPriceRange({ min: priceRangeData.min_price, max: priceRangeData.max_price })
-      }
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products')
-      console.error('Error fetching products:', err)
-    } finally {
-      setLoading(false)
+  async function fetchCategories() {
+    const { data } = await supabase.from('categories').select('*');
+    if (data) {
+      setCategories(data);
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Product Catalog</h1>
-          <p className="mt-2 text-gray-600">Browse our selection of food service disposables</p>
-        </div>
+  function filterAndSortProducts() {
+    let filtered = [...products];
 
-        <div className="mb-8">
-          <SearchBar onSearch={setSearchQuery} />
-        </div>
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          <aside className="lg:col-span-1">
-            <FilterSidebar
-              availableCategories={availableCategories}
-              availableBrands={availableBrands}
-              priceRange={priceRange}
-              onFilterChange={setFilters}
-            />
-          </aside>
+    // Category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter((p) => p.category === selectedCategory);
+    }
 
-          <main className="lg:col-span-3">
-            {loading ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-96 animate-pulse rounded-lg bg-gray-200"></div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="flex h-full items-center justify-center rounded-lg bg-white p-12 text-center shadow">
-                <h2 className="text-xl font-semibold text-red-600">Error</h2>
-                <p className="mt-2 text-gray-600">{error}</p>
-              </div>
-            ) : products.length > 0 ? (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {products.map((product) => (
-                  <ProductCardWithPricing key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="flex h-full items-center justify-center rounded-lg bg-white p-12 text-center shadow">
-                <h2 className="text-xl font-semibold text-gray-900">No Products Found</h2>
-                <p className="mt-2 text-gray-600">Try adjusting your search or filters.</p>
-              </div>
-            )}
-          </main>
-        </div>
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'price-asc':
+          return a.base_price - b.base_price;
+        case 'price-desc':
+          return b.base_price - a.base_price;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredProducts(filtered);
+  }
+
+  async function handleAddToCart(productId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Add to cart logic
+    const { error } = await supabase.from('cart_items').insert({
+      user_id: user.id,
+      product_id: productId,
+      quantity: 1,
+    });
+
+    if (!error) {
+      // Show success notification (you can add a toast here)
+      console.log('Added to cart');
+    }
+  }
+
+  const categoryOptions = [
+    { value: 'all', label: 'All Categories' },
+    ...categories.map((cat) => ({ value: cat.name, label: cat.name })),
+  ];
+
+  const sortOptions = [
+    { value: 'name', label: 'Name (A-Z)' },
+    { value: 'price-asc', label: 'Price (Low to High)' },
+    { value: 'price-desc', label: 'Price (High to Low)' },
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Loading products...</div>
       </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 animate-fadeIn">
+      {/* Header */}
+      <Card extra="mb-5 p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Product Catalog</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Browse our complete selection of food service disposables
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<MdGridView />}
+              onClick={() => setViewMode('grid')}
+            />
+            <Button
+              variant={viewMode === 'list' ? 'primary' : 'ghost'}
+              size="sm"
+              icon={<MdViewList />}
+              onClick={() => setViewMode('list')}
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Filters */}
+      <Card extra="mb-5 p-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="relative">
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <MdSearch className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
+          </div>
+          <Select
+            options={categoryOptions}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          />
+          <Select options={sortOptions} value={sortBy} onChange={(e) => setSortBy(e.target.value)} />
+        </div>
+      </Card>
+
+      {/* Results Count */}
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Showing {filteredProducts.length} of {products.length} products
+        </p>
+      </div>
+
+      {/* Products Grid */}
+      {filteredProducts.length === 0 ? (
+        <Card extra="p-12 text-center">
+          <div className="text-gray-500 dark:text-gray-400">
+            <MdSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
+            <h3 className="mb-2 text-lg font-semibold">No products found</h3>
+            <p className="text-sm">Try adjusting your search or filters</p>
+          </div>
+        </Card>
+      ) : (
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+              : 'flex flex-col gap-4'
+          }
+        >
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }

@@ -1,89 +1,92 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import Image from 'next/image'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, ShoppingCart, Package, AlertCircle, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/horizon/card';
+import Button from '@/components/horizon/button/Button';
+import Input from '@/components/horizon/input/Input';
+import ProductCard from '@/components/horizon/product/ProductCard';
+import Modal from '@/components/horizon/modal/Modal';
+import {
+  MdShoppingCart,
+  MdCheckCircle,
+  MdWarning,
+  MdChevronRight,
+  MdZoomIn,
+} from 'react-icons/md';
 
 type Product = {
-  id: string
-  sku: string
-  name: string
-  description: string
-  category: string
-  subcategory: string | null
-  brand: string | null
-  base_price: number
-  unit_of_measure: string
-  units_per_case: number | null
-  weight_lbs: number | null
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  category: string;
+  subcategory: string | null;
+  brand: string | null;
+  base_price: number;
+  unit_of_measure: string;
+  units_per_case: number | null;
+  weight_lbs: number | null;
   dimensions_inches: {
-    length: number
-    width: number
-    height: number
-  } | null
-  in_stock: boolean
-  image_url: string | null
-  additional_images: string[] | null
-  specifications: Record<string, any> | null
-  allergens: string[] | null
-  nutritional_info: Record<string, any> | null
-}
+    length: number;
+    width: number;
+    height: number;
+  } | null;
+  in_stock: boolean;
+  image_url: string | null;
+  additional_images: string[] | null;
+  specifications: Record<string, any> | null;
+  allergens: string[] | null;
+  nutritional_info: Record<string, any> | null;
+};
 
 type Props = {
-  product: Product
-  organizationId: string | null
+  product: Product;
+  organizationId: string | null;
   relatedProducts: Array<{
-    id: string
-    name: string
-    sku: string
-    base_price: number
-    image_url: string | null
-    category: string
-  }>
-}
+    id: string;
+    name: string;
+    sku: string;
+    base_price: number;
+    image_url: string | null;
+    category: string;
+  }>;
+};
 
 export default function ProductDetail({ product, organizationId, relatedProducts }: Props) {
-  const [selectedImage, setSelectedImage] = useState(product.image_url)
-  const [quantity, setQuantity] = useState(1)
-  const [price, setPrice] = useState(product.base_price)
-  const [loading, setLoading] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const supabase = createClient()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [selectedImage, setSelectedImage] = useState(product.image_url);
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(product.base_price);
+  const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [imageModal, setImageModal] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const supabase = createClient();
+  const router = useRouter();
 
-  // All available images (main + additional)
-  const allImages = [
-    product.image_url,
-    ...(product.additional_images || [])
-  ].filter(Boolean) as string[]
+  const allImages = [product.image_url, ...(product.additional_images || [])].filter(
+    Boolean
+  ) as string[];
 
-  // Fetch custom price when quantity changes
   useEffect(() => {
     if (!organizationId) {
-      setPrice(product.base_price)
-      return
+      setPrice(product.base_price);
+      return;
     }
 
     const fetchPrice = async () => {
-      setLoading(true)
-      
+      setLoading(true);
+
       try {
-        // Use our pricing API
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
-          setPrice(product.base_price)
-          setLoading(false)
-          return
+          setPrice(product.base_price);
+          setLoading(false);
+          return;
         }
 
         const response = await fetch('/api/pricing/calculate', {
@@ -92,412 +95,319 @@ export default function ProductDetail({ product, organizationId, relatedProducts
           body: JSON.stringify({
             organizationId,
             userId: user.id,
-            items: [{
-              productId: product.id,
-              quantity,
-              basePrice: product.base_price,
-            }],
+            items: [
+              {
+                productId: product.id,
+                quantity,
+                basePrice: product.base_price,
+              },
+            ],
           }),
-        })
+        });
 
         if (response.ok) {
-          const pricingData = await response.json()
-          if (pricingData.items && pricingData.items.length > 0) {
-            setPrice(pricingData.items[0].unit_price)
-          } else {
-            setPrice(product.base_price)
+          const data = await response.json();
+          if (data.items && data.items[0]) {
+            setPrice(data.items[0].finalPrice);
           }
-        } else {
-          setPrice(product.base_price)
         }
       } catch (error) {
-        console.error('Error fetching price:', error)
-        setPrice(product.base_price)
+        console.error('Error fetching price:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchPrice()
-  }, [quantity, organizationId, product.id, product.base_price])
+    fetchPrice();
+  }, [quantity, organizationId, product.id, product.base_price]);
 
-  const addToCart = async () => {
-    setAdding(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    
+  const handleAddToCart = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
-      router.push('/auth/login')
-      return
+      router.push('/auth/login');
+      return;
     }
+
+    setAdding(true);
 
     try {
-      // Check if already in cart
-      const { data: existingItem } = await supabase
-        .from('cart_items')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('product_id', product.id)
-        .single()
+      const { error } = await supabase.from('cart_items').insert({
+        user_id: user.id,
+        product_id: product.id,
+        quantity,
+      });
 
-      if (existingItem) {
-        // Update quantity
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ 
-            quantity: existingItem.quantity + quantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingItem.id)
+      if (error) throw error;
 
-        if (error) throw error
-
-        toast({
-          title: 'Cart Updated',
-          description: `Updated quantity to ${existingItem.quantity + quantity}`,
-        })
-      } else {
-        // Insert new
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            organization_id: organizationId!,
-            quantity
-          })
-
-        if (error) throw error
-
-        toast({
-          title: 'Added to Cart',
-          description: `${product.name} has been added to your cart`,
-        })
-      }
-
-      // Refresh to update cart count in header
-      router.refresh()
+      setSuccessModal(true);
     } catch (error) {
-      console.error('Error adding to cart:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to add item to cart',
-        variant: 'destructive',
-      })
+      console.error('Error adding to cart:', error);
+      alert('Failed to add to cart');
     } finally {
-      setAdding(false)
+      setAdding(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Breadcrumb */}
-        <nav className="mb-6 flex items-center text-sm text-muted-foreground">
-          <Link href="/products" className="hover:text-primary transition-colors">
-            Products
-          </Link>
-          <ChevronRight className="h-4 w-4 mx-2" />
-          <Link 
-            href={`/products?category=${product.category}`} 
-            className="hover:text-primary transition-colors"
-          >
-            {product.category}
-          </Link>
-          <ChevronRight className="h-4 w-4 mx-2" />
-          <span className="text-foreground">{product.name}</span>
-        </nav>
+    <div className="mt-3 animate-fadeIn">
+      {/* Breadcrumb */}
+      <div className="mb-5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+        <span className="cursor-pointer hover:text-brand-500" onClick={() => router.push('/products')}>
+          Products
+        </span>
+        <MdChevronRight />
+        <span className="cursor-pointer hover:text-brand-500">
+          {product.category}
+        </span>
+        <MdChevronRight />
+        <span className="text-navy-700 dark:text-white">{product.name}</span>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 mb-12">
-          {/* Left Column: Images */}
-          <div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Product Images */}
+        <div className="lg:col-span-1">
+          <Card extra="p-6">
             {/* Main Image */}
-            <Card className="mb-4 overflow-hidden">
-              <div className="relative aspect-square bg-neutral-100">
-                {selectedImage ? (
-                  <Image
-                    src={selectedImage}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-4"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                    <Package className="h-24 w-24 mb-4" />
-                    <p>No image available</p>
-                  </div>
-                )}
+            <div
+              className="relative mb-4 aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700"
+              onClick={() => setImageModal(true)}
+            >
+              {selectedImage ? (
+                <Image src={selectedImage} alt={product.name} fill className="object-contain" />
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <MdShoppingCart className="h-24 w-24 text-gray-300" />
+                </div>
+              )}
+              <div className="absolute right-2 top-2 rounded-full bg-white/80 p-2 dark:bg-navy-800/80">
+                <MdZoomIn className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </div>
-            </Card>
+            </div>
 
-            {/* Thumbnail Gallery */}
+            {/* Thumbnail Images */}
             {allImages.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
                 {allImages.map((img, idx) => (
-                  <button
+                  <div
                     key={idx}
-                    onClick={() => setSelectedImage(img)}
-                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === img 
-                        ? 'border-primary shadow-md' 
-                        : 'border-neutral-200 hover:border-neutral-300'
+                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 transition-all ${
+                      selectedImage === img
+                        ? 'border-brand-500'
+                        : 'border-gray-200 hover:border-brand-300 dark:border-white/10'
                     }`}
+                    onClick={() => setSelectedImage(img)}
                   >
-                    <Image
-                      src={img}
-                      alt={`${product.name} view ${idx + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
+                    <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
+                  </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
+        </div>
 
-          {/* Right Column: Details */}
-          <div>
-            {/* Stock status */}
-            {!product.in_stock && (
-              <Badge variant="destructive" className="mb-3">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                Out of Stock
-              </Badge>
-            )}
+        {/* Product Info */}
+        <div className="space-y-5 lg:col-span-2">
+          {/* Main Info Card */}
+          <Card extra="p-6">
+            <div className="mb-4">
+              <div className="mb-2 flex items-start justify-between">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-navy-700 dark:text-white">
+                    {product.name}
+                  </h1>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    SKU: {product.sku}
+                  </p>
+                </div>
+                <div
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
+                    product.in_stock
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                  }`}
+                >
+                  {product.in_stock ? (
+                    <>
+                      <MdCheckCircle /> In Stock
+                    </>
+                  ) : (
+                    <>
+                      <MdWarning /> Out of Stock
+                    </>
+                  )}
+                </div>
+              </div>
 
-            <h1 className="text-4xl font-bold text-secondary-500 mb-3">{product.name}</h1>
-            
-            <div className="flex items-center gap-4 mb-4 text-muted-foreground">
-              <p>SKU: <span className="font-medium text-foreground">{product.sku}</span></p>
               {product.brand && (
-                <>
-                  <span>•</span>
-                  <p>Brand: <span className="font-medium text-foreground">{product.brand}</span></p>
-                </>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Brand: <span className="font-semibold">{product.brand}</span>
+                </p>
               )}
             </div>
 
-            {/* Price */}
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-5xl font-bold text-primary">
-                    ${loading ? '...' : price.toFixed(2)}
-                  </span>
-                  {price < product.base_price && (
-                    <span className="text-xl text-muted-foreground line-through">
-                      ${product.base_price.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                <p className="text-muted-foreground">per {product.unit_of_measure}</p>
-                {product.units_per_case && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {product.units_per_case} units per {product.unit_of_measure}
-                  </p>
-                )}
-                {price < product.base_price && (
-                  <Badge variant="secondary" className="mt-2">
-                    Special Pricing Applied
-                  </Badge>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Add to Cart */}
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-1">
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                      disabled={!product.in_stock}
-                      className="text-center"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>&nbsp;</Label>
-                    <Button
-                      onClick={addToCart}
-                      disabled={adding || !product.in_stock}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {adding ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="mr-2 h-4 w-4" />
-                          Add to Cart
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground mt-3 text-center">
-                  Total: <span className="font-semibold text-foreground">
-                    ${(price * quantity).toFixed(2)}
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Description */}
             {product.description && (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Description</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground leading-relaxed">{product.description}</p>
-                </CardContent>
-              </Card>
+              <div className="mb-6">
+                <p className="text-gray-700 dark:text-gray-300">{product.description}</p>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Product Details Tabs */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-12">
-          {/* Product Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Product Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-3">
-                <div className="flex border-b pb-2">
-                  <dt className="w-1/3 text-muted-foreground">Category:</dt>
-                  <dd className="w-2/3 font-medium">{product.category}</dd>
+            {/* Price and Add to Cart */}
+            <div className="border-t border-gray-200 pt-6 dark:border-white/10">
+              <div className="mb-4 flex items-baseline gap-3">
+                <span className="text-4xl font-bold text-brand-500 dark:text-brand-400">
+                  ${price.toFixed(2)}
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  per {product.unit_of_measure}
+                </span>
+                {price !== product.base_price && (
+                  <span className="text-sm text-gray-500 line-through">
+                    ${product.base_price.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-32">
+                  <Input
+                    type="number"
+                    label="Quantity"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    min={1}
+                  />
                 </div>
-                {product.subcategory && (
-                  <div className="flex border-b pb-2">
-                    <dt className="w-1/3 text-muted-foreground">Subcategory:</dt>
-                    <dd className="w-2/3 font-medium">{product.subcategory}</dd>
-                  </div>
-                )}
-                {product.weight_lbs && (
-                  <div className="flex border-b pb-2">
-                    <dt className="w-1/3 text-muted-foreground">Weight:</dt>
-                    <dd className="w-2/3 font-medium">{product.weight_lbs} lbs</dd>
-                  </div>
-                )}
-                {product.dimensions_inches && (
-                  <div className="flex border-b pb-2">
-                    <dt className="w-1/3 text-muted-foreground">Dimensions:</dt>
-                    <dd className="w-2/3 font-medium">
-                      {product.dimensions_inches.length}" L × {product.dimensions_inches.width}" W × {product.dimensions_inches.height}" H
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </CardContent>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="flex-1"
+                  icon={<MdShoppingCart />}
+                  onClick={handleAddToCart}
+                  loading={adding}
+                  disabled={!product.in_stock}
+                >
+                  Add to Cart
+                </Button>
+              </div>
+
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Total: <span className="font-bold text-navy-700 dark:text-white">
+                  ${(price * quantity).toFixed(2)}
+                </span>
+              </p>
+            </div>
           </Card>
 
-          {/* Specifications */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Specifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-3">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="flex border-b pb-2">
-                      <dt className="w-1/3 text-muted-foreground capitalize">
-                        {key.replace(/_/g, ' ')}:
-                      </dt>
-                      <dd className="w-2/3 font-medium">{String(value)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </CardContent>
-            </Card>
-          )}
+          {/* Product Details */}
+          <Card extra="p-6">
+            <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
+              Product Details
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              {product.units_per_case && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Units per Case</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">
+                    {product.units_per_case}
+                  </p>
+                </div>
+              )}
+              {product.weight_lbs && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Weight</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">
+                    {product.weight_lbs} lbs
+                  </p>
+                </div>
+              )}
+              {product.dimensions_inches && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Dimensions (L × W × H)</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">
+                    {product.dimensions_inches.length}" × {product.dimensions_inches.width}" ×{' '}
+                    {product.dimensions_inches.height}"
+                  </p>
+                </div>
+              )}
+            </div>
 
-          {/* Allergens */}
-          {product.allergens && product.allergens.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Allergen Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {product.allergens.map((allergen) => (
-                    <Badge key={allergen} variant="secondary" className="bg-yellow-100 text-yellow-800">
-                      {allergen}
-                    </Badge>
+            {product.specifications && Object.keys(product.specifications).length > 0 && (
+              <div className="mt-6">
+                <h3 className="mb-3 font-semibold text-navy-700 dark:text-white">
+                  Specifications
+                </h3>
+                <div className="space-y-2">
+                  {Object.entries(product.specifications).map(([key, value]) => (
+                    <div key={key} className="flex justify-between border-b border-gray-100 pb-2 dark:border-white/5">
+                      <span className="text-gray-600 dark:text-gray-400">{key}</span>
+                      <span className="font-semibold text-navy-700 dark:text-white">{value}</span>
+                    </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Nutritional Info */}
-          {product.nutritional_info && Object.keys(product.nutritional_info).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Nutritional Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="space-y-2">
-                  {Object.entries(product.nutritional_info).map(([key, value]) => (
-                    <div key={key} className="flex border-b pb-2">
-                      <dt className="w-1/2 text-muted-foreground capitalize">
-                        {key.replace(/_/g, ' ')}:
-                      </dt>
-                      <dd className="w-1/2 font-medium">{String(value)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
+          </Card>
         </div>
+      </div>
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <div>
-            <h2 className="text-3xl font-bold text-secondary-500 mb-6">Related Products</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {relatedProducts.map((related) => (
-                <Link
-                  key={related.id}
-                  href={`/products/${related.id}`}
-                  className="group"
-                >
-                  <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-                    {related.image_url && (
-                      <div className="relative aspect-square bg-neutral-100">
-                        <Image
-                          src={related.image_url}
-                          alt={related.name}
-                          fill
-                          className="object-contain p-4 group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                    )}
-                    <CardContent className="pt-4">
-                      <h3 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
-                        {related.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mb-2">{related.sku}</p>
-                      <p className="font-bold text-primary">${related.base_price.toFixed(2)}</p>
-                    </CardContent>
-                  </Card>
-                </Link>
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-8">
+          <Card extra="p-6">
+            <h2 className="mb-5 text-2xl font-bold text-navy-700 dark:text-white">
+              Related Products
+            </h2>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard
+                  key={relatedProduct.id}
+                  product={relatedProduct}
+                  onAddToCart={() => {}}
+                />
               ))}
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Image Zoom Modal */}
+      <Modal isOpen={imageModal} onClose={() => setImageModal(false)} title={product.name} size="xl">
+        <div className="relative aspect-square w-full">
+          {selectedImage && (
+            <Image src={selectedImage} alt={product.name} fill className="object-contain" />
+          )}
+        </div>
+      </Modal>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={successModal}
+        onClose={() => setSuccessModal(false)}
+        title="Added to Cart!"
+        size="sm"
+      >
+        <div className="space-y-4 text-center">
+          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <p className="text-gray-700 dark:text-gray-300">
+            <span className="font-semibold">{product.name}</span> has been added to your cart.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setSuccessModal(false)}
+            >
+              Continue Shopping
+            </Button>
+            <Button variant="primary" className="flex-1" onClick={() => router.push('/cart')}>
+              View Cart
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      </Modal>
     </div>
-  )
+  );
 }
