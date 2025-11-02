@@ -1,0 +1,47 @@
+# Priority 2 Implementation - File List
+
+## Database Migrations (8 files)
+supabase/migrations/20251101000001_create_customer_product_images.sql
+supabase/migrations/20251101000002_setup_customer_images_storage.sql
+supabase/migrations/20251101000003_create_feature_flags.sql
+supabase/migrations/20251101000004_create_advanced_pricing.sql
+supabase/migrations/20251101000005_create_dormant_inventory_warehouse.sql
+supabase/migrations/20251101000006_create_email_campaigns.sql
+supabase/migrations/20251101000007_create_semantic_search_recommendations.sql
+supabase/migrations/20251101000008_create_recommendation_functions.sql
+
+## API Routes - Pricing (4 files)
+apps/web/app/api/pricing/customer-price/route.ts
+apps/web/app/api/admin/pricing/tiers/route.ts
+apps/web/app/api/admin/pricing/assign-tier/route.ts
+apps/web/app/api/admin/pricing/volume-discounts/route.ts
+
+## API Routes - Import (2 files)
+apps/web/app/api/admin/import/ai-excel/route.ts
+apps/web/app/api/admin/import/execute/route.ts
+
+## API Routes - Email Campaigns (2 files)
+apps/web/app/api/admin/campaigns/route.ts
+apps/web/app/api/admin/campaigns/send/route.ts
+
+## API Routes - Search (2 files)
+apps/web/app/api/admin/embeddings/generate/route.ts
+apps/web/app/api/search/semantic/route.ts
+
+## API Routes - Recommendations (2 files)
+apps/web/app/api/recommendations/route.ts
+apps/web/app/api/recommendations/generate/route.ts
+
+## Libraries (1 file)
+apps/web/lib/email/resend.ts
+
+## Documentation (4 files)
+PRIORITY_2_IMPLEMENTATION_PLAN.md
+PRIORITY_2_IMPLEMENTATION_COMPLETE.md
+PRIORITY_2_DEPLOYMENT_GUIDE.md
+PRIORITY_2_EXECUTIVE_SUMMARY.md
+
+## Configuration (1 file)
+apps/web/package.json (updated with resend, openai, react-dropzone)
+
+## Total Files Created/Modified: 26

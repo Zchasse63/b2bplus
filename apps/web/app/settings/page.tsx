@@ -1,41 +1,49 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, MapPin, Plus, Trash2, Edit, Check } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/horizon/card';
+import Button from '@/components/horizon/button/Button';
+import Input from '@/components/horizon/input/Input';
+import Select from '@/components/horizon/input/Select';
+import Modal from '@/components/horizon/modal/Modal';
+import {
+  MdLocationOn,
+  MdAdd,
+  MdEdit,
+  MdDelete,
+  MdCheckCircle,
+  MdStar,
+  MdStarBorder,
+} from 'react-icons/md';
 
 interface ShippingAddress {
-  id: string
-  label: string
-  contact_name: string
-  phone: string
-  street_address: string
-  street_address2?: string
-  city: string
-  state: string
-  postal_code: string
-  is_default: boolean
+  id: string;
+  label: string;
+  contact_name: string;
+  phone: string;
+  street_address: string;
+  street_address2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  is_default: boolean;
 }
 
 export default function SettingsPage() {
-  const [addresses, setAddresses] = useState<ShippingAddress[]>([])
-  const [loading, setLoading] = useState(true)
-  const [organizationId, setOrganizationId] = useState<string | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingAddress, setEditingAddress] = useState<ShippingAddress | null>(null)
-  const supabase = createClient()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [addresses, setAddresses] = useState<ShippingAddress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<ShippingAddress | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [addressToDelete, setAddressToDelete] = useState<string | null>(null);
+  const supabase = createClient();
+  const router = useRouter();
 
-  // Form state
   const [formData, setFormData] = useState({
     label: '',
     contact_name: '',
@@ -46,53 +54,50 @@ export default function SettingsPage() {
     state: '',
     postal_code: '',
     is_default: false,
-  })
+  });
 
   useEffect(() => {
-    loadSettings()
-  }, [])
+    loadSettings();
+  }, []);
 
   const loadSettings = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/auth/login')
-        return
+        router.push('/auth/login');
+        return;
       }
 
       const { data: profile } = await supabase
         .from('profiles')
         .select('current_organization_id')
         .eq('id', user.id)
-        .single()
+        .single();
 
       if (!profile?.current_organization_id) {
-        throw new Error('No organization found')
+        throw new Error('No organization found');
       }
 
-      setOrganizationId(profile.current_organization_id)
+      setOrganizationId(profile.current_organization_id);
 
-      // Load shipping addresses
       const { data: addressData, error: addressError } = await supabase
         .from('shipping_addresses')
         .select('*')
         .eq('organization_id', profile.current_organization_id)
         .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
-      if (addressError) throw addressError
-      setAddresses(addressData || [])
+      if (addressError) throw addressError;
+      setAddresses(addressData || []);
     } catch (error) {
-      console.error('Error loading settings:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load settings',
-        variant: 'destructive',
-      })
+      console.error('Error loading settings:', error);
+      alert('Failed to load settings');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -105,13 +110,13 @@ export default function SettingsPage() {
       state: '',
       postal_code: '',
       is_default: false,
-    })
-    setEditingAddress(null)
-  }
+    });
+    setEditingAddress(null);
+  };
 
-  const handleOpenDialog = (address?: ShippingAddress) => {
+  const handleOpenModal = (address?: ShippingAddress) => {
     if (address) {
-      setEditingAddress(address)
+      setEditingAddress(address);
       setFormData({
         label: address.label,
         contact_name: address.contact_name,
@@ -122,345 +127,313 @@ export default function SettingsPage() {
         state: address.state,
         postal_code: address.postal_code,
         is_default: address.is_default,
-      })
+      });
     } else {
-      resetForm()
+      resetForm();
     }
-    setIsDialogOpen(true)
-  }
+    setIsModalOpen(true);
+  };
 
-  const handleSaveAddress = async () => {
-    if (!organizationId) return
+  const handleSave = async () => {
+    if (!organizationId) return;
+
+    setSaving(true);
 
     try {
+      const addressData = {
+        ...formData,
+        organization_id: organizationId,
+      };
+
       if (editingAddress) {
-        // Update existing address
         const { error } = await supabase
           .from('shipping_addresses')
-          .update({
-            ...formData,
-            street_address2: formData.street_address2 || null,
-          })
-          .eq('id', editingAddress.id)
+          .update(addressData)
+          .eq('id', editingAddress.id);
 
-        if (error) throw error
-
-        toast({
-          title: 'Success',
-          description: 'Address updated successfully',
-        })
+        if (error) throw error;
       } else {
-        // Create new address
-        const { error } = await supabase
-          .from('shipping_addresses')
-          .insert({
-            ...formData,
-            organization_id: organizationId,
-            street_address2: formData.street_address2 || null,
-          })
+        const { error } = await supabase.from('shipping_addresses').insert(addressData);
 
-        if (error) throw error
-
-        toast({
-          title: 'Success',
-          description: 'Address added successfully',
-        })
+        if (error) throw error;
       }
 
-      setIsDialogOpen(false)
-      resetForm()
-      await loadSettings()
+      await loadSettings();
+      setIsModalOpen(false);
+      resetForm();
     } catch (error) {
-      console.error('Error saving address:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to save address',
-        variant: 'destructive',
-      })
+      console.error('Error saving address:', error);
+      alert('Failed to save address');
+    } finally {
+      setSaving(false);
     }
-  }
+  };
 
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) return
+  const handleDelete = async () => {
+    if (!addressToDelete) return;
+
+    setDeleting(true);
 
     try {
       const { error } = await supabase
         .from('shipping_addresses')
         .delete()
-        .eq('id', addressId)
+        .eq('id', addressToDelete);
 
-      if (error) throw error
+      if (error) throw error;
 
-      toast({
-        title: 'Success',
-        description: 'Address deleted successfully',
-      })
-
-      await loadSettings()
+      await loadSettings();
+      setDeleteModal(false);
+      setAddressToDelete(null);
     } catch (error) {
-      console.error('Error deleting address:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to delete address',
-        variant: 'destructive',
-      })
+      console.error('Error deleting address:', error);
+      alert('Failed to delete address');
+    } finally {
+      setDeleting(false);
     }
-  }
+  };
 
   const handleSetDefault = async (addressId: string) => {
-    if (!organizationId) return
+    if (!organizationId) return;
 
     try {
-      // Remove default from all addresses
       await supabase
         .from('shipping_addresses')
         .update({ is_default: false })
-        .eq('organization_id', organizationId)
+        .eq('organization_id', organizationId);
 
-      // Set new default
-      const { error } = await supabase
+      await supabase
         .from('shipping_addresses')
         .update({ is_default: true })
-        .eq('id', addressId)
+        .eq('id', addressId);
 
-      if (error) throw error
-
-      toast({
-        title: 'Success',
-        description: 'Default address updated',
-      })
-
-      await loadSettings()
+      await loadSettings();
     } catch (error) {
-      console.error('Error setting default address:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to set default address',
-        variant: 'destructive',
-      })
+      console.error('Error setting default address:', error);
+      alert('Failed to set default address');
     }
-  }
+  };
+
+  const stateOptions = [
+    { value: '', label: 'Select State' },
+    { value: 'AL', label: 'Alabama' },
+    { value: 'AK', label: 'Alaska' },
+    { value: 'AZ', label: 'Arizona' },
+    { value: 'AR', label: 'Arkansas' },
+    { value: 'CA', label: 'California' },
+    { value: 'CO', label: 'Colorado' },
+    { value: 'CT', label: 'Connecticut' },
+    { value: 'DE', label: 'Delaware' },
+    { value: 'FL', label: 'Florida' },
+    { value: 'GA', label: 'Georgia' },
+    // Add more states as needed
+  ];
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Loading settings...</div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-secondary-500 mb-2">Settings</h1>
-          <p className="text-muted-foreground">Manage your organization settings</p>
+    <div className="mt-3 animate-fadeIn">
+      {/* Header */}
+      <Card extra="mb-5 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Settings</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Manage your account preferences and shipping addresses
+            </p>
+          </div>
+          <Button variant="primary" icon={<MdAdd />} onClick={() => handleOpenModal()}>
+            Add Address
+          </Button>
         </div>
+      </Card>
 
-        {/* Shipping Addresses */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Shipping Addresses
-                </CardTitle>
-                <CardDescription>
-                  Manage your delivery locations
-                </CardDescription>
-              </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => handleOpenDialog()}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Address
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingAddress ? 'Edit Address' : 'Add New Address'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingAddress ? 'Update the address details below' : 'Enter the details for your new shipping address'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="label">Address Label *</Label>
-                      <Input
-                        id="label"
-                        placeholder="e.g., Main Kitchen, Downtown Location"
-                        value={formData.label}
-                        onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="contact_name">Contact Name *</Label>
-                        <Input
-                          id="contact_name"
-                          placeholder="John Doe"
-                          value={formData.contact_name}
-                          onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Phone *</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="(555) 123-4567"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="street_address">Street Address *</Label>
-                      <Input
-                        id="street_address"
-                        placeholder="123 Main St"
-                        value={formData.street_address}
-                        onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="street_address2">Street Address 2</Label>
-                      <Input
-                        id="street_address2"
-                        placeholder="Apt, Suite, Unit, etc."
-                        value={formData.street_address2}
-                        onChange={(e) => setFormData({ ...formData, street_address2: e.target.value })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <Label htmlFor="city">City *</Label>
-                        <Input
-                          id="city"
-                          placeholder="New York"
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="state">State *</Label>
-                        <Input
-                          id="state"
-                          placeholder="NY"
-                          maxLength={2}
-                          value={formData.state}
-                          onChange={(e) => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="postal_code">Postal Code *</Label>
-                      <Input
-                        id="postal_code"
-                        placeholder="10001"
-                        value={formData.postal_code}
-                        onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="is_default"
-                        checked={formData.is_default}
-                        onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-                        className="rounded border-gray-300"
-                      />
-                      <Label htmlFor="is_default" className="cursor-pointer">
-                        Set as default address
-                      </Label>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsDialogOpen(false)
-                          resetForm()
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button onClick={handleSaveAddress}>
-                        {editingAddress ? 'Update' : 'Add'} Address
-                      </Button>
-                    </div>
+      {/* Shipping Addresses */}
+      <Card extra="p-6">
+        <h2 className="mb-5 text-xl font-bold text-navy-700 dark:text-white">
+          Shipping Addresses
+        </h2>
+        {addresses.length === 0 ? (
+          <div className="py-12 text-center">
+            <MdLocationOn className="mx-auto mb-3 h-16 w-16 text-gray-400" />
+            <p className="mb-4 text-gray-600 dark:text-gray-400">No shipping addresses yet</p>
+            <Button variant="primary" icon={<MdAdd />} onClick={() => handleOpenModal()}>
+              Add Your First Address
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {addresses.map((address) => (
+              <Card key={address.id} extra="p-5 border border-gray-200 dark:border-white/10">
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-navy-700 dark:text-white">{address.label}</h3>
+                    {address.is_default && (
+                      <span className="flex items-center gap-1 rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                        <MdStar className="h-3 w-3" />
+                        Default
+                      </span>
+                    )}
                   </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {addresses.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No shipping addresses yet. Add one to get started.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {addresses.map(address => (
-                  <div
-                    key={address.id}
-                    className="p-4 border rounded-lg hover:shadow-sm transition-shadow"
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenModal(address)}
+                      className="text-gray-600 hover:text-brand-500 dark:text-gray-400"
+                    >
+                      <MdEdit className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAddressToDelete(address.id);
+                        setDeleteModal(true);
+                      }}
+                      className="text-gray-600 hover:text-red-500 dark:text-gray-400"
+                    >
+                      <MdDelete className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                  <p>{address.contact_name}</p>
+                  <p>{address.phone}</p>
+                  <p>{address.street_address}</p>
+                  {address.street_address2 && <p>{address.street_address2}</p>}
+                  <p>
+                    {address.city}, {address.state} {address.postal_code}
+                  </p>
+                </div>
+                {!address.is_default && (
+                  <button
+                    onClick={() => handleSetDefault(address.id)}
+                    className="mt-3 flex items-center gap-1 text-sm text-brand-500 hover:text-brand-600"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="font-semibold text-lg">{address.label}</p>
-                          {address.is_default && (
-                            <Badge variant="secondary">Default</Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{address.contact_name}</p>
-                        <p className="text-sm text-muted-foreground">{address.street_address}</p>
-                        {address.street_address2 && (
-                          <p className="text-sm text-muted-foreground">{address.street_address2}</p>
-                        )}
-                        <p className="text-sm text-muted-foreground">
-                          {address.city}, {address.state} {address.postal_code}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{address.phone}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        {!address.is_default && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSetDefault(address.id)}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Set Default
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDialog(address)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAddress(address.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    <MdStarBorder className="h-4 w-4" />
+                    Set as Default
+                  </button>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Add/Edit Address Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          resetForm();
+        }}
+        title={editingAddress ? 'Edit Address' : 'Add New Address'}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Address Label"
+            value={formData.label}
+            onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+            placeholder="e.g., Main Warehouse, Office"
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Contact Name"
+              value={formData.contact_name}
+              onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+              required
+            />
+            <Input
+              label="Phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+            />
+          </div>
+          <Input
+            label="Street Address"
+            value={formData.street_address}
+            onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
+            required
+          />
+          <Input
+            label="Street Address 2 (Optional)"
+            value={formData.street_address2}
+            onChange={(e) => setFormData({ ...formData, street_address2: e.target.value })}
+          />
+          <div className="grid grid-cols-3 gap-4">
+            <Input
+              label="City"
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              required
+            />
+            <Select
+              label="State"
+              options={stateOptions}
+              value={formData.state}
+              onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+              required
+            />
+            <Input
+              label="Postal Code"
+              value={formData.postal_code}
+              onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+              required
+            />
+          </div>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={formData.is_default}
+              onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Set as default address</span>
+          </label>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsModalOpen(false);
+                resetForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSave} loading={saving}>
+              {editingAddress ? 'Update' : 'Add'} Address
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModal}
+        onClose={() => setDeleteModal(false)}
+        title="Delete Address"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700 dark:text-gray-300">
+            Are you sure you want to delete this address? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" onClick={() => setDeleteModal(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete} loading={deleting}>
+              Delete Address
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -15,12 +15,23 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
   const supabase = createClient()
 
-  // Use the pricing hook to get dynamic pricing
+  // Check authentication status
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user)
+      setAuthChecked(true)
+    })
+  }, [supabase.auth])
+
+  // Use the pricing hook to get dynamic pricing (only for authenticated users)
   const { pricing, loading: pricingLoading, error: pricingError } = usePricing({
     productId: product.id,
     quantity,
+    enabled: isAuthenticated,
   })
 
   const handleAddToCart = async () => {
@@ -128,8 +139,8 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
             </div>
           )}
           
-          {/* Discount Badge */}
-          {hasDiscount && (
+          {/* Discount Badge - only show for authenticated users */}
+          {isAuthenticated && hasDiscount && (
             <div className="absolute right-2 top-2 rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white shadow-lg">
               Save {savingsPercentage.toFixed(0)}%
             </div>
@@ -154,7 +165,24 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
         
         {/* Pricing Section */}
         <div className="mb-3">
-          {pricingLoading ? (
+          {!authChecked ? (
+            // Show loading while checking authentication
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-24 animate-pulse rounded bg-gray-200"></div>
+              <span className="text-sm text-gray-500">Loading...</span>
+            </div>
+          ) : !isAuthenticated ? (
+            // Show sign-in prompt for anonymous users
+            <div className="rounded border-2 border-dashed border-blue-300 bg-blue-50 p-3 text-center">
+              <p className="mb-2 text-sm font-semibold text-blue-900">Sign in to see pricing</p>
+              <Link 
+                href="/auth/login" 
+                className="inline-block rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"
+              >
+                Sign In
+              </Link>
+            </div>
+          ) : pricingLoading ? (
             <div className="flex items-center gap-2">
               <div className="h-8 w-24 animate-pulse rounded bg-gray-200"></div>
               <span className="text-sm text-gray-500">Loading price...</span>
@@ -214,26 +242,36 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
           </div>
         )}
 
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            onClick={(e) => e.stopPropagation()}
-            className="w-20 rounded border border-gray-300 px-3 py-2 text-center"
-          />
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              handleAddToCart()
-            }}
-            disabled={loading || pricingLoading}
-            className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+        {/* Show add to cart only for authenticated users */}
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              onClick={(e) => e.stopPropagation()}
+              className="w-20 rounded border border-gray-300 px-3 py-2 text-center"
+            />
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                handleAddToCart()
+              }}
+              disabled={loading || pricingLoading}
+              className="flex-1 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Adding...' : 'Add to Cart'}
+            </button>
+          </div>
+        ) : (
+          <Link 
+            href="/auth/login"
+            className="block w-full rounded bg-gray-600 px-4 py-2 text-center text-white hover:bg-gray-700"
           >
-            {loading ? 'Adding...' : 'Add to Cart'}
-          </button>
-        </div>
+            Sign in to order
+          </Link>
+        )}
       </div>
     </div>
   )

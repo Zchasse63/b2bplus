@@ -1,304 +1,259 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, User, Mail, Phone, Building2, Save } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+import Card from '@/components/horizon/card';
+import Button from '@/components/horizon/button/Button';
+import Input from '@/components/horizon/input/Input';
+import Modal from '@/components/horizon/modal/Modal';
+import { MdPerson, MdEmail, MdPhone, MdBusiness, MdSave, MdCheckCircle } from 'react-icons/md';
 
 interface Profile {
-  id: string
-  email: string
-  full_name: string | null
-  phone: string | null
-  avatar_url: string | null
-  current_organization_id: string | null
+  id: string;
+  email: string;
+  full_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  current_organization_id: string | null;
 }
 
 interface Organization {
-  id: string
-  name: string
-  type: string
-  phone: string | null
-  website: string | null
+  id: string;
+  name: string;
+  type: string;
+  phone: string | null;
+  website: string | null;
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [organization, setOrganization] = useState<Organization | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
-  const supabase = createClient()
-  const router = useRouter()
-  const { toast } = useToast()
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
-    loadProfile()
-  }, [])
+    loadProfile();
+  }, []);
 
   const loadProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
-        router.push('/auth/login')
-        return
+        router.push('/auth/login');
+        return;
       }
 
-      // Load profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single()
+        .single();
 
-      if (profileError) throw profileError
-      setProfile(profileData)
-      setFullName(profileData.full_name || '')
-      setPhone(profileData.phone || '')
+      if (profileError) throw profileError;
+      setProfile(profileData);
+      setFullName(profileData.full_name || '');
+      setPhone(profileData.phone || '');
 
-      // Load organization
       if (profileData.current_organization_id) {
         const { data: orgData, error: orgError } = await supabase
           .from('organizations')
           .select('*')
           .eq('id', profileData.current_organization_id)
-          .single()
+          .single();
 
-        if (orgError) throw orgError
-        setOrganization(orgData)
+        if (orgError) throw orgError;
+        setOrganization(orgData);
       }
     } catch (error) {
-      console.error('Error loading profile:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load profile',
-        variant: 'destructive',
-      })
+      console.error('Error loading profile:', error);
+      alert('Failed to load profile');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSave = async () => {
-    if (!profile) return
+    if (!profile) return;
 
-    setSaving(true)
+    setSaving(true);
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName || null,
-          phone: phone || null,
-          updated_at: new Date().toISOString(),
+          full_name: fullName,
+          phone: phone,
         })
-        .eq('id', profile.id)
+        .eq('id', profile.id);
 
-      if (error) throw error
+      if (error) throw error;
 
-      toast({
-        title: 'Success',
-        description: 'Profile updated successfully',
-      })
-
-      // Reload profile
-      await loadProfile()
+      setProfile({ ...profile, full_name: fullName, phone: phone });
+      setSuccessModal(true);
     } catch (error) {
-      console.error('Error saving profile:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to save profile',
-        variant: 'destructive',
-      })
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Loading profile...</div>
       </div>
-    )
+    );
   }
 
   if (!profile) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-secondary-500 mb-2">Profile Not Found</h1>
-          <p className="text-muted-foreground">Unable to load your profile.</p>
-        </div>
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-gray-600 dark:text-gray-400">Profile not found</div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-secondary-500 mb-2">My Profile</h1>
-          <p className="text-muted-foreground">Manage your personal information</p>
+    <div className="mt-3 animate-fadeIn">
+      {/* Header */}
+      <Card extra="mb-5 p-6">
+        <div className="flex items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600">
+            <MdPerson className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">My Profile</h1>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+              Manage your personal information
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Personal Information */}
+        <div className="lg:col-span-2">
+          <Card extra="p-6">
+            <h2 className="mb-5 text-xl font-bold text-navy-700 dark:text-white">
+              Personal Information
+            </h2>
+            <div className="space-y-4">
+              <Input
+                label="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                icon={<MdPerson />}
+              />
+              <Input
+                label="Email Address"
+                value={profile.email}
+                disabled
+                icon={<MdEmail />}
+                helperText="Email cannot be changed"
+              />
+              <Input
+                label="Phone Number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(555) 123-4567"
+                icon={<MdPhone />}
+              />
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => router.push('/')}>
+                Cancel
+              </Button>
+              <Button variant="primary" icon={<MdSave />} onClick={handleSave} loading={saving}>
+                Save Changes
+              </Button>
+            </div>
+          </Card>
         </div>
 
-        <div className="space-y-6">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Personal Information
-              </CardTitle>
-              <CardDescription>
-                Update your personal details and contact information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Organization Info */}
+        <div className="lg:col-span-1">
+          {organization ? (
+            <Card extra="p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-900/30">
+                  <MdBusiness className="h-6 w-6 text-brand-500" />
+                </div>
                 <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile.email}
-                      disabled
-                      className="pl-10"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Email cannot be changed
+                  <h2 className="text-lg font-bold text-navy-700 dark:text-white">Organization</h2>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Company Name</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">{organization.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Type</p>
+                  <p className="font-semibold text-navy-700 dark:text-white">
+                    {organization.type}
                   </p>
                 </div>
-
-                <div>
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input
-                    id="full-name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Organization Information */}
-          {organization && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Organization
-                </CardTitle>
-                <CardDescription>
-                  Your current organization details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+                {organization.phone && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Organization Name</p>
-                    <p className="text-lg font-semibold">{organization.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                    <p className="font-semibold text-navy-700 dark:text-white">
+                      {organization.phone}
+                    </p>
                   </div>
+                )}
+                {organization.website && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Type</p>
-                    <p className="capitalize">{organization.type}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Website</p>
+                    <a
+                      href={organization.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-brand-500 hover:text-brand-600"
+                    >
+                      {organization.website}
+                    </a>
                   </div>
-                  {organization.phone && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                      <p>{organization.phone}</p>
-                    </div>
-                  )}
-                  {organization.website && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Website</p>
-                      <a
-                        href={organization.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {organization.website}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
+                )}
+              </div>
+            </Card>
+          ) : (
+            <Card extra="p-6">
+              <div className="text-center">
+                <MdBusiness className="mx-auto mb-3 h-12 w-12 text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-400">No organization linked</p>
+              </div>
             </Card>
           )}
-
-          {/* Account Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Actions</CardTitle>
-              <CardDescription>
-                Manage your account settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => router.push('/settings')}
-              >
-                Organization Settings
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                  router.push('/auth/login')
-                }}
-              >
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={successModal}
+        onClose={() => setSuccessModal(false)}
+        title="Profile Updated!"
+        size="sm"
+      >
+        <div className="space-y-4 text-center">
+          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <p className="text-gray-700 dark:text-gray-300">
+            Your profile has been updated successfully!
+          </p>
+          <Button variant="primary" className="w-full" onClick={() => setSuccessModal(false)}>
+            Continue
+          </Button>
+        </div>
+      </Modal>
     </div>
-  )
+  );
 }
