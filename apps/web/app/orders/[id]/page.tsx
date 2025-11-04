@@ -3,18 +3,15 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import DataTable from '@/components/horizon/table/DataTable';
-import Modal from '@/components/horizon/modal/Modal';
+import { Card, Button, DataTable, Modal, PageHeader } from '@/components/b2b';
 import {
-  MdArrowBack,
-  MdShoppingCart,
-  MdLocalShipping,
-  MdCheckCircle,
-  MdReceipt,
-  MdContentCopy,
-} from 'react-icons/md';
+  FiArrowLeft,
+  FiShoppingCart,
+  FiTruck,
+  FiCheckCircle,
+  FiFileText,
+  FiCopy,
+} from 'react-icons/fi';
 import { format } from 'date-fns';
 
 interface OrderItem {
@@ -27,7 +24,7 @@ interface OrderItem {
 }
 
 interface ShippingAddress {
-  label: string;
+  header: string;
   contact_name: string;
   phone: string;
   street_address: string;
@@ -57,13 +54,13 @@ interface Order {
   shipping_addresses: ShippingAddress;
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  draft: { label: 'Draft', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: MdShoppingCart },
-  submitted: { label: 'Submitted', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: MdReceipt },
-  processing: { label: 'Processing', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: MdShoppingCart },
-  shipped: { label: 'Shipped', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: MdLocalShipping },
-  delivered: { label: 'Delivered', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: MdCheckCircle },
-  cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: MdArrowBack },
+const statusConfig: Record<string, { header: string; color: string; icon: any }> = {
+  draft: { header: 'Draft', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: FiShoppingCart },
+  submitted: { header: 'Submitted', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: FiFileText },
+  processing: { header: 'Processing', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: FiShoppingCart },
+  shipped: { header: 'Shipped', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: FiTruck },
+  delivered: { header: 'Delivered', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: FiCheckCircle },
+  cancelled: { header: 'Cancelled', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: FiArrowLeft },
 };
 
 export default function OrderDetailsPage({ params }: { params: { id: string } }) {
@@ -233,21 +230,21 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   const StatusIcon = statusInfo.icon;
 
   const columns = [
-    { key: 'sku', label: 'SKU' },
-    { key: 'name', label: 'Product' },
+    { key: 'sku', header: 'SKU' },
+    { key: 'name', header: 'Product' },
     {
       key: 'quantity',
-      label: 'Quantity',
+      header: 'Quantity',
       render: (item: OrderItem) => <span className="font-semibold">{item.quantity}</span>,
     },
     {
       key: 'unit_price',
-      label: 'Unit Price',
+      header: 'Unit Price',
       render: (item: OrderItem) => `$${item.unit_price.toFixed(2)}`,
     },
     {
       key: 'line_total',
-      label: 'Total',
+      header: 'Total',
       render: (item: OrderItem) => (
         <span className="font-bold text-brand-500">${item.line_total.toFixed(2)}</span>
       ),
@@ -257,13 +254,13 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
-              icon={<MdArrowBack />}
+              icon={<FiArrowLeft />}
               onClick={() => router.push('/orders')}
             />
             <div>
@@ -273,7 +270,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                 </h1>
                 <div className={`flex items-center gap-2 rounded-full px-4 py-1 text-sm font-semibold ${statusInfo.color}`}>
                   <StatusIcon className="h-4 w-4" />
-                  {statusInfo.label}
+                  {statusInfo.header}
                 </div>
               </div>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -285,7 +282,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             {hasInvoice && invoiceId && (
               <Button
                 variant="outline"
-                icon={<MdReceipt />}
+                icon={<FiFileText />}
                 onClick={() => router.push(`/invoices/${invoiceId}`)}
               >
                 View Invoice
@@ -294,14 +291,14 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
             {!hasInvoice && order.status !== 'draft' && (
               <Button
                 variant="outline"
-                icon={<MdReceipt />}
+                icon={<FiFileText />}
                 onClick={handleGenerateInvoice}
                 loading={generatingInvoice}
               >
                 Generate Invoice
               </Button>
             )}
-            <Button variant="primary" icon={<MdShoppingCart />} onClick={handleReorder} loading={reordering}>
+            <Button variant="primary" icon={<FiShoppingCart />} onClick={handleReorder} loading={reordering}>
               Reorder
             </Button>
           </div>
@@ -311,13 +308,11 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Order Items */}
         <div className="lg:col-span-2">
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Order Items</h2>
             <DataTable
               data={order.order_items}
               columns={columns}
-              searchable={false}
-              pagination={false}
             />
           </Card>
         </div>
@@ -325,7 +320,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
         {/* Order Summary & Details */}
         <div className="space-y-5">
           {/* Order Summary */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Order Summary</h2>
             <div className="space-y-3">
               <div className="flex justify-between text-gray-700 dark:text-gray-300">
@@ -351,12 +346,12 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
 
           {/* Shipping Address */}
           {order.shipping_addresses && (
-            <Card extra="p-6">
+            <Card className="p-6">
               <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
                 Shipping Address
               </h2>
               <div className="space-y-2 text-gray-700 dark:text-gray-300">
-                <p className="font-semibold">{order.shipping_addresses.label}</p>
+                <p className="font-semibold">{order.shipping_addresses.header}</p>
                 <p>{order.shipping_addresses.contact_name}</p>
                 <p>{order.shipping_addresses.phone}</p>
                 <p>{order.shipping_addresses.street_address}</p>
@@ -373,7 +368,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
 
           {/* Tracking Info */}
           {order.shipping_tracking_number && (
-            <Card extra="p-6">
+            <Card className="p-6">
               <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
                 Tracking Information
               </h2>
@@ -394,7 +389,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
                       onClick={() => copyToClipboard(order.shipping_tracking_number!)}
                       className="text-brand-500 hover:text-brand-600"
                     >
-                      <MdContentCopy />
+                      <FiCopy />
                     </button>
                   </div>
                 </div>
@@ -404,7 +399,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
 
           {/* PO Number */}
           {order.po_number && (
-            <Card extra="p-6">
+            <Card className="p-6">
               <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">PO Number</h2>
               <p className="font-mono text-navy-700 dark:text-white">{order.po_number}</p>
             </Card>
@@ -420,7 +415,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
         size="sm"
       >
         <div className="space-y-4 text-center">
-          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
           <p className="text-gray-700 dark:text-gray-300">
             All items from this order have been added to your cart.
           </p>

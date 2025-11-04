@@ -4,9 +4,9 @@ import { generateJSON } from '@/lib/gemini';
 
 interface ColumnMapping {
   sourceColumn: string;
-  targetField: string;
+  targetField: string | null;
   confidence: number;
-  sampleValues: string[];
+  sampleValues: any[];
 }
 
 interface ValidationError {

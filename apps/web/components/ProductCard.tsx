@@ -5,10 +5,11 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import type { Product } from '@b2b-plus/supabase'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import Button from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { ShoppingCart, Package } from 'react-icons/md'
+import { MdShoppingCart, MdInventory } from 'react-icons/md'
 
 interface ProductCardProps {
   product: Product
@@ -113,7 +114,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
-            <Package className="h-12 w-12" />
+            <MdInventory className="h-12 w-12" />
           </div>
         )}
       </div>
@@ -129,19 +130,19 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           )}
         </div>
-        
+
         <h3 className="font-semibold text-lg leading-tight line-clamp-2">
           {product.name}
         </h3>
-        
+
         {product.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
             {product.description}
           </p>
         )}
-      </div>
+      </CardHeader>
 
-      <div className="space-y-3">
+      <CardContent className="space-y-3">
         <div className="flex items-baseline justify-between">
           <div>
             <span className="text-2xl font-bold text-primary">
@@ -157,7 +158,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div>SKU: {product.sku}</div>
           {product.brand && <div>Brand: {product.brand}</div>}
         </div>
-      </div>
+      </CardContent>
 
       <CardFooter className="flex gap-2">
         <Input
@@ -172,7 +173,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           disabled={loading}
           className="flex-1 gap-2"
         >
-          <ShoppingCart className="h-4 w-4" />
+          <MdShoppingCart className="h-4 w-4" />
           {loading ? 'Adding...' : 'Add to Cart'}
         </Button>
       </CardFooter>

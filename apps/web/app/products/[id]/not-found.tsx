@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PackageX } from 'react-icons/md'
+import { PackageX } from 'lucide-react'
 
 export default function ProductNotFound() {
   return (
@@ -11,7 +11,7 @@ export default function ProductNotFound() {
           <PackageX className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
           <h1 className="text-3xl font-bold text-secondary-500 mb-4">Product Not Found</h1>
           <p className="text-muted-foreground mb-8">
-            Sorry, we couldn't find the product you're looking for. It may have been removed or is no longer available.
+            Sorry, we couldn&apos;t find the product you&apos;re looking for. It may have been removed or is no longer available.
           </p>
           <Button asChild size="lg">
             <Link href="/products">

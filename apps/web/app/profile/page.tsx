@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import Modal from '@/components/horizon/modal/Modal';
-import { MdPerson, MdEmail, MdPhone, MdBusiness, MdSave, MdCheckCircle } from 'react-icons/md';
+import { PageHeader } from '@/components/b2b';
+import { Card } from '@/components/b2b';
+import { Button } from '@/components/b2b';
+import { Input } from '@/components/b2b';
+import { Modal } from '@/components/b2b';
+import { FiUser, FiMail, FiPhone, FiBriefcase, FiSave, FiCheckCircle } from 'react-icons/fi';
 
 interface Profile {
   id: string;
@@ -109,7 +110,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-400">Loading profile...</div>
+        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading profile...</div>
       </div>
     );
   }
@@ -117,7 +118,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-400">Profile not found</div>
+        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Profile not found</div>
       </div>
     );
   }
@@ -125,14 +126,14 @@ export default function ProfilePage() {
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card padding="lg" className="mb-5">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600">
-            <MdPerson className="h-8 w-8 text-white" />
+            <FiUser className="h-8 w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">My Profile</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">My Profile</h1>
+            <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
               Manage your personal information
             </p>
           </div>
@@ -142,8 +143,8 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Personal Information */}
         <div className="lg:col-span-2">
-          <Card extra="p-6">
-            <h2 className="mb-5 text-xl font-bold text-navy-700 dark:text-white">
+          <Card padding="lg">
+            <h2 className="mb-5 text-xl font-bold text-b2b-dark dark:text-white">
               Personal Information
             </h2>
             <div className="space-y-4">
@@ -152,28 +153,30 @@ export default function ProfilePage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
-                icon={<MdPerson />}
+                icon={<FiUser />}
               />
-              <Input
-                label="Email Address"
-                value={profile.email}
-                disabled
-                icon={<MdEmail />}
-                helperText="Email cannot be changed"
-              />
+              <div>
+                <Input
+                  label="Email Address"
+                  value={profile.email}
+                  disabled
+                  icon={<FiMail />}
+                />
+                <p className="mt-1 text-sm text-b2b-gray-500">Email cannot be changed</p>
+              </div>
               <Input
                 label="Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(555) 123-4567"
-                icon={<MdPhone />}
+                icon={<FiPhone />}
               />
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <Button variant="outline" onClick={() => router.push('/')}>
                 Cancel
               </Button>
-              <Button variant="primary" icon={<MdSave />} onClick={handleSave} loading={saving}>
+              <Button variant="primary" icon={<FiSave />} onClick={handleSave} loading={saving}>
                 Save Changes
               </Button>
             </div>
@@ -183,42 +186,42 @@ export default function ProfilePage() {
         {/* Organization Info */}
         <div className="lg:col-span-1">
           {organization ? (
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-100 dark:bg-brand-900/30">
-                  <MdBusiness className="h-6 w-6 text-brand-500" />
+                  <FiBriefcase className="h-6 w-6 text-b2b-yellow" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-navy-700 dark:text-white">Organization</h2>
+                  <h2 className="text-lg font-bold text-b2b-dark dark:text-white">Organization</h2>
                 </div>
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Company Name</p>
-                  <p className="font-semibold text-navy-700 dark:text-white">{organization.name}</p>
+                  <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">Company Name</p>
+                  <p className="font-semibold text-b2b-dark dark:text-white">{organization.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Type</p>
-                  <p className="font-semibold text-navy-700 dark:text-white">
+                  <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">Type</p>
+                  <p className="font-semibold text-b2b-dark dark:text-white">
                     {organization.type}
                   </p>
                 </div>
                 {organization.phone && (
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-                    <p className="font-semibold text-navy-700 dark:text-white">
+                    <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">Phone</p>
+                    <p className="font-semibold text-b2b-dark dark:text-white">
                       {organization.phone}
                     </p>
                   </div>
                 )}
                 {organization.website && (
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Website</p>
+                    <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">Website</p>
                     <a
                       href={organization.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-semibold text-brand-500 hover:text-brand-600"
+                      className="font-semibold text-b2b-yellow hover:text-brand-600"
                     >
                       {organization.website}
                     </a>
@@ -227,10 +230,10 @@ export default function ProfilePage() {
               </div>
             </Card>
           ) : (
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="text-center">
-                <MdBusiness className="mx-auto mb-3 h-12 w-12 text-gray-400" />
-                <p className="text-gray-600 dark:text-gray-400">No organization linked</p>
+                <FiBriefcase className="mx-auto mb-3 h-12 w-12 text-b2b-gray-500" />
+                <p className="text-b2b-gray-500 dark:text-b2b-gray-500">No organization linked</p>
               </div>
             </Card>
           )}
@@ -245,7 +248,7 @@ export default function ProfilePage() {
         size="sm"
       >
         <div className="space-y-4 text-center">
-          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
           <p className="text-gray-700 dark:text-gray-300">
             Your profile has been updated successfully!
           </p>

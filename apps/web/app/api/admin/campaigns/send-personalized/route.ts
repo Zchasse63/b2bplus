@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/gemini';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
@@ -161,9 +159,8 @@ Return ONLY the personalized email in this exact JSON format:
           `;
         }
 
-        // Send email via Resend
-        const emailResult = await resend.emails.send({
-          from: 'B2B+ <noreply@b2bplus.com>',
+        // Send email via SendGrid
+        await sendEmail({
           to: lead.email,
           subject: personalizedSubject,
           html: personalizedBody,
@@ -197,7 +194,6 @@ Return ONLY the personalized email in this exact JSON format:
             description: `Email campaign sent: ${campaign.name}`,
             metadata: {
               campaign_id: campaignId,
-              email_id: emailResult.id,
             },
           });
 

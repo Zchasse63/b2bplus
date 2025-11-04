@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import Card from '@/components/horizon/card';
-import { MdBarChart, MdAttachMoney, MdShoppingCart, MdPeople } from 'react-icons/md';
+import { Card, StatCard, PageHeader } from '@/components/b2b';
+import { FiTrendingUp, FiDollarSign, FiShoppingCart, FiUsers } from 'react-icons/fi';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -58,104 +58,64 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="mt-3 grid h-full grid-cols-1 gap-5 xl:grid-cols-2 2xl:grid-cols-4">
-      {/* Total Revenue Card */}
-      <Card extra="!flex-row flex-grow items-center rounded-[20px]">
-        <div className="ml-[18px] flex h-[90px] w-auto flex-row items-center">
-          <div className="rounded-full bg-lightPrimary p-3 dark:bg-navy-700">
-            <span className="flex items-center text-brand-500 dark:text-white">
-              <MdAttachMoney className="h-7 w-7" />
-            </span>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader title="Dashboard" subtitle="Overview of your B2B platform" />
 
-        <div className="h-50 ml-4 flex w-auto flex-col justify-center">
-          <p className="font-dm text-sm font-medium text-gray-600">Total Revenue</p>
-          <h4 className="text-xl font-bold text-navy-700 dark:text-white">
-            {loading ? '...' : `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          </h4>
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+        {/* Total Revenue Card */}
+        <StatCard
+          title="Total Revenue"
+          value={loading ? '...' : `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={<FiDollarSign className="h-6 w-6" />}
+        />
 
-      {/* Total Orders Card */}
-      <Card extra="!flex-row flex-grow items-center rounded-[20px]">
-        <div className="ml-[18px] flex h-[90px] w-auto flex-row items-center">
-          <div className="rounded-full bg-lightPrimary p-3 dark:bg-navy-700">
-            <span className="flex items-center text-brand-500 dark:text-white">
-              <MdShoppingCart className="h-6 w-6" />
-            </span>
-          </div>
-        </div>
+        {/* Total Orders Card */}
+        <StatCard
+          title="Total Orders"
+          value={loading ? '...' : stats.totalOrders.toLocaleString()}
+          icon={<FiShoppingCart className="h-6 w-6" />}
+        />
 
-        <div className="h-50 ml-4 flex w-auto flex-col justify-center">
-          <p className="font-dm text-sm font-medium text-gray-600">Total Orders</p>
-          <h4 className="text-xl font-bold text-navy-700 dark:text-white">
-            {loading ? '...' : stats.totalOrders.toLocaleString()}
-          </h4>
-        </div>
-      </Card>
+        {/* Total Customers Card */}
+        <StatCard
+          title="Total Customers"
+          value={loading ? '...' : stats.totalCustomers.toLocaleString()}
+          icon={<FiUsers className="h-6 w-6" />}
+        />
 
-      {/* Total Customers Card */}
-      <Card extra="!flex-row flex-grow items-center rounded-[20px]">
-        <div className="ml-[18px] flex h-[90px] w-auto flex-row items-center">
-          <div className="rounded-full bg-lightPrimary p-3 dark:bg-navy-700">
-            <span className="flex items-center text-brand-500 dark:text-white">
-              <MdPeople className="h-6 w-6" />
-            </span>
-          </div>
-        </div>
-
-        <div className="h-50 ml-4 flex w-auto flex-col justify-center">
-          <p className="font-dm text-sm font-medium text-gray-600">Total Customers</p>
-          <h4 className="text-xl font-bold text-navy-700 dark:text-white">
-            {loading ? '...' : stats.totalCustomers.toLocaleString()}
-          </h4>
-        </div>
-      </Card>
-
-      {/* Average Order Value Card */}
-      <Card extra="!flex-row flex-grow items-center rounded-[20px]">
-        <div className="ml-[18px] flex h-[90px] w-auto flex-row items-center">
-          <div className="rounded-full bg-lightPrimary p-3 dark:bg-navy-700">
-            <span className="flex items-center text-brand-500 dark:text-white">
-              <MdBarChart className="h-6 w-6" />
-            </span>
-          </div>
-        </div>
-
-        <div className="h-50 ml-4 flex w-auto flex-col justify-center">
-          <p className="font-dm text-sm font-medium text-gray-600">Avg Order Value</p>
-          <h4 className="text-xl font-bold text-navy-700 dark:text-white">
-            {loading ? '...' : `$${stats.averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          </h4>
-        </div>
-      </Card>
+        {/* Average Order Value Card */}
+        <StatCard
+          title="Avg Order Value"
+          value={loading ? '...' : `$${stats.averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={<FiTrendingUp className="h-6 w-6" />}
+        />
+      </div>
 
       {/* Welcome Card */}
-      <Card extra="col-span-1 xl:col-span-2 2xl:col-span-4 rounded-[20px] p-6">
-        <div className="mb-4">
-          <h3 className="text-2xl font-bold text-navy-700 dark:text-white">
+      <Card padding="lg" className="mt-6">
+        <div className="mb-6">
+          <h3 className="text-2xl font-bold text-b2b-dark">
             Welcome to B2B+ Admin Dashboard
           </h3>
-          <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-base text-b2b-gray-500">
             Manage your products, orders, customers, and analytics from this central hub.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 p-4 text-white">
-            <h4 className="text-lg font-bold">Quick Actions</h4>
-            <p className="mt-2 text-sm opacity-90">Add products, create orders, manage inventory</p>
+          <div className="rounded-lg bg-b2b-yellow bg-opacity-10 border border-b2b-yellow p-4">
+            <h4 className="text-lg font-bold text-b2b-dark">Quick Actions</h4>
+            <p className="mt-2 text-sm text-b2b-gray-500">Add products, create orders, manage inventory</p>
           </div>
-          
-          <div className="rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 p-4 text-white">
-            <h4 className="text-lg font-bold">Analytics</h4>
-            <p className="mt-2 text-sm opacity-90">View sales trends, customer insights, revenue reports</p>
+
+          <div className="rounded-lg bg-b2b-green bg-opacity-10 border border-b2b-green p-4">
+            <h4 className="text-lg font-bold text-b2b-dark">Analytics</h4>
+            <p className="mt-2 text-sm text-b2b-gray-500">View sales trends, customer insights, revenue reports</p>
           </div>
-          
-          <div className="rounded-lg bg-gradient-to-br from-green-400 to-green-600 p-4 text-white">
-            <h4 className="text-lg font-bold">Settings</h4>
-            <p className="mt-2 text-sm opacity-90">Configure pricing, shipping, taxes, and more</p>
+
+          <div className="rounded-lg bg-b2b-gray-100 border border-b2b-gray-300 p-4">
+            <h4 className="text-lg font-bold text-b2b-dark">Settings</h4>
+            <p className="mt-2 text-sm text-b2b-gray-500">Configure pricing, shipping, taxes, and more</p>
           </div>
         </div>
       </Card>

@@ -1,19 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import DataTable from '@/components/horizon/table/DataTable';
-import Modal from '@/components/horizon/modal/Modal';
+import { Card, Button, DataTable, Modal, PageHeader } from '@/components/b2b';
 import {
-  MdUpload,
-  MdFileUpload,
-  MdCheckCircle,
-  MdError,
-  MdWarning,
-  MdDownload,
-  MdShoppingCart,
-} from 'react-icons/md';
+  FiUpload,
+  FiUploadCloud,
+  FiCheckCircle,
+  FiXCircle,
+  FiAlertTriangle,
+  FiDownload,
+  FiShoppingCart,
+} from 'react-icons/fi';
 import { useRouter } from 'next/navigation';
 
 interface OrderItem {
@@ -121,37 +118,37 @@ export default function BulkOrderUploadPage() {
   };
 
   const statusIcons = {
-    valid: <MdCheckCircle className="h-5 w-5 text-green-500" />,
-    invalid: <MdError className="h-5 w-5 text-red-500" />,
-    warning: <MdWarning className="h-5 w-5 text-yellow-500" />,
+    valid: <FiCheckCircle className="h-5 w-5 text-green-500" />,
+    invalid: <FiXCircle className="h-5 w-5 text-red-500" />,
+    warning: <FiAlertTriangle className="h-5 w-5 text-yellow-500" />,
   };
 
   const columns = [
     {
       key: 'status',
-      label: 'Status',
+      header: 'Status',
       render: (item: OrderItem) => statusIcons[item.status],
     },
-    { key: 'sku', label: 'SKU' },
+    { key: 'sku', header: 'SKU' },
     {
       key: 'product_name',
-      label: 'Product',
+      header: 'Product',
       render: (item: OrderItem) => item.product_name || '-',
     },
     {
       key: 'quantity',
-      label: 'Quantity',
+      header: 'Quantity',
       render: (item: OrderItem) => <span className="font-semibold">{item.quantity}</span>,
     },
     {
       key: 'unit_price',
-      label: 'Unit Price',
+      header: 'Unit Price',
       render: (item: OrderItem) =>
         item.unit_price ? `$${item.unit_price.toFixed(2)}` : '-',
     },
     {
       key: 'total_price',
-      label: 'Total',
+      header: 'Total',
       render: (item: OrderItem) =>
         item.total_price ? (
           <span className="font-bold text-brand-500">${item.total_price.toFixed(2)}</span>
@@ -161,7 +158,7 @@ export default function BulkOrderUploadPage() {
     },
     {
       key: 'error',
-      label: 'Notes',
+      header: 'Notes',
       render: (item: OrderItem) =>
         item.error ? <span className="text-sm text-red-600">{item.error}</span> : '-',
     },
@@ -170,11 +167,11 @@ export default function BulkOrderUploadPage() {
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600">
-              <MdFileUpload className="h-8 w-8 text-white" />
+              <FiUploadCloud className="h-8 w-8 text-white" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
@@ -185,20 +182,20 @@ export default function BulkOrderUploadPage() {
               </p>
             </div>
           </div>
-          <Button variant="outline" icon={<MdDownload />} onClick={downloadTemplate}>
+          <Button variant="outline" icon={<FiDownload />} onClick={downloadTemplate}>
             Download Template
           </Button>
         </div>
       </Card>
 
       {/* Upload Section */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Upload CSV File</h2>
         <div className="space-y-4">
           <div className="flex items-center gap-4">
             <label className="flex-1">
               <div className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-brand-500 dark:border-gray-600">
-                <MdUpload className="h-8 w-8 text-gray-400" />
+                <FiUpload className="h-8 w-8 text-gray-400" />
                 <div>
                   <p className="font-semibold text-navy-700 dark:text-white">
                     {file ? file.name : 'Choose a CSV file'}
@@ -217,7 +214,7 @@ export default function BulkOrderUploadPage() {
             </label>
             <Button
               variant="primary"
-              icon={<MdUpload />}
+              icon={<FiUpload />}
               onClick={handleUpload}
               loading={uploading}
               disabled={!file}
@@ -246,7 +243,7 @@ export default function BulkOrderUploadPage() {
         <>
           {/* Summary Cards */}
           <div className="mb-5 grid grid-cols-1 gap-5 md:grid-cols-4">
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Items</p>
@@ -254,11 +251,11 @@ export default function BulkOrderUploadPage() {
                     {preview.total_items}
                   </p>
                 </div>
-                <MdFileUpload className="h-8 w-8 text-gray-400" />
+                <FiUploadCloud className="h-8 w-8 text-gray-400" />
               </div>
             </Card>
 
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Valid Items</p>
@@ -266,11 +263,11 @@ export default function BulkOrderUploadPage() {
                     {preview.valid_items}
                   </p>
                 </div>
-                <MdCheckCircle className="h-8 w-8 text-green-500" />
+                <FiCheckCircle className="h-8 w-8 text-green-500" />
               </div>
             </Card>
 
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Invalid Items</p>
@@ -278,11 +275,11 @@ export default function BulkOrderUploadPage() {
                     {preview.invalid_items}
                   </p>
                 </div>
-                <MdError className="h-8 w-8 text-red-500" />
+                <FiXCircle className="h-8 w-8 text-red-500" />
               </div>
             </Card>
 
-            <Card extra="p-6">
+            <Card padding="lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
@@ -290,18 +287,18 @@ export default function BulkOrderUploadPage() {
                     ${preview.total_amount.toFixed(2)}
                   </p>
                 </div>
-                <MdShoppingCart className="h-8 w-8 text-brand-500" />
+                <FiShoppingCart className="h-8 w-8 text-brand-500" />
               </div>
             </Card>
           </div>
 
           {/* Items Table */}
-          <Card extra="p-6">
+          <Card padding="lg">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-xl font-bold text-navy-700 dark:text-white">Order Preview</h2>
               <Button
                 variant="primary"
-                icon={<MdShoppingCart />}
+                icon={<FiShoppingCart />}
                 onClick={handleSubmitOrder}
                 loading={submitting}
                 disabled={preview.invalid_items > 0}
@@ -318,7 +315,7 @@ export default function BulkOrderUploadPage() {
               </div>
             )}
 
-            <DataTable data={preview.items} columns={columns} searchable={false} />
+            <DataTable data={preview.items} columns={columns} />
           </Card>
         </>
       )}
@@ -334,7 +331,7 @@ export default function BulkOrderUploadPage() {
         size="sm"
       >
         <div className="space-y-4 text-center">
-          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
           <p className="text-gray-700 dark:text-gray-300">
             Your bulk order has been submitted successfully!
           </p>

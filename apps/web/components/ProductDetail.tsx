@@ -4,18 +4,14 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import ProductCard from '@/components/horizon/product/ProductCard';
-import Modal from '@/components/horizon/modal/Modal';
+import { Card, Button, Input, ProductCard, Modal } from '@/components/b2b';
 import {
-  MdShoppingCart,
-  MdCheckCircle,
-  MdWarning,
-  MdChevronRight,
-  MdZoomIn,
-} from 'react-icons/md';
+  FiShoppingCart,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiChevronRight,
+  FiZoomIn,
+} from 'react-icons/fi';
 
 type Product = {
   id: string;
@@ -52,6 +48,7 @@ type Props = {
     base_price: number;
     image_url: string | null;
     category: string;
+    in_stock: boolean;
   }>;
 };
 
@@ -63,12 +60,42 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   const [adding, setAdding] = useState(false);
   const [imageModal, setImageModal] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const supabase = createClient();
   const router = useRouter();
 
   const allImages = [product.image_url, ...(product.additional_images || [])].filter(
     Boolean
   ) as string[];
+
+  // Fetch AI-powered recommendations
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const response = await fetch(`/api/recommendations?productId=${product.id}&type=also_bought&limit=4`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.recommendations && data.recommendations.length > 0) {
+            // Fetch full product details for recommendations
+            const productIds = data.recommendations.map((r: any) => r.recommended_product_id);
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name, sku, base_price, image_url, category')
+              .in('id', productIds);
+
+            setRecommendations(products || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [product.id]);
 
   useEffect(() => {
     if (!organizationId) {
@@ -158,18 +185,18 @@ export default function ProductDetail({ product, organizationId, relatedProducts
         <span className="cursor-pointer hover:text-brand-500" onClick={() => router.push('/products')}>
           Products
         </span>
-        <MdChevronRight />
+        <FiChevronRight />
         <span className="cursor-pointer hover:text-brand-500">
           {product.category}
         </span>
-        <MdChevronRight />
+        <FiChevronRight />
         <span className="text-navy-700 dark:text-white">{product.name}</span>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Product Images */}
         <div className="lg:col-span-1">
-          <Card extra="p-6">
+          <Card className="p-6">
             {/* Main Image */}
             <div
               className="relative mb-4 aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700"
@@ -179,11 +206,11 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 <Image src={selectedImage} alt={product.name} fill className="object-contain" />
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <MdShoppingCart className="h-24 w-24 text-gray-300" />
+                  <FiShoppingCart className="h-24 w-24 text-gray-300" />
                 </div>
               )}
               <div className="absolute right-2 top-2 rounded-full bg-white/80 p-2 dark:bg-navy-800/80">
-                <MdZoomIn className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                <FiZoomIn className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </div>
             </div>
 
@@ -211,7 +238,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
         {/* Product Info */}
         <div className="space-y-5 lg:col-span-2">
           {/* Main Info Card */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <div className="mb-4">
               <div className="mb-2 flex items-start justify-between">
                 <div className="flex-1">
@@ -231,11 +258,11 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 >
                   {product.in_stock ? (
                     <>
-                      <MdCheckCircle /> In Stock
+                      <FiCheckCircle /> In Stock
                     </>
                   ) : (
                     <>
-                      <MdWarning /> Out of Stock
+                      <FiAlertTriangle /> Out of Stock
                     </>
                   )}
                 </div>
@@ -284,7 +311,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                   variant="primary"
                   size="lg"
                   className="flex-1"
-                  icon={<MdShoppingCart />}
+                  icon={<FiShoppingCart />}
                   onClick={handleAddToCart}
                   loading={adding}
                   disabled={!product.in_stock}
@@ -302,7 +329,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
           </Card>
 
           {/* Product Details */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
               Product Details
             </h2>
@@ -327,8 +354,8 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 <div className="col-span-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400">Dimensions (L × W × H)</p>
                   <p className="font-semibold text-navy-700 dark:text-white">
-                    {product.dimensions_inches.length}" × {product.dimensions_inches.width}" ×{' '}
-                    {product.dimensions_inches.height}"
+                    {product.dimensions_inches.length}&quot; × {product.dimensions_inches.width}&quot; ×{' '}
+                    {product.dimensions_inches.height}&quot;
                   </p>
                 </div>
               )}
@@ -353,18 +380,53 @@ export default function ProductDetail({ product, organizationId, relatedProducts
         </div>
       </div>
 
+      {/* AI-Powered Recommendations - Customers Also Bought */}
+      {!loadingRecommendations && recommendations.length > 0 && (
+        <div className="mt-8">
+          <Card className="p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-navy-700 dark:text-white">
+                Customers Also Bought
+              </h2>
+              <span className="rounded-lg bg-brand-500/10 px-3 py-1 text-sm font-semibold text-brand-500">
+                AI Recommended
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendations.map((rec) => (
+                <ProductCard
+                  key={rec.id}
+                  id={rec.id}
+                  name={rec.name}
+                  price={rec.base_price}
+                  image={rec.image_url || undefined}
+                  category={rec.category || undefined}
+                  inStock={rec.in_stock}
+                  onAddToCart={() => {}}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="mt-8">
-          <Card extra="p-6">
-            <h2 className="mb-5 text-2xl font-bold text-navy-700 dark:text-white">
+          <Card className="p-6">
+            <h2 className="mb-5 text-2xl font-bold text-b2b-dark">
               Related Products
             </h2>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((relatedProduct) => (
                 <ProductCard
                   key={relatedProduct.id}
-                  product={relatedProduct}
+                  id={relatedProduct.id}
+                  name={relatedProduct.name}
+                  price={relatedProduct.base_price}
+                  image={relatedProduct.image_url || undefined}
+                  category={relatedProduct.category || undefined}
+                  inStock={relatedProduct.in_stock}
                   onAddToCart={() => {}}
                 />
               ))}
@@ -390,7 +452,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
         size="sm"
       >
         <div className="space-y-4 text-center">
-          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
           <p className="text-gray-700 dark:text-gray-300">
             <span className="font-semibold">{product.name}</span> has been added to your cart.
           </p>

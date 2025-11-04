@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import Button from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { MdFilterList, MdClose, MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 
 export interface FilterState {
@@ -123,7 +125,7 @@ export default function FilterPanel({
       <div className="mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="text-lg flex items-center gap-2">
+            <h2 className="text-lg flex items-center gap-2 font-bold text-navy-700 dark:text-white">
               <MdFilterList className="h-5 w-5" />
               Filters
               {activeFilterCount > 0 && (

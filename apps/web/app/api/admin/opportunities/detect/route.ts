@@ -175,7 +175,7 @@ async function detectCrossSellOpportunities(supabase: any, customerId?: string) 
     customerProducts.get(p.customer_id)!.add(p.product_id)
   })
 
-  const opportunities = []
+  const opportunities: any[] = []
 
   // For each customer, find products in their categories they haven't bought
   for (const [custId, categories] of customerCategories.entries()) {

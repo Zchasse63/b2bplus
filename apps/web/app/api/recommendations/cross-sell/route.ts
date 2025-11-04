@@ -154,7 +154,7 @@ async function getGeneralCrossSell(
     customerPurchases.map((p: any) => p.product_id)
   )
 
-  const recommendations = []
+  const recommendations: any[] = []
 
   // Find products in their categories they haven't bought
   for (const category of purchasedCategories) {
@@ -178,12 +178,12 @@ async function getGeneralCrossSell(
     }
 
     // Also check complementary categories
-    const complementary = getComplementaryCategories(category)
+    const complementary = getComplementaryCategories(category as string)
     for (const compCategory of complementary.slice(0, 1)) {
       const { data: compProducts } = await supabase
         .from('products')
         .select('*')
-        .eq('category', compCategory)
+        .eq('category', compCategory as string)
         .limit(2)
 
       if (compProducts) {

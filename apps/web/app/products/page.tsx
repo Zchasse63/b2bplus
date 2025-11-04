@@ -3,12 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import ProductCard from '@/components/horizon/product/ProductCard';
-import Input from '@/components/horizon/input/Input';
-import Button from '@/components/horizon/button/Button';
-import Select from '@/components/horizon/input/Select';
-import { MdSearch, MdFilterList, MdGridView, MdViewList } from 'react-icons/md';
+import { PageHeader, Card, ProductCard, Input, Button, Select } from '@/components/b2b';
+import { FiSearch, FiGrid, FiList } from 'react-icons/fi';
 import type { Product } from '@b2b-plus/supabase';
 
 export default function ProductsPage() {
@@ -121,50 +117,45 @@ export default function ProductsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-400">Loading products...</div>
+        <div className="text-lg text-b2b-gray-500">Loading products...</div>
       </div>
     );
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
-      {/* Header */}
-      <Card extra="mb-5 p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Product Catalog</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Browse our complete selection of food service disposables
-            </p>
-          </div>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <PageHeader
+        title="Product Catalog"
+        subtitle="Browse our complete selection of food service disposables"
+        actions={
           <div className="flex items-center gap-2">
             <Button
               variant={viewMode === 'grid' ? 'primary' : 'ghost'}
               size="sm"
-              icon={<MdGridView />}
+              icon={<FiGrid />}
               onClick={() => setViewMode('grid')}
             />
             <Button
               variant={viewMode === 'list' ? 'primary' : 'ghost'}
               size="sm"
-              icon={<MdViewList />}
+              icon={<FiList />}
               onClick={() => setViewMode('list')}
             />
           </div>
-        </div>
-      </Card>
+        }
+      />
 
       {/* Filters */}
-      <Card extra="mb-5 p-6">
+      <Card padding="lg">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="relative">
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <MdSearch className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
-          </div>
+          <Input
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            icon={<FiSearch />}
+            iconPosition="left"
+          />
           <Select
             options={categoryOptions}
             value={selectedCategory}
@@ -176,16 +167,16 @@ export default function ProductsPage() {
 
       {/* Results Count */}
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-b2b-gray-500">
           Showing {filteredProducts.length} of {products.length} products
         </p>
       </div>
 
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <Card extra="p-12 text-center">
-          <div className="text-gray-500 dark:text-gray-400">
-            <MdSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
+        <Card padding="lg" className="text-center">
+          <div className="text-b2b-gray-500">
+            <FiSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
             <h3 className="mb-2 text-lg font-semibold">No products found</h3>
             <p className="text-sm">Try adjusting your search or filters</p>
           </div>
@@ -199,7 +190,18 @@ export default function ProductsPage() {
           }
         >
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              price={product.base_price}
+              image={product.image_url || undefined}
+              category={product.category || undefined}
+              inStock={product.in_stock}
+              onAddToCart={handleAddToCart}
+              onClick={() => router.push(`/products/${product.id}`)}
+              variant={viewMode}
+            />
           ))}
         </div>
       )}

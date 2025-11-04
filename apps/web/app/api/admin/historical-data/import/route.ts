@@ -136,8 +136,8 @@ async function importOrder(supabase: any, order: HistoricalOrder) {
     .eq('old_system', order.sourceSystem)
     .in('old_sku', oldSKUs)
 
-  const skuMap = new Map(
-    skuMappings?.map((m: any) => [m.old_sku, m.current_product_id]) || []
+  const skuMap = new Map<string, string>(
+    skuMappings?.map((m: any) => [m.old_sku as string, m.current_product_id as string]) || []
   )
 
   // Insert order items

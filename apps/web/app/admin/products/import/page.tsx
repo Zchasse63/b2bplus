@@ -250,7 +250,7 @@ export default function ImportProductsPage() {
         <div>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="csv-file">CSV File</Label>
+              <label htmlFor="csv-file">CSV File</label>
               <Input
                 id="csv-file"
                 type="file"
@@ -281,10 +281,10 @@ export default function ImportProductsPage() {
             <div className="space-y-4">
               {allFields.map(field => (
                 <div key={field} className="grid grid-cols-2 gap-4 items-center">
-                  <Label>
+                  <label>
                     {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     {requiredFields.includes(field) && <span className="text-destructive"> *</span>}
-                  </Label>
+                  </label>
                   <Select
                     value={columnMapping[field] || ''}
                     onValueChange={(value) => handleMappingChange(field, value)}
@@ -341,7 +341,7 @@ export default function ImportProductsPage() {
 
       {/* Import Results */}
       {importResult && (
-        <Card extra="p-6">
+        <Card className="p-6">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-navy-700 dark:text-white">Import Results</h2>
           </div>
@@ -358,7 +358,7 @@ export default function ImportProductsPage() {
                     <span className="font-medium">{importResult.failed} products failed</span>
                   </div>
                   <div className="mt-4">
-                    <Label>Errors:</Label>
+                    <label>Errors:</label>
                     <div className="mt-2 p-4 bg-muted rounded-lg max-h-64 overflow-y-auto">
                       {importResult.errors.map((error, index) => (
                         <div key={index} className="text-sm text-muted-foreground mb-1">

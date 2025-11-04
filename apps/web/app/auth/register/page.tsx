@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import { MdPersonAdd } from 'react-icons/md';
+import { Card, Button, Input } from '@/components/b2b';
+import { FiUserPlus } from 'react-icons/fi';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -88,38 +86,40 @@ export default function Register() {
 
   const updateField = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
-    setErrors({ ...errors, [field]: undefined });
+    const newErrors = { ...errors };
+    delete newErrors[field];
+    setErrors(newErrors);
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600 px-4 py-12">
-      <div className="w-full max-w-md animate-slideUp">
+    <div className="flex min-h-screen items-center justify-center bg-b2b-gray-50 px-4 py-12">
+      <div className="w-full max-w-md animate-slide-up">
         {/* Logo/Brand */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-white">B2B+</h1>
-          <p className="mt-2 text-lg text-white/90">Create your account</p>
+          <h1 className="text-4xl font-bold text-b2b-dark">B2B+</h1>
+          <p className="mt-2 text-lg text-b2b-gray-500">Create your account</p>
         </div>
 
         {/* Register Card */}
-        <Card extra="p-8">
+        <Card padding="lg">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-navy-700 dark:text-white">
+            <h2 className="text-2xl font-bold text-b2b-dark">
               Sign Up
             </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-1 text-sm text-b2b-gray-500">
               Get started with your B2B+ account
             </p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-5">
             {errorMessage && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
                 {errorMessage}
               </div>
             )}
 
             {successMessage && (
-              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+              <div className="rounded-lg bg-green-50 p-3 text-sm text-green-600">
                 {successMessage}
               </div>
             )}
@@ -151,7 +151,6 @@ export default function Register() {
               onChange={(e) => updateField('password', e.target.value)}
               error={errors.password}
               placeholder="••••••••"
-              helperText="Minimum 6 characters"
               required
             />
 
@@ -169,15 +168,15 @@ export default function Register() {
               <input
                 type="checkbox"
                 required
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                className="mt-1 h-4 w-4 rounded border-b2b-gray-300 text-b2b-yellow focus:ring-b2b-yellow"
               />
-              <label className="text-sm text-gray-600 dark:text-gray-400">
+              <label className="text-sm text-b2b-gray-500">
                 I agree to the{' '}
-                <Link href="/terms" className="text-brand-500 hover:text-brand-600">
+                <Link href="/terms" className="text-b2b-dark hover:text-b2b-yellow transition-colors">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="/privacy" className="text-brand-500 hover:text-brand-600">
+                <Link href="/privacy" className="text-b2b-dark hover:text-b2b-yellow transition-colors">
                   Privacy Policy
                 </Link>
               </label>
@@ -186,19 +185,19 @@ export default function Register() {
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
-              loading={loading}
-              icon={<MdPersonAdd />}
+              fullWidth
+              disabled={loading}
+              icon={<FiUserPlus />}
             >
-              Create Account
+              {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-6 text-center text-sm text-b2b-gray-500">
             Already have an account?{' '}
             <Link
               href="/auth/login"
-              className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+              className="font-medium text-b2b-dark hover:text-b2b-yellow transition-colors"
             >
               Sign in
             </Link>
@@ -206,7 +205,7 @@ export default function Register() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-white/80">
+        <div className="mt-8 text-center text-sm text-b2b-gray-500">
           <p>&copy; 2025 B2B+. All rights reserved.</p>
         </div>
       </div>

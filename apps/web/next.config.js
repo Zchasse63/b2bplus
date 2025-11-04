@@ -6,6 +6,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Disable static optimization for authenticated B2B app
+  output: 'standalone',
   transpilePackages: ['@b2b-plus/shared', '@b2b-plus/ui', '@b2b-plus/supabase'],
   experimental: {
     serverActions: {

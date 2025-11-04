@@ -28,7 +28,7 @@ This is a **Turborepo monorepo** containing:
 ### Frontend
 - **Web:** Next.js 14 (App Router), React 18, Tailwind CSS 3
 - **Mobile:** Expo SDK 51+, React Native 0.74+, Expo Router
-- **Monorepo:** Turborepo with npm workspaces
+- **Monorepo:** Turborepo with pnpm workspaces
 
 ### Backend & Services
 - **Database:** Supabase (Postgres with Row Level Security)
@@ -52,7 +52,7 @@ This is a **Turborepo monorepo** containing:
 ## 📋 Prerequisites
 
 - Node.js >= 18.0.0
-- npm >= 9.0.0
+- pnpm >= 8.0.0 (install with `npm install -g pnpm`)
 - Expo CLI (for mobile development)
 - Supabase CLI (optional, for local development)
 
@@ -80,7 +80,7 @@ For testing and development, use these pre-configured demo accounts:
 
 ```bash
 cd /Users/zach/projects/b2b-plus
-npm install
+pnpm install
 ```
 
 ### 2. Environment Variables
@@ -124,20 +124,20 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 **Web App:**
 ```bash
 cd apps/web
-npm run dev
+pnpm dev
 # Open http://localhost:3000
 ```
 
 **Mobile App:**
 ```bash
 cd apps/mobile
-npm start
+pnpm start
 # Scan QR code with Expo Go app
 ```
 
 **All Apps (Turborepo):**
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ## 📦 Project Structure
@@ -178,14 +178,14 @@ b2b-plus/
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
 # Run tests in watch mode
-npm run test:watch
+pnpm test:watch
 
 # Run tests for specific app
-cd apps/web && npm test
-cd apps/mobile && npm test
+cd apps/web && pnpm test
+cd apps/mobile && pnpm test
 ```
 
 **Current Test Coverage:** 70%+ across Phases 2-4
@@ -195,13 +195,13 @@ cd apps/mobile && npm test
 ### iOS Simulator
 ```bash
 cd apps/mobile
-npm run ios
+pnpm ios
 ```
 
 ### Android Emulator
 ```bash
 cd apps/mobile
-npm run android
+pnpm android
 ```
 
 ### EAS Build

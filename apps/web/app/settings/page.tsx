@@ -3,24 +3,24 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import Select from '@/components/horizon/input/Select';
-import Modal from '@/components/horizon/modal/Modal';
+import { PageHeader } from '@/components/b2b';
+import { Card } from '@/components/b2b';
+import { Button } from '@/components/b2b';
+import { Input } from '@/components/b2b';
+import { Select } from '@/components/b2b';
+import { Modal } from '@/components/b2b';
 import {
-  MdLocationOn,
-  MdAdd,
-  MdEdit,
-  MdDelete,
-  MdCheckCircle,
-  MdStar,
-  MdStarBorder,
-} from 'react-icons/md';
+  FiMapPin,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiCheckCircle,
+  FiStar,
+} from 'react-icons/fi';
 
 interface ShippingAddress {
   id: string;
-  label: string;
+  header: string;
   contact_name: string;
   phone: string;
   street_address: string;
@@ -45,7 +45,7 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    label: '',
+    header: '',
     contact_name: '',
     phone: '',
     street_address: '',
@@ -101,7 +101,7 @@ export default function SettingsPage() {
 
   const resetForm = () => {
     setFormData({
-      label: '',
+      header: '',
       contact_name: '',
       phone: '',
       street_address: '',
@@ -118,7 +118,7 @@ export default function SettingsPage() {
     if (address) {
       setEditingAddress(address);
       setFormData({
-        label: address.label,
+        header: address.header,
         contact_name: address.contact_name,
         phone: address.phone,
         street_address: address.street_address,
@@ -232,7 +232,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-400">Loading settings...</div>
+        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading settings...</div>
       </div>
     );
   }
@@ -240,43 +240,43 @@ export default function SettingsPage() {
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card padding="lg" className="mb-5">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Settings</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">Settings</h1>
+            <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
               Manage your account preferences and shipping addresses
             </p>
           </div>
-          <Button variant="primary" icon={<MdAdd />} onClick={() => handleOpenModal()}>
+          <Button variant="primary" icon={<FiPlus />} onClick={() => handleOpenModal()}>
             Add Address
           </Button>
         </div>
       </Card>
 
       {/* Shipping Addresses */}
-      <Card extra="p-6">
-        <h2 className="mb-5 text-xl font-bold text-navy-700 dark:text-white">
+      <Card padding="lg">
+        <h2 className="mb-5 text-xl font-bold text-b2b-dark dark:text-white">
           Shipping Addresses
         </h2>
         {addresses.length === 0 ? (
           <div className="py-12 text-center">
-            <MdLocationOn className="mx-auto mb-3 h-16 w-16 text-gray-400" />
-            <p className="mb-4 text-gray-600 dark:text-gray-400">No shipping addresses yet</p>
-            <Button variant="primary" icon={<MdAdd />} onClick={() => handleOpenModal()}>
+            <FiMapPin className="mx-auto mb-3 h-16 w-16 text-b2b-gray-500" />
+            <p className="mb-4 text-b2b-gray-500 dark:text-b2b-gray-500">No shipping addresses yet</p>
+            <Button variant="primary" icon={<FiPlus />} onClick={() => handleOpenModal()}>
               Add Your First Address
             </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {addresses.map((address) => (
-              <Card key={address.id} extra="p-5 border border-gray-200 dark:border-white/10">
+              <Card key={address.id} className="p-5 border border-gray-200 dark:border-white/10">
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-navy-700 dark:text-white">{address.label}</h3>
+                    <h3 className="font-bold text-b2b-dark dark:text-white">{address.header}</h3>
                     {address.is_default && (
                       <span className="flex items-center gap-1 rounded-full bg-brand-100 px-2 py-1 text-xs font-semibold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-                        <MdStar className="h-3 w-3" />
+                        <FiStar className="h-3 w-3" />
                         Default
                       </span>
                     )}
@@ -284,18 +284,18 @@ export default function SettingsPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleOpenModal(address)}
-                      className="text-gray-600 hover:text-brand-500 dark:text-gray-400"
+                      className="text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500"
                     >
-                      <MdEdit className="h-5 w-5" />
+                      <FiEdit2 className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => {
                         setAddressToDelete(address.id);
                         setDeleteModal(true);
                       }}
-                      className="text-gray-600 hover:text-red-500 dark:text-gray-400"
+                      className="text-b2b-gray-500 hover:text-red-500 dark:text-b2b-gray-500"
                     >
-                      <MdDelete className="h-5 w-5" />
+                      <FiTrash2 className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -311,9 +311,9 @@ export default function SettingsPage() {
                 {!address.is_default && (
                   <button
                     onClick={() => handleSetDefault(address.id)}
-                    className="mt-3 flex items-center gap-1 text-sm text-brand-500 hover:text-brand-600"
+                    className="mt-3 flex items-center gap-1 text-sm text-b2b-yellow hover:text-brand-600"
                   >
-                    <MdStarBorder className="h-4 w-4" />
+                    <FiStar className="h-4 w-4" />
                     Set as Default
                   </button>
                 )}
@@ -336,8 +336,8 @@ export default function SettingsPage() {
         <div className="space-y-4">
           <Input
             label="Address Label"
-            value={formData.label}
-            onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+            value={formData.header}
+            onChange={(e) => setFormData({ ...formData, header: e.target.value })}
             placeholder="e.g., Main Warehouse, Office"
             required
           />
@@ -392,7 +392,7 @@ export default function SettingsPage() {
               type="checkbox"
               checked={formData.is_default}
               onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
-              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-gray-300 text-b2b-yellow focus:ring-brand-500"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">Set as default address</span>
           </label>
@@ -428,7 +428,7 @@ export default function SettingsPage() {
             <Button variant="ghost" onClick={() => setDeleteModal(false)} disabled={deleting}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDelete} loading={deleting}>
+            <Button variant="primary" className="bg-red-500 hover:bg-red-600" onClick={handleDelete} loading={deleting}>
               Delete Address
             </Button>
           </div>

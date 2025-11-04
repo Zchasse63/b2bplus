@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import { MdLogin, MdEmail, MdLock } from 'react-icons/md';
+import { Card, Button, Input } from '@/components/b2b';
+import { FiLogIn } from 'react-icons/fi';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -85,28 +83,28 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600 px-4 py-12">
-      <div className="w-full max-w-md animate-slideUp">
+    <div className="flex min-h-screen items-center justify-center bg-b2b-gray-50 px-4 py-12">
+      <div className="w-full max-w-md animate-slide-up">
         {/* Logo/Brand */}
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-white">B2B+</h1>
-          <p className="mt-2 text-lg text-white/90">Welcome back</p>
+          <h1 className="text-4xl font-bold text-b2b-dark">B2B+</h1>
+          <p className="mt-2 text-lg text-b2b-gray-500">Welcome back</p>
         </div>
 
         {/* Login Card */}
-        <Card extra="p-8">
+        <Card padding="lg">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-navy-700 dark:text-white">
+            <h2 className="text-2xl font-bold text-b2b-dark">
               Sign In
             </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            <p className="mt-1 text-sm text-b2b-gray-500">
               Enter your credentials to access your account
             </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             {errorMessage && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
                 {errorMessage}
               </div>
             )}
@@ -141,13 +139,13 @@ export default function Login() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-b2b-gray-300 text-b2b-yellow focus:ring-b2b-yellow"
                 />
-                <span className="text-gray-600 dark:text-gray-400">Remember me</span>
+                <span className="text-b2b-gray-500">Remember me</span>
               </label>
               <Link
                 href="/auth/forgot-password"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                className="text-b2b-dark hover:text-b2b-yellow transition-colors"
               >
                 Forgot password?
               </Link>
@@ -156,21 +154,21 @@ export default function Login() {
             <Button
               type="submit"
               variant="primary"
-              className="w-full"
-              loading={loading}
-              icon={<MdLogin />}
+              fullWidth
+              disabled={loading}
+              icon={<FiLogIn />}
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-white/10"></div>
+                <div className="w-full border-t border-b2b-gray-100"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500 dark:bg-navy-800 dark:text-gray-400">
+                <span className="bg-white px-2 text-b2b-gray-500">
                   Or continue with
                 </span>
               </div>
@@ -194,11 +192,11 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-6 text-center text-sm text-b2b-gray-500">
             Don&apos;t have an account?{' '}
             <Link
               href="/auth/register"
-              className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+              className="font-medium text-b2b-dark hover:text-b2b-yellow transition-colors"
             >
               Sign up
             </Link>
@@ -206,7 +204,7 @@ export default function Login() {
         </Card>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-white/80">
+        <div className="mt-8 text-center text-sm text-b2b-gray-500">
           <p>&copy; 2025 B2B+. All rights reserved.</p>
         </div>
       </div>

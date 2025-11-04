@@ -242,7 +242,7 @@ export default function OrdersPage() {
 
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
-          <Card extra="p-6">
+          <Card className="p-6">
             <div className="flex flex-col items-center justify-center py-12">
               <Package className="h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-xl font-semibold mb-2">
@@ -266,7 +266,7 @@ export default function OrdersPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="text-lg">
+                        <h2 className="text-lg font-bold text-b2b-dark">
                           Order {order.order_number}
                         </h2>
                         {order.po_number && (

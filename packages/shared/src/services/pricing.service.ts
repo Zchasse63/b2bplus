@@ -67,6 +67,7 @@ export interface PriceLock {
 export interface PromotionalCode {
   id: string;
   code: string;
+  description?: string;
   discount_type: 'percentage' | 'fixed_amount' | 'free_shipping';
   discount_value: number;
   min_order_value: number;

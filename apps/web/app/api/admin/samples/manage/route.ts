@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from '@/lib/sendgrid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,8 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (emailSubject && emailBody) {
-      await resend.emails.send({
-        from: 'B2B+ <noreply@b2bplus.com>',
+      await sendEmail({
         to: sampleRequest.requester_email,
         subject: emailSubject,
         html: `

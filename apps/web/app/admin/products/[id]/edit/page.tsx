@@ -4,13 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Input from '@/components/horizon/input/Input';
-import Textarea from '@/components/horizon/input/Textarea';
-import Select from '@/components/horizon/input/Select';
-import Modal from '@/components/horizon/modal/Modal';
-import { MdArrowBack, MdSave, MdCheckCircle, MdDelete } from 'react-icons/md';
+import { Card, Button, Input, Textarea, Select, Modal, PageHeader } from '@/components/b2b';
+import { FiArrowLeft, FiSave, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -168,13 +163,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
-              icon={<MdArrowBack />}
+              icon={<FiArrowLeft />}
               onClick={() => router.push('/admin/products')}
             />
             <div>
@@ -185,9 +180,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             </div>
           </div>
           <Button
-            variant="danger"
+            variant="primary" className="bg-red-500 hover:bg-red-600"
             size="sm"
-            icon={<MdDelete />}
+            icon={<FiTrash2 />}
             onClick={() => setDeleteModal(true)}
           >
             Delete
@@ -200,7 +195,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Main Info */}
           <div className="space-y-5 lg:col-span-2">
-            <Card extra="p-6">
+            <Card padding="lg">
               <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
                 Basic Information
               </h2>
@@ -226,7 +221,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               </div>
             </Card>
 
-            <Card extra="p-6">
+            <Card padding="lg">
               <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
                 Category & Classification
               </h2>
@@ -248,7 +243,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               </div>
             </Card>
 
-            <Card extra="p-6">
+            <Card padding="lg">
               <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
                 Product Details
               </h2>
@@ -289,7 +284,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
           {/* Pricing & Stock */}
           <div className="lg:col-span-1">
-            <Card extra="p-6 sticky top-4">
+            <Card className="p-6 sticky top-4">
               <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
                 Pricing & Inventory
               </h2>
@@ -312,7 +307,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                 />
                 <div className="mt-6 space-y-3 border-t border-gray-200 pt-6 dark:border-white/10">
                   <Button type="submit" variant="primary" className="w-full" loading={saving}>
-                    <MdSave className="mr-2" />
+                    <FiSave className="mr-2" />
                     Save Changes
                   </Button>
                   <Button
@@ -334,7 +329,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       {/* Success Modal */}
       <Modal isOpen={successModal} onClose={() => setSuccessModal(false)} title="Changes Saved!" size="sm">
         <div className="space-y-4 text-center">
-          <MdCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
           <p className="text-gray-700 dark:text-gray-300">Product has been updated successfully!</p>
           <Button variant="primary" className="w-full" onClick={() => setSuccessModal(false)}>
             Continue Editing
@@ -352,7 +347,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             <Button variant="ghost" onClick={() => setDeleteModal(false)} disabled={deleting}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDelete} loading={deleting}>
+            <Button variant="primary" className="bg-red-500 hover:bg-red-600" onClick={handleDelete} loading={deleting}>
               Delete Product
             </Button>
           </div>

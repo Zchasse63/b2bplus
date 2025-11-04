@@ -3,13 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/hooks/use-toast'
-import { Loader2, ShoppingBag, MapPin, CreditCard } from 'lucide-react'
+import { PageHeader, Card, Button, Input, Textarea, Modal } from '@/components/b2b'
+import { FiShoppingBag, FiMapPin, FiCreditCard, FiCheckCircle } from 'react-icons/fi'
+import Image from 'next/image'
 
 interface CartItem {
   id: string
@@ -46,9 +42,10 @@ export default function CheckoutPage() {
   const [poNumber, setPoNumber] = useState('')
   const [notes, setNotes] = useState('')
   const [pricing, setPricing] = useState<any>(null)
+  const [successModal, setSuccessModal] = useState(false)
+  const [orderNumber, setOrderNumber] = useState('')
   const supabase = createClient()
   const router = useRouter()
-  const { toast } = useToast()
 
   useEffect(() => {
     loadCheckoutData()
@@ -80,13 +77,8 @@ export default function CheckoutPage() {
         .eq('user_id', user.id)
 
       if (cartError) throw cartError
-      
+
       if (!cart || cart.length === 0) {
-        toast({
-          title: 'Empty Cart',
-          description: 'Your cart is empty. Add some products first.',
-          variant: 'destructive',
-        })
         router.push('/products')
         return
       }
@@ -133,11 +125,6 @@ export default function CheckoutPage() {
 
     } catch (error) {
       console.error('Error loading checkout data:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to load checkout data',
-        variant: 'destructive',
-      })
     } finally {
       setLoading(false)
     }
@@ -145,11 +132,7 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async () => {
     if (!selectedAddressId) {
-      toast({
-        title: 'Address Required',
-        description: 'Please select a shipping address',
-        variant: 'destructive',
-      })
+      alert('Please select a shipping address')
       return
     }
 
@@ -219,20 +202,12 @@ export default function CheckoutPage() {
 
       if (clearError) throw clearError
 
-      toast({
-        title: 'Order Placed!',
-        description: `Order ${order.order_number} has been submitted successfully.`,
-      })
-
-      router.push(`/orders/${order.id}`)
+      setOrderNumber(order.order_number)
+      setSuccessModal(true)
 
     } catch (error) {
       console.error('Error submitting order:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to submit order. Please try again.',
-        variant: 'destructive',
-      })
+      alert('Failed to submit order. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -241,12 +216,12 @@ export default function CheckoutPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading checkout...</div>
       </div>
     )
   }
 
-  const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) => 
+  const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) =>
     sum + (item.products.base_price * item.quantity), 0
   )
   const tax = subtotal * 0.08
@@ -254,178 +229,240 @@ export default function CheckoutPage() {
   const total = subtotal + tax + shippingCost
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="text-3xl font-bold text-secondary-500 mb-8">Checkout</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Shipping Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Shipping Address
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {addresses.length === 0 ? (
-                  <p className="text-muted-foreground">No shipping addresses found. Please add one in settings.</p>
-                ) : (
-                  addresses.map(address => (
-                    <div
-                      key={address.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedAddressId === address.id
-                          ? 'border-primary bg-primary-50'
-                          : 'border-neutral-200 hover:border-primary'
-                      }`}
-                      onClick={() => setSelectedAddressId(address.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold">{address.label}</p>
-                          <p className="text-sm text-muted-foreground">{address.contact_name}</p>
-                          <p className="text-sm text-muted-foreground">{address.street_address}</p>
-                          {address.street_address2 && (
-                            <p className="text-sm text-muted-foreground">{address.street_address2}</p>
-                          )}
-                          <p className="text-sm text-muted-foreground">
-                            {address.city}, {address.state} {address.postal_code}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{address.phone}</p>
-                        </div>
-                        {address.is_default && (
-                          <Badge variant="secondary">Default</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Order Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Order Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="po-number" className="text-base font-semibold">
-                    Purchase Order Number
-                  </Label>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Enter your PO number for tracking and reference
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      id="po-number"
-                      placeholder="e.g., PO-2025-001"
-                      value={poNumber}
-                      onChange={(e) => setPoNumber(e.target.value)}
-                      className="flex-1"
-                      maxLength={50}
-                    />
-                  </div>
-                  {poNumber && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {poNumber.length}/50 characters
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="notes">Order Notes (Optional)</Label>
-                  <Input
-                    id="notes"
-                    placeholder="Any special instructions?"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+    <div className="mt-3 animate-fadeIn">
+      {/* Header */}
+      <Card className="mb-5 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">Checkout</h1>
+            <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+              Review your order and complete your purchase
+            </p>
           </div>
+          <FiShoppingBag className="h-8 w-8 text-b2b-yellow" />
+        </div>
+      </Card>
 
-          {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
-                  Order Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Cart Items */}
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {cartItems.map(item => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{item.products.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Qty: {item.quantity} × ${item.products.base_price.toFixed(2)}
-                        </p>
-                      </div>
-                      <p className="font-semibold text-sm">
-                        ${(item.quantity * item.products.base_price).toFixed(2)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Tax (8%)</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Shipping</span>
-                    <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
-                  </div>
-                  {subtotal < 500 && (
-                    <p className="text-xs text-muted-foreground">
-                      Add ${(500 - subtotal).toFixed(2)} more for free shipping
-                    </p>
-                  )}
-                  <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-primary">${total.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleSubmitOrder}
-                  disabled={submitting || !selectedAddressId}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Placing Order...
-                    </>
-                  ) : (
-                    'Place Order'
-                  )}
-                </Button>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  By placing this order, you agree to our terms and conditions
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Shipping Address */}
+          <Card className="p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <FiMapPin className="h-5 w-5 text-b2b-yellow" />
+              <h2 className="text-lg font-bold text-b2b-dark dark:text-white">Shipping Address</h2>
+            </div>
+            <div className="space-y-3">
+              {addresses.length === 0 ? (
+                <p className="text-b2b-gray-500 dark:text-b2b-gray-500">
+                  No shipping addresses found. Please add one in settings.
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+              ) : (
+                addresses.map(address => (
+                  <div
+                    key={address.id}
+                    className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                      selectedAddressId === address.id
+                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                        : 'border-gray-200 hover:border-brand-300 dark:border-navy-700 dark:hover:border-brand-500'
+                    }`}
+                    onClick={() => setSelectedAddressId(address.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-b2b-dark dark:text-white">{address.label}</p>
+                        <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">{address.contact_name}</p>
+                        <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">{address.street_address}</p>
+                        {address.street_address2 && (
+                          <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">{address.street_address2}</p>
+                        )}
+                        <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                          {address.city}, {address.state} {address.postal_code}
+                        </p>
+                        <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">{address.phone}</p>
+                      </div>
+                      {address.is_default && (
+                        <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Order Details */}
+          <Card className="p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <FiCreditCard className="h-5 w-5 text-b2b-yellow" />
+              <h2 className="text-lg font-bold text-b2b-dark dark:text-white">Order Details</h2>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-b2b-dark dark:text-white">
+                  Purchase Order Number
+                </label>
+                <p className="mb-2 text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+                  Enter your PO number for tracking and reference
+                </p>
+                <Input
+                  id="po-number"
+                  placeholder="e.g., PO-2025-001"
+                  value={poNumber}
+                  onChange={(e) => setPoNumber(e.target.value)}
+                  maxLength={50}
+                />
+                {poNumber && (
+                  <p className="mt-1 text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+                    {poNumber.length}/50 characters
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-b2b-dark dark:text-white">
+                  Order Notes (Optional)
+                </label>
+                <Textarea
+                  id="notes"
+                  placeholder="Any special instructions?"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Order Summary */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-4 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <FiShoppingBag className="h-5 w-5 text-b2b-yellow" />
+              <h2 className="text-lg font-bold text-b2b-dark dark:text-white">Order Summary</h2>
+            </div>
+
+            {/* Cart Items */}
+            <div className="mb-4 max-h-64 space-y-3 overflow-y-auto">
+              {cartItems.map(item => (
+                <div key={item.id} className="flex gap-3">
+                  {item.products.image_url && (
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700">
+                      <Image
+                        src={item.products.image_url}
+                        alt={item.products.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-b2b-dark dark:text-white">
+                      {item.products.name}
+                    </p>
+                    <p className="text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+                      Qty: {item.quantity} × ${item.products.base_price.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-b2b-dark dark:text-white">
+                    ${(item.quantity * item.products.base_price).toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-navy-700">
+              <div className="flex justify-between text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                <span>Subtotal</span>
+                <span className="font-medium text-b2b-dark dark:text-white">
+                  ${subtotal.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                <span>Tax (8%)</span>
+                <span className="font-medium text-b2b-dark dark:text-white">${tax.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                <span>Shipping</span>
+                <span className="font-medium text-b2b-dark dark:text-white">
+                  {shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}
+                </span>
+              </div>
+              {subtotal < 500 && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  Add ${(500 - subtotal).toFixed(2)} more for free shipping
+                </p>
+              )}
+              <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-navy-700">
+                <span className="text-b2b-dark dark:text-white">Total</span>
+                <span className="text-b2b-yellow">${total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <Button
+              variant="primary"
+              className="mt-4 w-full"
+              onClick={handleSubmitOrder}
+              disabled={submitting || !selectedAddressId}
+              loading={submitting}
+            >
+              {submitting ? 'Placing Order...' : 'Place Order'}
+            </Button>
+
+            <p className="mt-3 text-center text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+              By placing this order, you agree to our terms and conditions
+            </p>
+          </Card>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <Modal
+        isOpen={successModal}
+        onClose={() => {
+          setSuccessModal(false)
+          router.push('/orders')
+        }}
+        title="Order Placed Successfully!"
+        size="md"
+      >
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+            <FiCheckCircle className="h-10 w-10 text-green-600 dark:text-green-400" />
+          </div>
+          <h3 className="mb-2 text-xl font-bold text-b2b-dark dark:text-white">
+            Thank you for your order!
+          </h3>
+          <p className="mb-4 text-b2b-gray-500 dark:text-b2b-gray-500">
+            Your order <span className="font-semibold text-b2b-yellow">{orderNumber}</span> has been
+            submitted successfully.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setSuccessModal(false)
+                router.push('/products')
+              }}
+            >
+              Continue Shopping
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => {
+                setSuccessModal(false)
+                router.push('/orders')
+              }}
+            >
+              View Orders
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

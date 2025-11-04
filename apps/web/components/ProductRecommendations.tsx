@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Sparkles, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
@@ -101,9 +102,9 @@ export function ProductRecommendations({
 
   if (loading) {
     return (
-      <Card extra="p-6">
+      <Card className="p-6">
         <div className="mb-4">
-          <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="flex items-center gap-2">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-navy-700 dark:text-white">
             <Sparkles className="h-5 w-5" />
             {title || getDefaultTitle()}
           </h2>
@@ -120,9 +121,9 @@ export function ProductRecommendations({
   }
 
   return (
-    <Card extra="p-6">
+    <Card className="p-6">
       <div className="mb-4">
-        <h2 className="text-xl font-bold text-navy-700 dark:text-white" className="flex items-center gap-2">
+        <h2 className="flex items-center gap-2 text-xl font-bold text-navy-700 dark:text-white">
           <Sparkles className="h-5 w-5 text-purple-500" />
           {title || getDefaultTitle()}
         </h2>

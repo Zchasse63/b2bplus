@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from '@/lib/sendgrid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,7 +78,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (requestError) {
-      console.error('Error creating sample request:', error);
+      console.error('Error creating sample request:', requestError);
       return NextResponse.json(
         { error: 'Failed to create sample request' },
         { status: 500 }
@@ -106,9 +104,8 @@ export async function POST(request: NextRequest) {
 
     // Send notification email to admin
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@b2bplus.com';
-    
-    await resend.emails.send({
-      from: 'B2B+ Samples <noreply@b2bplus.com>',
+
+    await sendEmail({
       to: adminEmail,
       subject: `New Sample Request: ${product.name}`,
       html: `
@@ -119,14 +116,14 @@ export async function POST(request: NextRequest) {
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2 style="color: #2563eb;">New Sample Request</h2>
-            
+
             <h3>Product Details:</h3>
             <ul>
               <li><strong>Product:</strong> ${product.name}</li>
               <li><strong>SKU:</strong> ${product.sku}</li>
               <li><strong>Quantity:</strong> ${quantity}</li>
             </ul>
-            
+
             <h3>Requester Details:</h3>
             <ul>
               <li><strong>Name:</strong> ${requesterName}</li>
@@ -134,12 +131,12 @@ export async function POST(request: NextRequest) {
               <li><strong>Phone:</strong> ${requesterPhone || 'Not provided'}</li>
               <li><strong>Company:</strong> ${requesterCompany || 'Not provided'}</li>
             </ul>
-            
+
             ${purpose ? `<h3>Purpose:</h3><p>${purpose}</p>` : ''}
             ${notes ? `<h3>Notes:</h3><p>${notes}</p>` : ''}
-            
+
             <p style="margin-top: 30px;">
-              <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/samples" 
+              <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/samples"
                  style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 View Sample Requests
               </a>
@@ -150,8 +147,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send confirmation email to requester
-    await resend.emails.send({
-      from: 'B2B+ <noreply@b2bplus.com>',
+    await sendEmail({
       to: requesterEmail,
       subject: `Sample Request Received: ${product.name}`,
       html: `
@@ -162,22 +158,22 @@ export async function POST(request: NextRequest) {
           </head>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2 style="color: #2563eb;">Sample Request Received</h2>
-            
+
             <p>Hi ${requesterName},</p>
-            
+
             <p>We've received your request for a sample of <strong>${product.name}</strong>.</p>
-            
+
             <p>Our team will review your request and get back to you within 1-2 business days.</p>
-            
+
             <h3>Request Details:</h3>
             <ul>
               <li><strong>Product:</strong> ${product.name}</li>
               <li><strong>SKU:</strong> ${product.sku}</li>
               <li><strong>Quantity:</strong> ${quantity}</li>
             </ul>
-            
+
             <p>If you have any questions, please don't hesitate to contact us.</p>
-            
+
             <p>Best regards,<br>B2B+ Team</p>
           </body>
         </html>

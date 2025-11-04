@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Button from '@/components/horizon/button/Button';
-import { Upload, Loader2, MdClose } from 'react-icons/md';
+import { Button } from '@/components/b2b';
+import { Label } from '@/components/ui/label';
+import { FiUpload, FiX } from 'react-icons/fi';
+import { Loader2 } from 'lucide-react';
 
 interface ImageUploadProps {
   value: string;
@@ -90,12 +92,12 @@ export default function ImageUpload({ value, onChange, label = 'Product Image' }
           />
           <Button
             type="button"
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2"
+            variant="outline"
+            size="sm"
+            className="absolute top-2 right-2 bg-red-500 text-white hover:bg-red-600"
             onClick={handleRemove}
           >
-            <MdClose className="h-4 w-4" />
+            <FiX className="h-4 w-4" />
           </Button>
         </div>
       ) : (
@@ -121,7 +123,7 @@ export default function ImageUpload({ value, onChange, label = 'Product Image' }
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
+                <FiUpload className="h-4 w-4 mr-2" />
                 Upload Image
               </>
             )}

@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import DataTable from '@/components/horizon/table/DataTable';
-import { MdArrowBack, MdDownload, MdCheckCircle, MdReceipt } from 'react-icons/md';
+import { Card, Button, DataTable, PageHeader } from '@/components/b2b';
+import { FiArrowLeft, FiDownload, FiCheckCircle, FiFileText } from 'react-icons/fi';
 import { format } from 'date-fns';
 
 interface InvoiceDetails {
@@ -49,11 +47,11 @@ interface InvoiceDetails {
   };
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  unpaid: { label: 'Unpaid', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
-  paid: { label: 'Paid', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
-  overdue: { label: 'Overdue', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
-  cancelled: { label: 'Cancelled', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
+const statusConfig: Record<string, { header: string; color: string }> = {
+  unpaid: { header: 'Unpaid', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+  paid: { header: 'Paid', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  overdue: { header: 'Overdue', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+  cancelled: { header: 'Cancelled', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' },
 };
 
 export default function InvoiceDetailsPage({ params }: { params: { id: string } }) {
@@ -134,21 +132,21 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
   const statusInfo = statusConfig[invoice.status] || statusConfig.unpaid;
 
   const columns = [
-    { key: 'sku', label: 'SKU' },
-    { key: 'name', label: 'Product' },
+    { key: 'sku', header: 'SKU' },
+    { key: 'name', header: 'Product' },
     {
       key: 'quantity',
-      label: 'Quantity',
+      header: 'Quantity',
       render: (item: any) => <span className="font-semibold">{item.quantity}</span>,
     },
     {
       key: 'unit_price',
-      label: 'Unit Price',
+      header: 'Unit Price',
       render: (item: any) => `$${item.unit_price.toFixed(2)}`,
     },
     {
       key: 'line_total',
-      label: 'Total',
+      header: 'Total',
       render: (item: any) => (
         <span className="font-bold text-brand-500">${item.line_total.toFixed(2)}</span>
       ),
@@ -158,13 +156,13 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
-              icon={<MdArrowBack />}
+              icon={<FiArrowLeft />}
               onClick={() => router.push('/invoices')}
             />
             <div>
@@ -173,7 +171,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
                   Invoice #{invoice.invoice_number}
                 </h1>
                 <span className={`rounded-full px-4 py-1 text-sm font-semibold ${statusInfo.color}`}>
-                  {statusInfo.label}
+                  {statusInfo.header}
                 </span>
               </div>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -184,7 +182,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
           </div>
           <Button
             variant="primary"
-            icon={<MdDownload />}
+            icon={<FiDownload />}
             onClick={handleDownloadPDF}
             loading={downloading}
           >
@@ -196,13 +194,13 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Invoice Items */}
         <div className="lg:col-span-2">
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Line Items</h2>
             <DataTable
               data={invoice.orders.order_items}
               columns={columns}
-              searchable={false}
-              pagination={false}
+             
+             
             />
           </Card>
         </div>
@@ -210,7 +208,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
         {/* Invoice Details */}
         <div className="space-y-5">
           {/* Invoice Summary */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Summary</h2>
             <div className="space-y-3">
               <div>
@@ -237,7 +235,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
           </Card>
 
           {/* Amount Breakdown */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Amount</h2>
             <div className="space-y-3">
               <div className="flex justify-between text-gray-700 dark:text-gray-300">
@@ -262,7 +260,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
           </Card>
 
           {/* Billing Info */}
-          <Card extra="p-6">
+          <Card className="p-6">
             <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Bill To</h2>
             <div className="space-y-2 text-gray-700 dark:text-gray-300">
               <p className="font-semibold">{invoice.organizations.name}</p>
@@ -273,7 +271,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
 
           {/* Shipping Address */}
           {invoice.shipping_address && (
-            <Card extra="p-6">
+            <Card className="p-6">
               <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">Ship To</h2>
               <div className="space-y-2 text-gray-700 dark:text-gray-300">
                 <p className="font-semibold">{invoice.shipping_address.contact_name}</p>

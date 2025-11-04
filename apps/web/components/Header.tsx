@@ -79,19 +79,19 @@ export default function Header() {
         <nav className="flex items-center gap-2">
           <Link href="/">
             <Button
-              variant={isActive('/') ? 'primary' : 'ghost'}
+              variant={isActive('/') ? 'default' : 'ghost'}
               size="sm"
-              icon={<MdHome />}
             >
+              <MdHome />
               Home
             </Button>
           </Link>
           <Link href="/products">
             <Button
-              variant={isActive('/products') ? 'primary' : 'ghost'}
+              variant={isActive('/products') ? 'default' : 'ghost'}
               size="sm"
-              icon={<MdShoppingBag />}
             >
+              <MdShoppingBag />
               Products
             </Button>
           </Link>
@@ -99,38 +99,38 @@ export default function Header() {
             <>
               <Link href="/orders">
                 <Button
-                  variant={isActive('/orders') ? 'primary' : 'ghost'}
+                  variant={isActive('/orders') ? 'default' : 'ghost'}
                   size="sm"
-                  icon={<MdShoppingCart />}
                 >
+                  <MdShoppingCart />
                   Orders
                 </Button>
               </Link>
               <Link href="/invoices">
                 <Button
-                  variant={isActive('/invoices') ? 'primary' : 'ghost'}
+                  variant={isActive('/invoices') ? 'default' : 'ghost'}
                   size="sm"
-                  icon={<MdReceipt />}
                 >
+                  <MdReceipt />
                   Invoices
                 </Button>
               </Link>
               <Link href="/tools/container-calculator">
                 <Button
-                  variant={isActive('/tools/container-calculator') ? 'primary' : 'ghost'}
+                  variant={isActive('/tools/container-calculator') ? 'default' : 'ghost'}
                   size="sm"
-                  icon={<MdCalculate />}
                 >
+                  <MdCalculate />
                   Calculator
                 </Button>
               </Link>
               {isAdmin && (
                 <Link href="/admin/products">
                   <Button
-                    variant={pathname?.startsWith('/admin') ? 'primary' : 'ghost'}
+                    variant={pathname?.startsWith('/admin') ? 'default' : 'ghost'}
                     size="sm"
-                    icon={<MdSettings />}
                   >
+                    <MdSettings />
                     Admin
                   </Button>
                 </Link>
@@ -138,10 +138,10 @@ export default function Header() {
               <Link href="/cart">
                 <div className="relative">
                   <Button
-                    variant={isActive('/cart') ? 'primary' : 'ghost'}
+                    variant={isActive('/cart') ? 'default' : 'ghost'}
                     size="sm"
-                    icon={<MdShoppingCart />}
                   >
+                    <MdShoppingCart />
                     Cart
                   </Button>
                   {cartCount > 0 && (
@@ -176,7 +176,7 @@ export default function Header() {
                 </Button>
               </Link>
               <Link href="/auth/register">
-                <Button variant="primary" size="sm">
+                <Button variant="default" size="sm">
                   Sign Up
                 </Button>
               </Link>

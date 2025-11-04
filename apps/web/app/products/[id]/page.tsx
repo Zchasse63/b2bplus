@@ -65,7 +65,7 @@ export default async function ProductDetailPage({ params }: Props) {
   // Fetch related products (same category)
   const { data: relatedProducts } = await supabase
     .from('products')
-    .select('id, name, sku, base_price, image_url, category')
+    .select('id, name, sku, base_price, image_url, category, in_stock')
     .eq('category', product.category)
     .neq('id', product.id)
     .eq('in_stock', true)

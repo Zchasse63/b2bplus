@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/horizon/card';
-import Button from '@/components/horizon/button/Button';
-import Modal from '@/components/horizon/modal/Modal';
+import { PageHeader, Card, Button, Modal, ProductCard } from '@/components/b2b';
 import Image from 'next/image';
-import { MdDelete, MdShoppingCart, MdArrowForward, MdRemoveCircle } from 'react-icons/md';
+import { FiTrash2, FiShoppingCart, FiArrowRight, FiMinusCircle } from 'react-icons/fi';
 
 interface CartItem {
   id: string;
@@ -30,12 +28,51 @@ export default function CartPage() {
     open: false,
   });
   const [deleting, setDeleting] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
     loadCart();
   }, []);
+
+  // Fetch recommendations based on cart items
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (cartItems.length === 0) {
+        setLoadingRecommendations(false);
+        return;
+      }
+
+      try {
+        // Get recommendations for the first product in cart
+        const firstProductId = cartItems[0].product_id;
+        const response = await fetch(`/api/recommendations?productId=${firstProductId}&type=also_bought&limit=4`);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.recommendations && data.recommendations.length > 0) {
+            // Fetch full product details
+            const productIds = data.recommendations.map((r: any) => r.recommended_product_id);
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name, sku, base_price, image_url, category')
+              .in('id', productIds)
+              .not('id', 'in', `(${cartItems.map(item => item.product_id).join(',')})`); // Exclude items already in cart
+
+            setRecommendations(products || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [cartItems]);
 
   async function loadCart() {
     try {
@@ -97,7 +134,7 @@ export default function CartPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-400">Loading cart...</div>
+        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading cart...</div>
       </div>
     );
   }
@@ -105,12 +142,12 @@ export default function CartPage() {
   if (cartItems.length === 0) {
     return (
       <div className="mt-3 animate-fadeIn">
-        <Card extra="p-12 text-center">
-          <MdShoppingCart className="mx-auto mb-4 h-24 w-24 text-gray-300 dark:text-gray-600" />
-          <h2 className="mb-2 text-2xl font-bold text-navy-700 dark:text-white">
+        <Card padding="lg" className="text-center">
+          <FiShoppingCart className="mx-auto mb-4 h-24 w-24 text-gray-300 dark:text-b2b-gray-500" />
+          <h2 className="mb-2 text-2xl font-bold text-b2b-dark dark:text-white">
             Your cart is empty
           </h2>
-          <p className="mb-6 text-gray-600 dark:text-gray-400">
+          <p className="mb-6 text-b2b-gray-500 dark:text-b2b-gray-500">
             Add some products to your cart to get started
           </p>
           <Button variant="primary" onClick={() => router.push('/products')}>
@@ -122,30 +159,27 @@ export default function CartPage() {
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
-      {/* Header */}
-      <Card extra="mb-5 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-navy-700 dark:text-white">Shopping Cart</h1>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart
-            </p>
-          </div>
+    <div className="space-y-6 animate-fadeIn">
+      {/* Gradient Header */}
+      <PageHeader
+        title="Shopping Cart"
+        subtitle={`${cartItems.length} ${cartItems.length === 1 ? 'item' : 'items'} in your cart`}
+        
+        actions={
           <Button
-            variant="primary"
-            icon={<MdArrowForward />}
+            variant="secondary"
+            icon={<FiArrowRight />}
             onClick={() => router.push('/checkout')}
           >
             Proceed to Checkout
           </Button>
-        </div>
-      </Card>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Cart Items */}
         <div className="lg:col-span-2">
-          <Card extra="p-6">
+          <Card padding="lg">
             <div className="space-y-4">
               {cartItems.map((item) => (
                 <div
@@ -162,8 +196,8 @@ export default function CartPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-gray-400">
-                        <MdShoppingCart className="h-8 w-8" />
+                      <div className="flex h-full w-full items-center justify-center text-b2b-gray-500">
+                        <FiShoppingCart className="h-8 w-8" />
                       </div>
                     )}
                   </div>
@@ -171,13 +205,13 @@ export default function CartPage() {
                   {/* Product Details */}
                   <div className="flex flex-1 flex-col justify-between">
                     <div>
-                      <h3 className="font-semibold text-navy-700 dark:text-white">
+                      <h3 className="font-semibold text-b2b-dark dark:text-white">
                         {item.products.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
                         SKU: {item.products.sku}
                       </p>
-                      <p className="mt-1 text-lg font-bold text-brand-500 dark:text-brand-400">
+                      <p className="mt-1 text-lg font-bold text-b2b-yellow dark:text-brand-400">
                         ${item.products.base_price.toFixed(2)}
                       </p>
                     </div>
@@ -187,16 +221,16 @@ export default function CartPage() {
                       <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-white/10">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="px-3 py-1 text-gray-600 hover:text-brand-500 dark:text-gray-400"
+                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500"
                         >
                           -
                         </button>
-                        <span className="min-w-[2rem] text-center font-semibold text-navy-700 dark:text-white">
+                        <span className="min-w-[2rem] text-center font-semibold text-b2b-dark dark:text-white">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="px-3 py-1 text-gray-600 hover:text-brand-500 dark:text-gray-400"
+                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500"
                         >
                           +
                         </button>
@@ -204,7 +238,7 @@ export default function CartPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        icon={<MdDelete />}
+                        icon={<FiTrash2 />}
                         onClick={() => setDeleteModal({ open: true, item })}
                       >
                         Remove
@@ -214,7 +248,7 @@ export default function CartPage() {
 
                   {/* Item Total */}
                   <div className="flex flex-col items-end justify-between">
-                    <p className="text-xl font-bold text-navy-700 dark:text-white">
+                    <p className="text-xl font-bold text-b2b-dark dark:text-white">
                       ${(item.products.base_price * item.quantity).toFixed(2)}
                     </p>
                   </div>
@@ -226,28 +260,28 @@ export default function CartPage() {
 
         {/* Order Summary */}
         <div className="lg:col-span-1">
-          <Card extra="p-6 sticky top-4">
-            <h2 className="mb-4 text-xl font-bold text-navy-700 dark:text-white">
+          <Card className="p-6 sticky top-4">
+            <h2 className="mb-4 text-xl font-bold text-b2b-dark dark:text-white">
               Order Summary
             </h2>
             <div className="space-y-3 border-b border-gray-200 pb-4 dark:border-white/10">
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between text-b2b-gray-500 dark:text-b2b-gray-500">
                 <span>Subtotal</span>
                 <span className="font-semibold">${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <div className="flex justify-between text-b2b-gray-500 dark:text-b2b-gray-500">
                 <span>Tax (8%)</span>
                 <span className="font-semibold">${tax.toFixed(2)}</span>
               </div>
             </div>
-            <div className="mt-4 flex justify-between text-xl font-bold text-navy-700 dark:text-white">
+            <div className="mt-4 flex justify-between text-xl font-bold text-b2b-dark dark:text-white">
               <span>Total</span>
-              <span className="text-brand-500 dark:text-brand-400">${total.toFixed(2)}</span>
+              <span className="text-b2b-yellow dark:text-brand-400">${total.toFixed(2)}</span>
             </div>
             <Button
               variant="primary"
               className="mt-6 w-full"
-              icon={<MdArrowForward />}
+              icon={<FiArrowRight />}
               onClick={() => router.push('/checkout')}
             >
               Checkout
@@ -262,6 +296,36 @@ export default function CartPage() {
           </Card>
         </div>
       </div>
+
+      {/* AI-Powered Recommendations */}
+      {!loadingRecommendations && recommendations.length > 0 && (
+        <div className="mt-8">
+          <Card padding="lg">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-b2b-dark dark:text-white">
+                You Might Also Like
+              </h2>
+              <span className="rounded-lg bg-b2b-yellow/10 px-3 py-1 text-sm font-semibold text-b2b-yellow">
+                AI Recommended
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendations.map((rec) => (
+                <ProductCard
+                  key={rec.id}
+                  id={rec.id}
+                  name={rec.name}
+                  price={rec.base_price}
+                  image={rec.image_url || undefined}
+                  category={rec.category || undefined}
+                  inStock={rec.in_stock}
+                  onAddToCart={() => loadCart()}
+                />
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal
@@ -284,7 +348,7 @@ export default function CartPage() {
               Cancel
             </Button>
             <Button
-              variant="danger"
+              variant="primary" className="bg-red-500 hover:bg-red-600"
               onClick={() => deleteModal.item && handleDelete(deleteModal.item)}
               loading={deleting}
             >

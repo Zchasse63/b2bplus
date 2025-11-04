@@ -4,11 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
-import DataTable from '@/components/horizon/table/DataTable';
-import Button from '@/components/horizon/button/Button';
-import Modal from '@/components/horizon/modal/Modal';
-import Card from '@/components/horizon/card';
-import { MdAdd, MdEdit, MdDelete, MdFileUpload, MdVisibility } from 'react-icons/md';
+import { DataTable, Button, Modal, Card, PageHeader } from '@/components/b2b';
+import { FiPlus, FiEdit, FiTrash2, FiUpload, FiEye } from 'react-icons/fi';
 import Image from 'next/image';
 
 interface Product {
@@ -69,7 +66,7 @@ export default function AdminProductsPage() {
   const columns = [
     {
       key: 'image_url',
-      label: 'Image',
+      header: 'Image',
       render: (product: Product) => (
         <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700">
           {product.image_url ? (
@@ -81,7 +78,7 @@ export default function AdminProductsPage() {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-gray-400">
-              <MdVisibility className="h-6 w-6" />
+              <FiEye className="h-6 w-6" />
             </div>
           )}
         </div>
@@ -89,7 +86,7 @@ export default function AdminProductsPage() {
     },
     {
       key: 'sku',
-      label: 'SKU',
+      header: 'SKU',
       sortable: true,
       render: (product: Product) => (
         <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{product.sku}</span>
@@ -97,7 +94,7 @@ export default function AdminProductsPage() {
     },
     {
       key: 'name',
-      label: 'Product Name',
+      header: 'Product Name',
       sortable: true,
       render: (product: Product) => (
         <div className="font-medium text-navy-700 dark:text-white">{product.name}</div>
@@ -105,12 +102,12 @@ export default function AdminProductsPage() {
     },
     {
       key: 'category',
-      label: 'Category',
+      header: 'Category',
       sortable: true,
     },
     {
       key: 'base_price',
-      label: 'Price',
+      header: 'Price',
       sortable: true,
       render: (product: Product) => (
         <span className="font-semibold text-green-600 dark:text-green-400">
@@ -120,7 +117,7 @@ export default function AdminProductsPage() {
     },
     {
       key: 'stock_quantity',
-      label: 'Stock',
+      header: 'Stock',
       sortable: true,
       render: (product: Product) => {
         const stock = product.stock_quantity ?? 0;
@@ -139,6 +136,30 @@ export default function AdminProductsPage() {
         );
       },
     },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (product: Product) => (
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<FiEdit />}
+            onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<FiTrash2 />}
+            onClick={() => setDeleteModal({ open: true, product })}
+          >
+            Delete
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   if (adminLoading || loading) {
@@ -156,7 +177,7 @@ export default function AdminProductsPage() {
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Header Card */}
-      <Card extra="mb-5 p-6">
+      <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-navy-700 dark:text-white">
@@ -169,14 +190,14 @@ export default function AdminProductsPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              icon={<MdFileUpload />}
+              icon={<FiUpload />}
               onClick={() => router.push('/admin/products/import')}
             >
               Import CSV
             </Button>
             <Button
               variant="primary"
-              icon={<MdAdd />}
+              icon={<FiPlus />}
               onClick={() => router.push('/admin/products/new')}
             >
               Add Product
@@ -189,31 +210,6 @@ export default function AdminProductsPage() {
       <DataTable
         data={products}
         columns={columns}
-        title={`Products (${products.length})`}
-        searchable
-        pagination
-        pageSize={15}
-        actions={(product) => (
-          <>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<MdEdit />}
-              onClick={() => router.push(`/admin/products/${product.id}/edit`)}
-            >
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              icon={<MdDelete />}
-              onClick={() => setDeleteModal({ open: true, product })}
-            >
-              Delete
-            </Button>
-          </>
-        )}
-        onRowClick={(product) => router.push(`/products/${product.id}`)}
       />
 
       {/* Delete Confirmation Modal */}
@@ -238,7 +234,7 @@ export default function AdminProductsPage() {
               Cancel
             </Button>
             <Button
-              variant="danger"
+              variant="primary" className="bg-red-500 hover:bg-red-600"
               onClick={() => deleteModal.product && handleDelete(deleteModal.product)}
               loading={deleting}
             >

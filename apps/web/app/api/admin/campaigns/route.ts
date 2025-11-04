@@ -134,12 +134,16 @@ export async function POST(request: NextRequest) {
 
     // Apply audience filters if provided
     if (targetAudience?.tier) {
-      customersQuery = customersQuery.in('id', 
-        supabase
-          .from('customer_pricing_tiers')
-          .select('customer_id')
-          .eq('tier_id', targetAudience.tier)
-      );
+      // First get the customer IDs for the tier
+      const { data: tierCustomers } = await supabase
+        .from('customer_pricing_tiers')
+        .select('customer_id')
+        .eq('tier_id', targetAudience.tier);
+
+      if (tierCustomers && tierCustomers.length > 0) {
+        const customerIds = tierCustomers.map(tc => tc.customer_id);
+        customersQuery = customersQuery.in('id', customerIds);
+      }
     }
 
     const { data: customers, error: customersError } = await customersQuery;

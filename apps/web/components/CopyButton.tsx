@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Button from '@/components/ui/button'
-import { Copy, Check } from 'react-icons/md'
+import { Button } from '@/components/ui/button'
+import { MdContentCopy, MdCheck } from 'react-icons/md'
 import { useToast } from '@/hooks/use-toast'
 
 interface CopyButtonProps {
@@ -50,9 +50,9 @@ export default function CopyButton({
       title={`Copy ${label || 'text'}`}
     >
       {copied ? (
-        <Check className="h-4 w-4" />
+        <MdCheck className="h-4 w-4" />
       ) : (
-        <Copy className="h-4 w-4" />
+        <MdContentCopy className="h-4 w-4" />
       )}
       {size !== 'icon' && <span className="ml-2">{copied ? 'Copied!' : 'Copy'}</span>}
     </Button>

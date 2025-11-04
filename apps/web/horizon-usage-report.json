@@ -1,0 +1,1301 @@
+{
+  "summary": {
+    "totalFiles": 35,
+    "totalImports": 157,
+    "uniqueComponents": 16
+  },
+  "componentCounts": {
+    "GradientHeader": 21,
+    "StatCard": 6,
+    "Card": 29,
+    "Button": 27,
+    "Select": 9,
+    "DataTable": 15,
+    "StatusBadge": 9,
+    "Modal": 14,
+    "Input": 14,
+    "Textarea": 5,
+    "SidebarHorizon": 1,
+    "ProductCard": 3,
+    "InvoiceCard": 1,
+    "OrderStatusTimeline": 1,
+    "HorizonCard": 1,
+    "HorizonButton": 1
+  },
+  "files": [
+    {
+      "path": "app/admin/analytics/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/analytics/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 12
+        }
+      ]
+    },
+    {
+      "path": "app/admin/campaigns/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 12
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Textarea"
+          ],
+          "lineNumber": 13
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 14
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/campaigns/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 15
+        }
+      ]
+    },
+    {
+      "path": "app/admin/customers/[id]/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/[id]/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/[id]/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/[id]/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/[id]/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/[id]/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        }
+      ]
+    },
+    {
+      "path": "app/admin/customers/analytics/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/analytics/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/analytics/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/customers/analytics/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 8
+        }
+      ]
+    },
+    {
+      "path": "app/admin/features/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/features/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/features/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/features/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        }
+      ]
+    },
+    {
+      "path": "app/admin/inventory/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/inventory/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/admin/layout.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/layout.tsx",
+          "imports": [
+            "SidebarHorizon"
+          ],
+          "lineNumber": 4
+        }
+      ]
+    },
+    {
+      "path": "app/admin/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 5
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 6
+        }
+      ]
+    },
+    {
+      "path": "app/admin/pricing/tiers/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 12
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "Textarea"
+          ],
+          "lineNumber": 13
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/pricing/tiers/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 14
+        }
+      ]
+    },
+    {
+      "path": "app/admin/products/[id]/edit/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Textarea"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/[id]/edit/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 12
+        }
+      ]
+    },
+    {
+      "path": "app/admin/products/analytics/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/analytics/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/analytics/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/analytics/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 8
+        }
+      ]
+    },
+    {
+      "path": "app/admin/products/new/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Textarea"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/new/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 12
+        }
+      ]
+    },
+    {
+      "path": "app/admin/products/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/products/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/admin/recommendations/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/recommendations/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/recommendations/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/recommendations/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/recommendations/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/recommendations/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/admin/reports/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "StatCard"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 12
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/reports/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 13
+        }
+      ]
+    },
+    {
+      "path": "app/admin/workflows/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 11
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 12
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 13
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/admin/workflows/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 14
+        }
+      ]
+    },
+    {
+      "path": "app/auth/login/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/login/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/login/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/login/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        }
+      ]
+    },
+    {
+      "path": "app/auth/register/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/register/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/register/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/auth/register/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        }
+      ]
+    },
+    {
+      "path": "app/cart/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/cart/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/cart/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/cart/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/cart/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/cart/page.tsx",
+          "imports": [
+            "ProductCard"
+          ],
+          "lineNumber": 10
+        }
+      ]
+    },
+    {
+      "path": "app/checkout/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "Textarea"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/checkout/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/invoices/[id]/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/[id]/page.tsx",
+          "imports": [
+            "InvoiceCard"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/[id]/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/[id]/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/[id]/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 9
+        }
+      ]
+    },
+    {
+      "path": "app/invoices/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/invoices/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/orders/[id]/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "OrderStatusTimeline"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/[id]/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/orders/bulk-upload/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/bulk-upload/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 4
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/bulk-upload/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 5
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/bulk-upload/page.tsx",
+          "imports": [
+            "DataTable"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/bulk-upload/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 7
+        }
+      ]
+    },
+    {
+      "path": "app/orders/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/page.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/page.tsx",
+          "imports": [
+            "HorizonCard"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/orders/page.tsx",
+          "imports": [
+            "HorizonButton"
+          ],
+          "lineNumber": 9
+        }
+      ]
+    },
+    {
+      "path": "app/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 2
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 3
+        }
+      ]
+    },
+    {
+      "path": "app/products/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "ProductCard"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/products/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/profile/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/profile/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/profile/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/profile/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/profile/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/profile/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 10
+        }
+      ]
+    },
+    {
+      "path": "app/settings/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/settings/page.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "app/tools/container-calculator/page.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/tools/container-calculator/page.tsx",
+          "imports": [
+            "GradientHeader"
+          ],
+          "lineNumber": 6
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/tools/container-calculator/page.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/tools/container-calculator/page.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/app/tools/container-calculator/page.tsx",
+          "imports": [
+            "Select"
+          ],
+          "lineNumber": 9
+        }
+      ]
+    },
+    {
+      "path": "components/ProductDetail.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/ProductDetail.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 7
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/ProductDetail.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 8
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/ProductDetail.tsx",
+          "imports": [
+            "Input"
+          ],
+          "lineNumber": 9
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/ProductDetail.tsx",
+          "imports": [
+            "ProductCard"
+          ],
+          "lineNumber": 10
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/ProductDetail.tsx",
+          "imports": [
+            "Modal"
+          ],
+          "lineNumber": 11
+        }
+      ]
+    },
+    {
+      "path": "components/admin/ImageUpload.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/admin/ImageUpload.tsx",
+          "imports": [
+            "Button"
+          ],
+          "lineNumber": 4
+        }
+      ]
+    },
+    {
+      "path": "components/horizon/cards/InvoiceCard.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/horizon/cards/InvoiceCard.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 4
+        },
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/horizon/cards/InvoiceCard.tsx",
+          "imports": [
+            "StatusBadge"
+          ],
+          "lineNumber": 5
+        }
+      ]
+    },
+    {
+      "path": "components/horizon/cards/StatCard.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/horizon/cards/StatCard.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 4
+        }
+      ]
+    },
+    {
+      "path": "components/horizon/sidebar/index.tsx",
+      "usages": [
+        {
+          "file": "/Users/zach/projects/b2b-plus/apps/web/components/horizon/sidebar/index.tsx",
+          "imports": [
+            "Card"
+          ],
+          "lineNumber": 15
+        }
+      ]
+    }
+  ]
+}
