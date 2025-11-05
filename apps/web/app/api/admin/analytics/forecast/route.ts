@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkAdminRole } from '@/lib/middleware/admin'
 
 /**
  * Product Usage Forecasting API
@@ -7,24 +8,11 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole()
+    if (authError) return authError
+
     const supabase = await createClient()
-    
-    // Check authentication and admin role
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
 
     const body = await request.json()
     const { customerId, productId, forecastPeriod = 'next_30_days' } = body

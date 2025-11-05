@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateJSON } from '@/lib/gemini'
+import { checkAdminRole } from '@/lib/middleware/admin'
 
 /**
  * Customer Analytics Insights API
@@ -8,24 +9,11 @@ import { generateJSON } from '@/lib/gemini'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole()
+    if (authError) return authError
+
     const supabase = await createClient()
-    
-    // Check authentication and admin role
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
 
     const { searchParams } = new URL(request.url)
     const customerId = searchParams.get('customerId')

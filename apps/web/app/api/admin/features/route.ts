@@ -1,29 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Get all feature flags
     const { data: features, error } = await supabase
@@ -41,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       features: features || [],
-      is_super_admin: profile.role === "super_admin",
+      is_super_admin: user.role === "super_admin",
     });
   } catch (error: any) {
     console.error("Unexpected error:", error);
@@ -54,30 +39,11 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Check super admin authorization (only super admins can toggle features)
+    const { user, error: authError } = await checkAdminRole(true);
+    if (authError) return authError;
+
     const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check super admin role (only super admins can toggle)
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.role !== "super_admin") {
-      return NextResponse.json(
-        { error: "Only super admins can toggle feature flags" },
-        { status: 403 }
-      );
-    }
 
     // Get request body
     const body = await request.json();

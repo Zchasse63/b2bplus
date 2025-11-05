@@ -202,6 +202,21 @@ export default function CheckoutPage() {
 
       if (clearError) throw clearError
 
+      // Send push notification for order submission
+      try {
+        await fetch('/api/notifications/order-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            status: 'submitted',
+          }),
+        })
+      } catch (notifError) {
+        // Don't fail the order if notification fails
+        console.error('Failed to send order notification:', notifError)
+      }
+
       setOrderNumber(order.order_number)
       setSuccessModal(true)
 

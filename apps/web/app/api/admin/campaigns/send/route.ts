@@ -1,26 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { resendEmail, renderTemplate } from '@/lib/email/resend';
+import { checkAdminRole } from '@/lib/middleware/admin';
+
+// Batch size for concurrent email sends
+const BATCH_SIZE = 50;
 
 // POST send email campaign
 export async function POST(request: NextRequest) {
   try {
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const body = await request.json();
     const { campaignId } = body;
@@ -78,72 +71,90 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send emails in batches
+    // Send emails in batches for better performance
     let sent = 0;
     let failed = 0;
 
-    for (const recipient of recipients) {
-      try {
-        // Render email content with recipient-specific variables
-        const variables = {
-          customer_name: recipient.customer_name || 'Valued Customer',
-          customer_email: recipient.email
-        };
+    // Process recipients in batches
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
 
-        const htmlContent = renderTemplate(campaign.html_content || '', variables);
-        const textContent = campaign.text_content 
-          ? renderTemplate(campaign.text_content, variables)
-          : undefined;
+      // Send all emails in this batch concurrently
+      const batchResults = await Promise.allSettled(
+        batch.map(async (recipient) => {
+          try {
+            // Render email content with recipient-specific variables
+            const variables = {
+              customer_name: recipient.customer_name || 'Valued Customer',
+              customer_email: recipient.email
+            };
 
-        // Send email via Resend
-        const result = await resendEmail.send({
-          to: recipient.email,
-          subject: campaign.subject,
-          html: htmlContent,
-          text: textContent
-        });
+            const htmlContent = renderTemplate(campaign.html_content || '', variables);
+            const textContent = campaign.text_content
+              ? renderTemplate(campaign.text_content, variables)
+              : undefined;
 
-        if (result.success) {
-          // Update recipient status
-          await supabase
+            // Send email via Resend
+            const result = await resendEmail.send({
+              to: recipient.email,
+              subject: campaign.subject,
+              html: htmlContent,
+              text: textContent
+            });
+
+            return {
+              recipient,
+              success: result.success,
+              messageId: result.messageId,
+              error: result.error
+            };
+          } catch (error) {
+            return {
+              recipient,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            };
+          }
+        })
+      );
+
+      // Update database in batch
+      const updates = batchResults.map((result, index) => {
+        const recipient = batch[index];
+
+        if (result.status === 'fulfilled' && result.value.success) {
+          sent++;
+          return supabase
             .from('email_campaign_recipients')
             .update({
               status: 'sent',
               sent_at: new Date().toISOString(),
-              resend_message_id: result.messageId
+              resend_message_id: result.value.messageId
             })
             .eq('id', recipient.id);
-          
-          sent++;
         } else {
-          // Mark as failed
-          await supabase
+          failed++;
+          const error = result.status === 'fulfilled'
+            ? result.value.error
+            : result.reason?.message || 'Unknown error';
+
+          return supabase
             .from('email_campaign_recipients')
             .update({
               status: 'failed',
               failed_at: new Date().toISOString(),
-              error_message: result.error
+              error_message: error
             })
             .eq('id', recipient.id);
-          
-          failed++;
         }
+      });
 
-        // Small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
+      // Execute all database updates for this batch
+      await Promise.all(updates);
 
-      } catch (error) {
-        console.error('Error sending to recipient:', recipient.email, error);
-        failed++;
-        
-        await supabase
-          .from('email_campaign_recipients')
-          .update({
-            status: 'failed',
-            failed_at: new Date().toISOString(),
-            error_message: error instanceof Error ? error.message : 'Unknown error'
-          })
-          .eq('id', recipient.id);
+      // Small delay between batches to avoid overwhelming the email service
+      if (i + BATCH_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
