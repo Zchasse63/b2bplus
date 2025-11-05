@@ -43,3 +43,8 @@ export type { StatCardProps } from './StatCard';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps } from './PageHeader';
 
+export { Tooltip } from './Tooltip';
+export type { TooltipProps } from './Tooltip';
+
+export { Drawer } from './Drawer';
+export type { DrawerProps } from './Drawer';

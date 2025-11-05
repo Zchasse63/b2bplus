@@ -43,7 +43,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           <p className="text-sm font-medium text-b2b-gray-500 mb-1">
             {title}
           </p>
-          <p className="text-2xl font-bold text-b2b-dark mb-2">
+          <p className="text-2xl font-bold text-b2b-text mb-2">
             {value}
           </p>
 
@@ -52,7 +52,7 @@ export const StatCard: React.FC<StatCardProps> = ({
               <span
                 className={cn(
                   'text-sm font-medium',
-                  effectiveTrend.isPositive ? 'text-b2b-green' : 'text-red-500'
+                  effectiveTrend.isPositive ? 'text-b2b-success' : 'text-b2b-error'
                 )}
               >
                 {effectiveTrend.isPositive ? '↑' : '↓'} {Math.abs(effectiveTrend.value)}%
@@ -76,7 +76,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           <div
             className={cn(
               'flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center',
-              iconBg || 'bg-b2b-yellow bg-opacity-10 text-b2b-yellow'
+              iconBg || 'bg-b2b-blue-50 text-b2b-blue'
             )}
             style={iconBg ? { backgroundColor: iconBg } : undefined}
           >

@@ -11,11 +11,11 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 /**
- * Button component based on Figma "B2B This One" design system
- * 
+ * Button component based on B2B Plus Professional Palette
+ *
  * Variants:
- * - primary: Yellow background (accent color)
- * - secondary: Dark background
+ * - primary: Trust Blue background (primary brand color)
+ * - secondary: Sage Green background (secondary brand color)
  * - outline: Transparent with border
  * - ghost: Transparent, no border
  */
@@ -36,12 +36,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
-    
+
     const variants = {
-      primary: 'bg-b2b-yellow text-b2b-dark hover:bg-opacity-90 shadow-b2b-sm hover:shadow-b2b',
-      secondary: 'bg-b2b-dark text-b2b-white hover:bg-opacity-90 shadow-b2b-sm hover:shadow-b2b',
-      outline: 'border-2 border-b2b-gray-300 text-b2b-dark hover:bg-b2b-gray-50',
-      ghost: 'text-b2b-dark hover:bg-b2b-gray-50',
+      primary: 'bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm hover:shadow-b2b',
+      secondary: 'bg-b2b-green text-white hover:bg-b2b-green-600 shadow-b2b-sm hover:shadow-b2b',
+      outline: 'border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50',
+      ghost: 'text-b2b-text hover:bg-b2b-gray-50',
     };
     
     const sizes = {

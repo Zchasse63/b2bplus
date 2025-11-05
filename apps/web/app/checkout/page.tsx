@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { PageHeader, Card, Button, Input, Textarea, Modal } from '@/components/b2b'
-import { FiShoppingBag, FiMapPin, FiCreditCard, FiCheckCircle } from 'react-icons/fi'
+import { PageHeader, Card, Button, Input, Textarea, Modal, Badge } from '@/components/b2b'
+import { FiShoppingBag, FiMapPin, FiCreditCard, FiCheckCircle, FiShield, FiLock } from 'react-icons/fi'
 import Image from 'next/image'
 
 interface CartItem {
@@ -401,14 +401,39 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* Trust Badges */}
+            <div className="mt-4 mb-4 p-4 bg-b2b-green-50 dark:bg-b2b-green-900/10 rounded-lg border border-b2b-green-200 dark:border-b2b-green-800">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <FiShield className="h-5 w-5 text-b2b-green" />
+                <p className="text-sm font-semibold text-b2b-green">
+                  Your information is secure
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3 text-xs text-b2b-gray-600 dark:text-b2b-gray-400">
+                <div className="flex items-center gap-1">
+                  <FiLock className="h-3 w-3" />
+                  <span>SSL Encrypted</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FiShield className="h-3 w-3" />
+                  <span>PCI Compliant</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FiCheckCircle className="h-3 w-3" />
+                  <span>Secure Checkout</span>
+                </div>
+              </div>
+            </div>
+
             <Button
               variant="primary"
-              className="mt-4 w-full"
+              className="mt-0 w-full"
               onClick={handleSubmitOrder}
               disabled={submitting || !selectedAddressId}
               loading={submitting}
+              icon={<FiLock />}
             >
-              {submitting ? 'Placing Order...' : 'Place Order'}
+              {submitting ? 'Placing Order...' : 'Place Secure Order'}
             </Button>
 
             <p className="mt-3 text-center text-xs text-b2b-gray-500 dark:text-b2b-gray-500">

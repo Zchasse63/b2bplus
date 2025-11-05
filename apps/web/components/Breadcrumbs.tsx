@@ -17,7 +17,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
     <nav className={`flex ${className}`} aria-label="Breadcrumb">
       <ol className="flex items-center space-x-2">
         <li>
-          <Link href="/" className="text-gray-500 hover:text-gray-700">
+          <Link href="/" className="text-b2b-gray-500 hover:text-b2b-blue transition-colors">
             <svg
               className="h-5 w-5"
               fill="currentColor"
@@ -30,7 +30,7 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
         {items.map((item, index) => (
           <li key={index} className="flex items-center">
             <svg
-              className="h-5 w-5 flex-shrink-0 text-gray-400"
+              className="h-5 w-5 flex-shrink-0 text-b2b-gray-400"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -41,13 +41,13 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
               />
             </svg>
             {index === items.length - 1 ? (
-              <span className="ml-2 text-sm font-medium text-gray-900">
+              <span className="ml-2 text-sm font-medium text-b2b-text">
                 {item.label}
               </span>
             ) : (
               <Link
                 href={item.href}
-                className="ml-2 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="ml-2 text-sm font-medium text-b2b-gray-500 hover:text-b2b-blue transition-colors"
               >
                 {item.label}
               </Link>

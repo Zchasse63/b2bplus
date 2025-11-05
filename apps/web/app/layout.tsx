@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { FloatingCartButton } from "@/components/FloatingCartButton";
 
 export const metadata: Metadata = {
   title: "B2B+ Platform",
@@ -22,6 +23,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <FloatingCartButton />
         <Toaster />
       </body>
     </html>

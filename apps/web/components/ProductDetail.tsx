@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Card, Button, Input, ProductCard, Modal } from '@/components/b2b';
+import { Card, Button, Input, ProductCard, Modal, Textarea } from '@/components/b2b';
 import {
   FiShoppingCart,
   FiCheckCircle,
   FiAlertTriangle,
   FiChevronRight,
   FiZoomIn,
+  FiPackage,
 } from 'react-icons/fi';
+import { useToast } from '@/hooks/use-toast';
 
 type Product = {
   id: string;
@@ -55,6 +57,7 @@ type Props = {
 export default function ProductDetail({ product, organizationId, relatedProducts }: Props) {
   const [selectedImage, setSelectedImage] = useState(product.image_url);
   const [quantity, setQuantity] = useState(1);
+  const [orderByCase, setOrderByCase] = useState(false);
   const [price, setPrice] = useState(product.base_price);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -62,8 +65,15 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   const [successModal, setSuccessModal] = useState(false);
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const [sampleRequestModal, setSampleRequestModal] = useState(false);
+  const [sampleNotes, setSampleNotes] = useState('');
+  const [requestingSample, setRequestingSample] = useState(false);
   const supabase = createClient();
   const router = useRouter();
+  const { toast } = useToast();
+
+  const unitsPerCase = product.units_per_case || 1;
+  const effectiveQuantity = orderByCase ? quantity * unitsPerCase : quantity;
 
   const allImages = [product.image_url, ...(product.additional_images || [])].filter(
     Boolean
@@ -164,7 +174,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       const { error } = await supabase.from('cart_items').insert({
         user_id: user.id,
         product_id: product.id,
-        quantity,
+        quantity: effectiveQuantity,
       });
 
       if (error) throw error;
@@ -175,6 +185,60 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       alert('Failed to add to cart');
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleRequestSample = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    setRequestingSample(true);
+
+    try {
+      // Get user's organization
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.current_organization_id) {
+        throw new Error('No organization found');
+      }
+
+      // Insert sample request
+      const { error } = await supabase.from('sample_requests').insert({
+        organization_id: profile.current_organization_id,
+        product_id: product.id,
+        requested_by: user.id,
+        notes: sampleNotes,
+        status: 'pending',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sample Request Submitted',
+        description: 'Your sample request has been submitted successfully. We will contact you shortly.',
+      });
+
+      setSampleRequestModal(false);
+      setSampleNotes('');
+    } catch (error) {
+      console.error('Error requesting sample:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit sample request. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRequestingSample(false);
     }
   };
 
@@ -297,11 +361,46 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 )}
               </div>
 
+              {/* Case/Unit Toggle */}
+              {product.units_per_case && product.units_per_case > 1 && (
+                <div className="mb-4 p-3 bg-b2b-blue-50 dark:bg-b2b-blue-900/10 rounded-lg border border-b2b-blue-200 dark:border-b2b-blue-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-b2b-text">Order by:</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setOrderByCase(false)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                          !orderByCase
+                            ? 'bg-b2b-blue text-white'
+                            : 'bg-white dark:bg-navy-800 text-b2b-gray-600 hover:bg-b2b-gray-100'
+                        }`}
+                      >
+                        Units
+                      </button>
+                      <button
+                        onClick={() => setOrderByCase(true)}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                          orderByCase
+                            ? 'bg-b2b-blue text-white'
+                            : 'bg-white dark:bg-navy-800 text-b2b-gray-600 hover:bg-b2b-gray-100'
+                        }`}
+                      >
+                        Cases
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-b2b-gray-600">
+                    {unitsPerCase} units per case
+                    {orderByCase && ` • ${effectiveQuantity} total units`}
+                  </p>
+                </div>
+              )}
+
               <div className="flex gap-4">
                 <div className="w-32">
                   <Input
                     type="number"
-                    label="Quantity"
+                    label={orderByCase ? 'Cases' : 'Quantity'}
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     min={1}
@@ -322,8 +421,13 @@ export default function ProductDetail({ product, organizationId, relatedProducts
 
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 Total: <span className="font-bold text-navy-700 dark:text-white">
-                  ${(price * quantity).toFixed(2)}
+                  ${(price * effectiveQuantity).toFixed(2)}
                 </span>
+                {orderByCase && (
+                  <span className="ml-2 text-xs">
+                    ({effectiveQuantity} units)
+                  </span>
+                )}
               </p>
             </div>
           </Card>
@@ -376,6 +480,21 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 </div>
               </div>
             )}
+
+            {/* Sample Request Button */}
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
+              <Button
+                variant="secondary"
+                className="w-full"
+                icon={<FiPackage />}
+                onClick={() => setSampleRequestModal(true)}
+              >
+                Request Free Sample
+              </Button>
+              <p className="mt-2 text-xs text-center text-b2b-gray-500">
+                Try before you buy - request a free sample to test quality
+              </p>
+            </div>
           </Card>
         </div>
       </div>
@@ -466,6 +585,71 @@ export default function ProductDetail({ product, organizationId, relatedProducts
             </Button>
             <Button variant="primary" className="flex-1" onClick={() => router.push('/cart')}>
               View Cart
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Sample Request Modal */}
+      <Modal
+        isOpen={sampleRequestModal}
+        onClose={() => {
+          setSampleRequestModal(false);
+          setSampleNotes('');
+        }}
+        title="Request Free Sample"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 bg-b2b-green-50 dark:bg-b2b-green-900/10 rounded-lg border border-b2b-green-200 dark:border-b2b-green-800">
+            <FiPackage className="h-5 w-5 text-b2b-green mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-b2b-green mb-1">
+                Free Sample Request
+              </p>
+              <p className="text-xs text-b2b-gray-600 dark:text-b2b-gray-400">
+                We'll send you a free sample of <span className="font-semibold">{product.name}</span> so you can test the quality before placing a full order.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-b2b-text mb-2">Product Details</p>
+            <div className="p-3 bg-b2b-gray-50 dark:bg-navy-800 rounded-lg">
+              <p className="text-sm font-semibold text-b2b-text">{product.name}</p>
+              <p className="text-xs text-b2b-gray-500">SKU: {product.sku}</p>
+            </div>
+          </div>
+
+          <div>
+            <Textarea
+              label="Additional Notes (Optional)"
+              placeholder="Let us know any specific requirements or questions about this sample..."
+              value={sampleNotes}
+              onChange={(e) => setSampleNotes(e.target.value)}
+              rows={4}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setSampleRequestModal(false);
+                setSampleNotes('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              icon={<FiPackage />}
+              onClick={handleRequestSample}
+              loading={requestingSample}
+            >
+              Submit Request
             </Button>
           </div>
         </div>

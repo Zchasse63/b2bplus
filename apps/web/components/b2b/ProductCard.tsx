@@ -77,19 +77,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           {category && (
             <p className="text-xs text-b2b-gray-500 mb-1">{category}</p>
           )}
-          <h3 className="font-semibold text-b2b-dark mb-2 line-clamp-2">{name}</h3>
-          
+          <h3 className="font-semibold text-b2b-text mb-2 line-clamp-2">{name}</h3>
+
           {/* Rating */}
           {rating !== undefined && (
             <div className="flex items-center gap-1 mb-2">
-              <FiStar className="w-4 h-4 fill-b2b-yellow text-b2b-yellow" />
-              <span className="text-sm text-b2b-dark">{rating.toFixed(1)}</span>
+              <FiStar className="w-4 h-4 fill-b2b-orange text-b2b-orange" />
+              <span className="text-sm text-b2b-text">{rating.toFixed(1)}</span>
             </div>
           )}
-          
+
           {/* Price & Action */}
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-b2b-dark">
+            <span className="text-lg font-bold text-b2b-text">
               ${price.toFixed(2)}
             </span>
             {inStock && (
@@ -135,11 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {category && (
           <p className="text-xs text-b2b-gray-500 mb-0.5">{category}</p>
         )}
-        <h3 className="font-semibold text-b2b-dark mb-1 truncate">{name}</h3>
-        
+        <h3 className="font-semibold text-b2b-text mb-1 truncate">{name}</h3>
+
         {/* Price & Stock */}
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-b2b-dark">
+          <span className="text-lg font-bold text-b2b-text">
             ${price.toFixed(2)}
           </span>
           {inStock ? (
@@ -148,11 +148,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <Badge variant="error" size="sm">Out of Stock</Badge>
           )}
         </div>
-        
+
         {/* Rating */}
         {rating !== undefined && (
           <div className="flex items-center gap-1 mt-1">
-            <FiStar className="w-3 h-3 fill-b2b-yellow text-b2b-yellow" />
+            <FiStar className="w-3 h-3 fill-b2b-orange text-b2b-orange" />
             <span className="text-xs text-b2b-gray-500">{rating.toFixed(1)}</span>
           </div>
         )}
