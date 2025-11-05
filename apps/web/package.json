@@ -17,6 +17,7 @@
     "@b2b-plus/supabase": "workspace:*",
     "@b2b-plus/ui": "workspace:*",
     "@google/generative-ai": "^0.24.1",
+    "expo-server-sdk": "^3.10.0",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",

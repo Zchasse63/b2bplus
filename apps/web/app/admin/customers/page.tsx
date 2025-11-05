@@ -44,37 +44,20 @@ export default function AdminCustomersPage() {
 
   const loadCustomers = async () => {
     try {
-      const supabase = createClient();
-      
-      // Fetch organizations
-      const { data: orgs, error: orgsError } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Use optimized endpoint that avoids N+1 queries
+      const response = await fetch('/api/admin/customers/stats');
 
-      if (orgsError) throw orgsError;
+      if (!response.ok) {
+        throw new Error('Failed to fetch customer stats');
+      }
 
-      // Fetch order stats for each customer
-      const customersWithStats = await Promise.all(
-        (orgs || []).map(async (org) => {
-          const { data: orders } = await supabase
-            .from('orders')
-            .select('total')
-            .eq('organization_id', org.id)
-            .neq('status', 'cancelled');
+      const data = await response.json();
 
-          const total_orders = orders?.length || 0;
-          const total_spent = orders?.reduce((sum, order) => sum + parseFloat(order.total || 0), 0) || 0;
-
-          return {
-            ...org,
-            total_orders,
-            total_spent,
-          };
-        })
-      );
-
-      setCustomers(customersWithStats);
+      if (data.success && data.customers) {
+        setCustomers(data.customers);
+      } else {
+        throw new Error('Invalid response format');
+      }
     } catch (error) {
       console.error('Error loading customers:', error);
     } finally {
