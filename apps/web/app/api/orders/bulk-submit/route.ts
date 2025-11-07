@@ -2,6 +2,17 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
+interface BulkOrderItem {
+  sku: string;
+  quantity: number;
+  product_id?: string;
+  product_name?: string;
+  unit_price?: number;
+  total_price?: number;
+  status: 'valid' | 'invalid' | 'warning';
+  error?: string;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // SECURITY: Require authentication
@@ -13,11 +24,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const body = await request.json();
-    const { shippingAddressId, poNumber, notes, paymentTerms } = body;
+    const { items, shippingAddressId, poNumber, notes, paymentTerms } = body;
 
-    if (!shippingAddressId) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: 'Shipping address is required' },
+        { error: 'No items provided' },
         { status: 400 }
       );
     }
@@ -36,106 +47,137 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // SECURITY: Fetch cart items from DATABASE (not from client)
-    const { data: cartItems, error: cartError } = await supabase
-      .from('cart_items')
-      .select(`
-        id,
-        quantity,
-        product_id,
-        products (
-          id,
-          name,
-          sku,
-          base_price,
-          is_active
-        )
-      `)
-      .eq('user_id', user.id);
+    // Filter only valid items
+    const validItems: BulkOrderItem[] = items.filter(
+      (item: BulkOrderItem) => item.status === 'valid' && item.product_id
+    );
 
-    if (cartError) {
-      logger.error('Error fetching cart:', cartError);
+    if (validItems.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to fetch cart' },
-        { status: 500 }
-      );
-    }
-
-    if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Cart is empty' },
+        { error: 'No valid items to order' },
         { status: 400 }
       );
     }
 
-    // Validate all products are active
-    const inactiveProducts = cartItems.filter(item => !item.products?.is_active);
+    // Re-validate products are still active and re-calculate prices
+    // (prices may have changed since preview was generated)
+    const productIds = validItems.map(item => item.product_id!);
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, sku, name, base_price, is_active')
+      .in('id', productIds);
+
+    if (productsError) {
+      logger.error('Error fetching products:', productsError);
+      return NextResponse.json(
+        { error: 'Failed to validate products' },
+        { status: 500 }
+      );
+    }
+
+    // Create product map
+    const productMap = new Map(
+      (products || []).map(p => [p.id, p])
+    );
+
+    // Validate all products are still active
+    const inactiveProducts = validItems.filter(
+      item => !productMap.get(item.product_id!)?.is_active
+    );
+
     if (inactiveProducts.length > 0) {
       return NextResponse.json(
         {
-          error: 'Some products in your cart are no longer available',
-          inactiveProducts: inactiveProducts.map(item => item.products?.name)
+          error: 'Some products are no longer available',
+          inactiveProducts: inactiveProducts.map(item => item.product_name)
         },
         { status: 400 }
       );
     }
 
-    // SECURITY: Calculate pricing SERVER-SIDE using database function
-    // This ensures accurate customer-specific pricing
-    const productIds = cartItems.map(item => item.product_id);
-
-    // Fetch customer-specific prices for each product
-    const pricingPromises = cartItems.map(async (item) => {
+    // Re-calculate prices server-side
+    const pricingPromises = validItems.map(async (item) => {
       const { data: price } = await supabase.rpc('get_customer_price', {
         p_customer_id: user.id,
-        p_product_id: item.product_id,
+        p_product_id: item.product_id!,
         p_quantity: item.quantity,
         p_date: new Date().toISOString().split('T')[0]
       });
 
+      const product = productMap.get(item.product_id!);
+      const unitPrice = price || product?.base_price || 0;
+      const lineTotal = unitPrice * item.quantity;
+
       return {
-        product_id: item.product_id,
-        sku: item.products?.sku,
-        name: item.products?.name,
+        product_id: item.product_id!,
+        sku: item.sku,
+        name: item.product_name || product?.name || '',
         quantity: item.quantity,
-        unit_price: price || item.products?.base_price || 0,
-        line_total: (price || item.products?.base_price || 0) * item.quantity
+        unit_price: unitPrice,
+        line_total: lineTotal
       };
     });
 
     const pricedItems = await Promise.all(pricingPromises);
 
-    // SECURITY: Calculate totals SERVER-SIDE
+    // Calculate totals
     const subtotal = pricedItems.reduce((sum, item) => sum + item.line_total, 0);
 
-    // Fetch tax rate from database (or use default)
-    // TODO: In production, calculate tax based on shipping address location
+    // Tax calculation (TODO: base on shipping address location)
     const taxRate = 0.08; // 8% default tax rate
     const tax = subtotal * taxRate;
 
-    // Calculate shipping cost based on business rules
+    // Shipping cost calculation
     const freeShippingThreshold = 500;
     const standardShippingCost = 50;
     const shippingCost = subtotal >= freeShippingThreshold ? 0 : standardShippingCost;
 
     const total = subtotal + tax + shippingCost;
 
-    // Verify shipping address belongs to organization
-    const { data: shippingAddress, error: addressError } = await supabase
-      .from('shipping_addresses')
-      .select('*')
-      .eq('id', shippingAddressId)
-      .eq('organization_id', profile.current_organization_id)
-      .single();
+    // Get or validate shipping address
+    let finalShippingAddressId = shippingAddressId;
 
-    if (addressError || !shippingAddress) {
-      return NextResponse.json(
-        { error: 'Invalid shipping address' },
-        { status: 400 }
-      );
+    if (!finalShippingAddressId) {
+      // Use default shipping address for the organization
+      const { data: defaultAddress } = await supabase
+        .from('shipping_addresses')
+        .select('id')
+        .eq('organization_id', profile.current_organization_id)
+        .eq('is_default', true)
+        .single();
+
+      if (defaultAddress) {
+        finalShippingAddressId = defaultAddress.id;
+      } else {
+        // Get any shipping address for the organization
+        const { data: anyAddress } = await supabase
+          .from('shipping_addresses')
+          .select('id')
+          .eq('organization_id', profile.current_organization_id)
+          .limit(1)
+          .single();
+
+        if (anyAddress) {
+          finalShippingAddressId = anyAddress.id;
+        }
+      }
     }
 
-    // Create order with SERVER-VERIFIED pricing
+    if (finalShippingAddressId) {
+      // Verify shipping address belongs to organization
+      const { data: shippingAddress, error: addressError } = await supabase
+        .from('shipping_addresses')
+        .select('id')
+        .eq('id', finalShippingAddressId)
+        .eq('organization_id', profile.current_organization_id)
+        .single();
+
+      if (addressError || !shippingAddress) {
+        finalShippingAddressId = null;
+      }
+    }
+
+    // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -146,9 +188,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         tax,
         shipping_cost: shippingCost,
         total,
-        shipping_address_id: shippingAddressId,
+        shipping_address_id: finalShippingAddressId,
         po_number: poNumber || null,
-        notes: notes || null,
+        notes: notes || 'Bulk order upload',
         payment_terms: paymentTerms || 'net_30',
         submitted_at: new Date().toISOString(),
       })
@@ -163,7 +205,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create order items with SERVER-VERIFIED pricing
+    // Create order items
     const orderItems = pricedItems.map(item => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -188,17 +230,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Clear cart
-    const { error: clearError } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('user_id', user.id);
-
-    if (clearError) {
-      logger.error('Error clearing cart:', clearError);
-      // Don't fail the order if cart clear fails
-    }
-
     // Send notification (non-blocking)
     fetch('/api/notifications/order-update', {
       method: 'POST',
@@ -216,14 +247,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         order_number: order.order_number,
         subtotal,
         tax,
-        shippingCost,
+        shipping_cost: shippingCost,
         total,
-        items: pricedItems,
+        items_count: pricedItems.length,
       }
     });
 
   } catch (error) {
-    logger.error('Error in checkout API:', error);
+    logger.error('Error in bulk submit API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

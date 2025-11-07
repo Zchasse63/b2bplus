@@ -43,6 +43,7 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>('')
   const [poNumber, setPoNumber] = useState('')
   const [notes, setNotes] = useState('')
+  const [paymentTerms, setPaymentTerms] = useState<string>('net_30')
   const [pricing, setPricing] = useState<any>(null)
   const [successModal, setSuccessModal] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
@@ -177,6 +178,7 @@ export default function CheckoutPage() {
           shippingAddressId: validatedData.shippingAddressId,
           poNumber: validatedData.poNumber || null,
           notes: validatedData.notes || null,
+          paymentTerms: paymentTerms || 'net_30',
         }),
       })
 
@@ -310,6 +312,33 @@ export default function CheckoutPage() {
                     {poNumber.length}/50 characters
                   </p>
                 )}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-b2b-dark dark:text-white">
+                  Payment Terms
+                </label>
+                <p className="mb-2 text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+                  Select your preferred payment terms
+                </p>
+                <select
+                  id="payment-terms"
+                  value={paymentTerms}
+                  onChange={(e) => setPaymentTerms(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-b2b-dark transition-colors hover:border-brand-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-navy-700 dark:bg-navy-800 dark:text-white dark:hover:border-brand-500"
+                >
+                  <option value="net_30">Net 30 Days</option>
+                  <option value="net_60">Net 60 Days</option>
+                  <option value="net_90">Net 90 Days</option>
+                  <option value="prepaid">Prepaid</option>
+                  <option value="credit_card">Credit Card (Future)</option>
+                </select>
+                <p className="mt-2 text-xs text-b2b-gray-500 dark:text-b2b-gray-500">
+                  {paymentTerms === 'net_30' && 'Payment due within 30 days of invoice date'}
+                  {paymentTerms === 'net_60' && 'Payment due within 60 days of invoice date'}
+                  {paymentTerms === 'net_90' && 'Payment due within 90 days of invoice date'}
+                  {paymentTerms === 'prepaid' && 'Payment required before shipment'}
+                  {paymentTerms === 'credit_card' && 'Credit card payment (coming soon)'}
+                </p>
               </div>
               <div>
                 <label className="mb-1 block text-sm font-semibold text-b2b-dark dark:text-white">
