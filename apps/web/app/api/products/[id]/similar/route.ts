@@ -6,7 +6,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // SECURITY: Require authentication to access product data
     const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;

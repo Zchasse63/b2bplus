@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require admin authentication for lead pricing data
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const { leadId, productId } = await request.json();
 
     if (!leadId || !productId) {

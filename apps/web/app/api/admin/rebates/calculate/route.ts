@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require admin authentication for rebate calculations
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const { userId, periodStart, periodEnd, rebateType } = await request.json();
 
     if (!userId || !periodStart || !periodEnd || !rebateType) {
@@ -77,6 +82,10 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // SECURITY: Require admin authentication to view all rebates
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const status = searchParams.get('status') || 'all';

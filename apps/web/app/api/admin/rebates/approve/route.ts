@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require admin authentication for rebate approval/payment
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const { rebateId, action, paymentMethod, paymentReference, notes } = await request.json();
 
     if (!rebateId || !action) {
@@ -13,15 +18,6 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     const updateData: any = {
       approved_by: user.id,
