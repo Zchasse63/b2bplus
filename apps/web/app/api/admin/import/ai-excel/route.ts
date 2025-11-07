@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSON } from '@/lib/gemini';
+import { sanitizeForPrompt, sanitizeArrayForPrompt } from '@/lib/security/prompt-sanitizer';
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -63,15 +64,49 @@ export async function POST(request: NextRequest) {
 
     const targetFields = expectedFields[importType] || expectedFields.products;
 
+    // SECURITY: Strict validation and sanitization for user-controlled data
+    // This is CRITICAL as attackers control the entire Excel file content
+    const MAX_HEADERS = 50;
+    const MAX_SAMPLES = 3;
+    const MAX_HEADER_LENGTH = 100;
+    const MAX_CELL_LENGTH = 100;
+
+    if (headers.length > MAX_HEADERS) {
+      return NextResponse.json(
+        { error: `Too many columns. Maximum ${MAX_HEADERS} columns supported.` },
+        { status: 400 }
+      );
+    }
+
+    if (sampleRows.length > 10) {
+      return NextResponse.json(
+        { error: 'Too many sample rows. Maximum 10 rows supported.' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize import type
+    const sanitizedImportType = ['products', 'prices', 'inventory'].includes(importType)
+      ? importType
+      : 'products';
+
+    // Sanitize headers and samples
+    const sanitizedHeaders = sanitizeArrayForPrompt(headers, MAX_HEADER_LENGTH, MAX_HEADERS);
+
     // Use Gemini 2.5 Flash for smart column mapping
     const prompt = `I need to map Excel columns to database fields for a B2B e-commerce platform.
 
-Import Type: ${importType}
+Import Type: ${sanitizedImportType}
 
 Excel Columns (with sample data):
-${headers.map((header: string, idx: number) => {
-  const samples = sampleRows.slice(0, 3).map((row: any) => row[idx]).filter(Boolean);
-  return `- "${header}": ${samples.join(', ')}`;
+${sanitizedHeaders.map((header: string, idx: number) => {
+  const rawSamples = sampleRows.slice(0, MAX_SAMPLES).map((row: any) => {
+    const value = row[idx];
+    if (value === null || value === undefined) return '';
+    return String(value).substring(0, MAX_CELL_LENGTH);
+  }).filter(Boolean);
+  const samples = sanitizeArrayForPrompt(rawSamples, MAX_CELL_LENGTH, MAX_SAMPLES);
+  return `- "${sanitizeForPrompt(header, MAX_HEADER_LENGTH)}": ${samples.join(', ')}`;
 }).join('\n')}
 
 Target Database Fields:

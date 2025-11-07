@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/gemini'
+import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer'
 
 /**
  * Opportunity Detection API
@@ -320,14 +321,22 @@ async function generateOpportunityReasoning(
       .eq('id', data.product_id)
       .single()
 
+    // SECURITY: Sanitize all inputs before using in AI prompts
+    const sanitizedProductName = sanitizeForPrompt(product?.name || 'Unknown');
+    const sanitizedCategory = sanitizeForPrompt(product?.category || 'Unknown');
+    const sanitizedDate = sanitizeForPrompt(String(data.last_purchase_date || ''), 50);
+    const daysSince = Math.max(0, Math.min(9999, parseInt(String(data.days_since_purchase || 0))));
+    const historicalRevenue = Math.max(0, parseFloat(String(data.total_historical_revenue || 0))).toFixed(2);
+
     let prompt = ''
 
     if (type === 'stopped_buying') {
-      prompt = `Customer stopped buying "${product?.name}" (${product?.category}). 
-Last purchase: ${data.last_purchase_date}
-Days since: ${data.days_since_purchase}
-Historical revenue: $${data.total_historical_revenue}
-Average frequency: every ${data.avg_frequency_days} days
+      const avgFrequency = Math.max(0, Math.min(999, parseInt(String(data.avg_frequency_days || 0))));
+      prompt = `Customer stopped buying "${sanitizedProductName}" (${sanitizedCategory}).
+Last purchase: ${sanitizedDate}
+Days since: ${daysSince}
+Historical revenue: $${historicalRevenue}
+Average frequency: every ${avgFrequency} days
 
 Write a brief, actionable reason why this is a sales opportunity (1-2 sentences).`
     }
