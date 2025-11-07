@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/gemini';
+import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,20 +75,30 @@ export async function POST(request: NextRequest) {
         let personalizedBody = campaign.body_template;
 
         if (useAI) {
+          // SECURITY: Sanitize all user inputs before using in AI prompts
+          const sanitizedLead = {
+            company_name: sanitizeForPrompt(lead.company_name),
+            contact_name: sanitizeForPrompt(lead.contact_name),
+            industry: sanitizeForPrompt(lead.industry || 'Not specified'),
+            region: sanitizeForPrompt(lead.regions?.name || 'Not specified'),
+            buying_group: sanitizeForPrompt(lead.buying_groups?.name || 'None'),
+            lead_score: Math.max(0, Math.min(100, Number(lead.lead_score) || 0))
+          };
+
           // Use AI to personalize the email
           const aiPrompt = `
 You are a B2B sales expert. Personalize this email for the following lead:
 
 Lead Information:
-- Company: ${lead.company_name}
-- Contact Name: ${lead.contact_name}
-- Industry: ${lead.industry || 'Not specified'}
-- Region: ${lead.regions?.name || 'Not specified'}
-- Buying Group: ${lead.buying_groups?.name || 'None'}
-- Lead Score: ${lead.lead_score}/100
+- Company: ${sanitizedLead.company_name}
+- Contact Name: ${sanitizedLead.contact_name}
+- Industry: ${sanitizedLead.industry}
+- Region: ${sanitizedLead.region}
+- Buying Group: ${sanitizedLead.buying_group}
+- Lead Score: ${sanitizedLead.lead_score}/100
 
-Original Email Subject: ${campaign.subject}
-Original Email Body: ${campaign.body_template}
+Original Email Subject: ${sanitizeForPrompt(campaign.subject, 500)}
+Original Email Body: ${sanitizeForPrompt(campaign.body_template, 2000)}
 
 Instructions:
 1. Personalize the subject line to be more engaging and relevant to this specific lead

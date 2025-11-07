@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateText } from '@/lib/gemini'
+import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer'
 
 /**
  * Pricing Optimization API
@@ -290,13 +291,21 @@ async function getAIPricingInsights(
   currentPrice: number
 ): Promise<string> {
   try {
+    // SECURITY: Sanitize inputs for AI prompt
+    const sanitizedProductName = sanitizeForPrompt(product.name);
+    const sanitizedCurrentPrice = Math.max(0, parseFloat(String(currentPrice)) || 0).toFixed(2);
+    const sanitizedSuggestedPrice = Math.max(0, parseFloat(String(suggestedPrice)) || 0).toFixed(2);
+    const orderCount = Math.max(0, Math.min(100000, historicalOrders.length));
+    const totalOrders = Math.max(0, Math.min(100000, analytics?.total_orders || 0));
+    const totalRevenue = Math.max(0, parseFloat(String(analytics?.total_revenue || 0))).toFixed(2);
+
     const prompt = `Analyze this B2B pricing scenario and provide a brief recommendation:
 
-Product: ${product.name}
-Current Price: $${currentPrice}
-Suggested Price: $${suggestedPrice}
-Customer Purchase History: ${analytics ? `${analytics.total_orders} orders, $${analytics.total_revenue} total revenue` : 'No history'}
-Historical Orders: ${historicalOrders.length} orders
+Product: ${sanitizedProductName}
+Current Price: $${sanitizedCurrentPrice}
+Suggested Price: $${sanitizedSuggestedPrice}
+Customer Purchase History: ${analytics ? `${totalOrders} orders, $${totalRevenue} total revenue` : 'No history'}
+Historical Orders: ${orderCount} orders
 
 Provide a 1-2 sentence recommendation on whether this pricing is optimal and why.`
 
