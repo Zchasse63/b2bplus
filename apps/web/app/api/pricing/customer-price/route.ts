@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use provided customerId or current user
+    // SECURITY: Only admins can query pricing for other customers
+    // Prevents customer impersonation and unauthorized access to pricing data
+    if (customerId && customerId !== user.id) {
+      const { error: adminError } = await checkAdminRole();
+      if (adminError) {
+        return NextResponse.json(
+          { error: 'Forbidden: Only admins can query pricing for other customers' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Use provided customerId (admin only) or current user
     const targetCustomerId = customerId || user.id;
 
     // Call the database function to get customer price
