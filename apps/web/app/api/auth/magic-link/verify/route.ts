@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (sessionError || !sessionData.session) {
-        console.error('Error creating session:', sessionError);
+        logger.error('Error creating session:', sessionError);
         return NextResponse.redirect(new URL('/login?error=session_failed', request.url));
       }
 
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (signUpError || !authData.user) {
-        console.error('Error creating user account:', signUpError);
+        logger.error('Error creating user account:', signUpError);
         return NextResponse.redirect(new URL('/login?error=signup_failed', request.url));
       }
 
@@ -180,7 +181,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/signup?email=' + encodeURIComponent(magicLinkToken.email || ''), request.url));
 
   } catch (error) {
-    console.error('Error in magic link verification:', error);
+    logger.error('Error in magic link verification:', error);
     return NextResponse.redirect(new URL('/login?error=server_error', request.url));
   }
 }

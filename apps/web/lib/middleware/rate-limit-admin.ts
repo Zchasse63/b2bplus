@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit, RateLimitConfig } from '@/lib/rate-limit';
+import { logSecurityEvent, logger } from '@/lib/logger';
 
 /**
  * Rate limit tiers for different admin operations
@@ -158,12 +159,16 @@ export async function checkAdminRateLimit(
     const rateLimitResult = await checkRateLimit(supabase, rateLimitConfig);
 
     if (!rateLimitResult.allowed) {
-      console.warn('Admin endpoint rate limit exceeded', {
-        userId: user.id,
-        tier,
-        pathname: request.nextUrl.pathname,
-        method: request.method,
-      });
+      logSecurityEvent(
+        'Admin endpoint rate limit exceeded',
+        'medium',
+        {
+          userId: user.id,
+          tier,
+          pathname: request.nextUrl.pathname,
+          method: request.method,
+        }
+      );
 
       return NextResponse.json(
         {
@@ -193,7 +198,7 @@ export async function checkAdminRateLimit(
 
     return null; // Rate limit check passed
   } catch (error) {
-    console.error('Error checking admin rate limit:', error);
+    logger.error('Error checking admin rate limit:', error);
     // On error, allow the request (fail open) but log for monitoring
     return null;
   }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { sanitizeCampaignHTML } from '@/lib/security/html-sanitizer';
+import { logger } from '@/lib/logger';
 
 // GET all campaigns
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching campaigns:', error);
+      logger.error('Error fetching campaigns:', error);
       return NextResponse.json({ error: 'Failed to fetch campaigns' }, { status: 500 });
     }
 
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, campaigns: campaignsWithStats });
 
   } catch (error) {
-    console.error('Error in campaigns API:', error);
+    logger.error('Error in campaigns API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (campaignError) {
-      console.error('Error creating campaign:', campaignError);
+      logger.error('Error creating campaign:', campaignError);
       return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 });
     }
 
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, campaign });
 
   } catch (error) {
-    console.error('Error in campaigns POST API:', error);
+    logger.error('Error in campaigns POST API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -205,14 +206,14 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating campaign:', error);
+      logger.error('Error updating campaign:', error);
       return NextResponse.json({ error: 'Failed to update campaign' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, campaign: updatedCampaign });
 
   } catch (error) {
-    console.error('Error in campaigns PATCH API:', error);
+    logger.error('Error in campaigns PATCH API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -239,14 +240,14 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting campaign:', error);
+      logger.error('Error deleting campaign:', error);
       return NextResponse.json({ error: 'Failed to delete campaign' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in campaigns DELETE API:', error);
+    logger.error('Error in campaigns DELETE API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

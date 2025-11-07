@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateEmbedding } from '@/lib/gemini';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 // POST semantic search
 export async function POST(request: NextRequest) {
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (searchError) {
-      console.error('Semantic search error:', searchError);
+      logger.error('Semantic search error:', searchError);
       // Fall back to keyword search
       return performKeywordSearch(supabase, query, limit);
     }
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
       .in('id', productIds);
 
     if (productsError) {
-      console.error('Error fetching products:', productsError);
+      logger.error('Error fetching products:', productsError);
       return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 
@@ -148,8 +149,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in semantic search API:', error);
-    
+    logger.error('Error in semantic search API:', error);
+
     // Fall back to keyword search on error
     try {
       const supabase = await createClient();
@@ -199,7 +200,7 @@ async function performKeywordSearch(supabase: any, query: string, limit: number)
   const { data: products, error } = await productsQuery;
 
   if (error) {
-    console.error('Keyword search error:', error);
+    logger.error('Keyword search error:', error);
     return NextResponse.json({ error: 'Search failed' }, { status: 500 });
   }
 
@@ -244,7 +245,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, suggestions });
 
   } catch (error) {
-    console.error('Error in search suggestions API:', error);
+    logger.error('Error in search suggestions API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { logger } from '@/lib/logger';
 
 /**
  * DELETE /api/admin/products/[id]
@@ -95,7 +96,7 @@ export async function DELETE(
         .eq('product_id', productId);
 
       if (deleteCartError) {
-        console.error('Failed to remove from carts:', deleteCartError);
+        logger.error('Failed to remove from carts:', deleteCartError);
       }
     }
 
@@ -118,7 +119,7 @@ export async function DELETE(
         .eq('product_id', productId);
 
       if (deletePricingError) {
-        console.error('Failed to delete custom pricing:', deletePricingError);
+        logger.error('Failed to delete custom pricing:', deletePricingError);
       }
     }
 
@@ -141,7 +142,7 @@ export async function DELETE(
         .eq('product_id', productId);
 
       if (deleteDiscountsError) {
-        console.error('Failed to delete volume discounts:', deleteDiscountsError);
+        logger.error('Failed to delete volume discounts:', deleteDiscountsError);
       }
     }
 
@@ -193,7 +194,7 @@ export async function DELETE(
         .or(`product_id.eq.${productId},recommended_product_id.eq.${productId}`);
 
       if (deleteRecError) {
-        console.error('Failed to delete recommendations:', deleteRecError);
+        logger.error('Failed to delete recommendations:', deleteRecError);
       }
     }
 
@@ -229,7 +230,7 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error('Error deleting product:', error);
+    logger.error('Error deleting product:', error);
     return NextResponse.json(
       {
         error: 'Failed to delete product',
@@ -271,7 +272,7 @@ export async function GET(
 
     return NextResponse.json({ product });
   } catch (error) {
-    console.error('Error fetching product:', error);
+    logger.error('Error fetching product:', error);
     return NextResponse.json(
       { error: 'Failed to fetch product' },
       { status: 500 }
@@ -320,7 +321,7 @@ export async function PUT(
 
     return NextResponse.json({ product });
   } catch (error) {
-    console.error('Error updating product:', error);
+    logger.error('Error updating product:', error);
     return NextResponse.json(
       {
         error: 'Failed to update product',

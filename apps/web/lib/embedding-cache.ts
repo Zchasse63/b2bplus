@@ -13,6 +13,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { generateEmbedding } from '@/lib/gemini';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 import crypto from 'crypto';
 
 interface CachedEmbedding {
@@ -157,7 +158,7 @@ export async function getCachedEmbedding(
     };
   } catch (error) {
     // If caching fails, fall back to direct generation (with rate limiting if userId provided)
-    console.error('Embedding cache error, falling back to direct generation:', error);
+    logger.error('Embedding cache error, falling back to direct generation:', error);
     const embedding = userId
       ? await rateLimitedGenerateEmbedding(text, userId)
       : await generateEmbedding(text);
@@ -304,7 +305,7 @@ export async function getBatchCachedEmbeddings(
     return results;
   } catch (error) {
     // If batch caching fails, fall back to direct generation (with rate limiting if userId provided)
-    console.error('Batch embedding cache error, falling back to direct generation:', error);
+    logger.error('Batch embedding cache error, falling back to direct generation:', error);
     const embeddings = await Promise.all(
       texts.map(text =>
         userId
@@ -367,7 +368,7 @@ export async function precacheProductEmbeddings(): Promise<{
       errors: 0,
     };
   } catch (error) {
-    console.error('Error pre-caching product embeddings:', error);
+    logger.error('Error pre-caching product embeddings:', error);
     return {
       total: 0,
       cached: 0,
@@ -416,7 +417,7 @@ export async function getCacheStats(): Promise<{
       newestEntry: data[0]?.created_at || null,
     };
   } catch (error) {
-    console.error('Error getting cache stats:', error);
+    logger.error('Error getting cache stats:', error);
     return {
       totalEntries: 0,
       totalUses: 0,

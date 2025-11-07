@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateEmbedding, cosineSimilarity as geminiCosineSimilarity } from '@/lib/gemini'
+import { logger } from '@/lib/logger'
 
 interface ProductToMap {
   oldSKU: string
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('SKU mapping error:', error)
+    logger.error('SKU mapping error:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to map SKUs' },
       { status: 500 }
@@ -198,7 +199,7 @@ async function findEmbeddingMatch(
 
     return null
   } catch (error) {
-    console.error('Embedding match error:', error)
+    logger.error('Embedding match error:', error)
     return null
   }
 }

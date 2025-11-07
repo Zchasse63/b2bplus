@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 interface ImportRow {
   [key: string]: any;
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in execute import API:', error);
+    logger.error('Error in execute import API:', error);
     return NextResponse.json(
       { error: 'Failed to execute import', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

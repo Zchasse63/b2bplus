@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { checkAdminRole } from "@/lib/middleware/admin";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Invalid analytics type" }, { status: 400 });
     }
   } catch (error: any) {
-    console.error("Analytics error:", error);
+    logger.error("Analytics error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch analytics" },
       { status: 500 }

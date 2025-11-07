@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { logger, logSecurityEvent } from '@/lib/logger';
 
 // Use service role key for webhook (bypasses RLS)
 const supabase = createClient(
@@ -35,7 +36,9 @@ function verifySignature(request: NextRequest, payload: string): boolean {
   const verificationKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
 
   if (!verificationKey) {
-    console.error('SENDGRID_WEBHOOK_VERIFICATION_KEY not configured');
+    logSecurityEvent('SENDGRID_WEBHOOK_VERIFICATION_KEY not configured', 'high', {
+      environment: process.env.NODE_ENV,
+    });
     // In development, you might want to skip verification
     // In production, this should always be required
     return process.env.NODE_ENV === 'development';
@@ -45,7 +48,10 @@ function verifySignature(request: NextRequest, payload: string): boolean {
   const timestamp = request.headers.get('X-Twilio-Email-Event-Webhook-Timestamp');
 
   if (!signature || !timestamp) {
-    console.error('Missing signature or timestamp headers');
+    logSecurityEvent('Missing signature or timestamp headers in webhook request', 'medium', {
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+    });
     return false;
   }
 
@@ -55,7 +61,11 @@ function verifySignature(request: NextRequest, payload: string): boolean {
   const maxAge = 10 * 60 * 1000; // 10 minutes
 
   if (Math.abs(now - timestampMs) > maxAge) {
-    console.error('Webhook timestamp too old or in future');
+    logSecurityEvent('Webhook timestamp too old or in future', 'medium', {
+      timestamp: timestampMs,
+      now,
+      difference: Math.abs(now - timestampMs),
+    });
     return false;
   }
 
@@ -72,12 +82,12 @@ function verifySignature(request: NextRequest, payload: string): boolean {
     const isValid = verifier.verify(publicKey, signature, 'base64');
 
     if (!isValid) {
-      console.error('Invalid webhook signature');
+      logSecurityEvent('Invalid webhook signature', 'high');
     }
 
     return isValid;
   } catch (error) {
-    console.error('Error verifying signature:', error);
+    logger.error('Error verifying signature:', error);
     return false;
   }
 }
@@ -89,7 +99,9 @@ export async function POST(request: NextRequest) {
 
     // SECURITY: Verify webhook signature before processing
     if (!verifySignature(request, rawBody)) {
-      console.error('Webhook signature verification failed');
+      logSecurityEvent('Webhook signature verification failed', 'critical', {
+        url: request.url,
+      });
       return NextResponse.json(
         { error: 'Unauthorized: Invalid signature' },
         { status: 401 }
@@ -102,13 +114,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    console.log(`Received ${events.length} SendGrid webhook events`);
+    logger.info(`Received ${events.length} SendGrid webhook events`);
 
     for (const event of events) {
       try {
         await processEvent(event);
       } catch (error) {
-        console.error('Error processing event:', error, event);
+        logger.error('Error processing event:', error, event);
         // Continue processing other events
       }
     }
@@ -119,10 +131,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('SendGrid webhook error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to process webhook', 
-      details: error.message 
+    logger.error('SendGrid webhook error:', error);
+    return NextResponse.json({
+      error: 'Failed to process webhook',
+      details: error.message
     }, { status: 500 });
   }
 }
@@ -144,7 +156,7 @@ async function processEvent(event: any) {
     ip,
   } = event;
 
-  console.log(`Processing ${eventType} event for ${email}`);
+  logger.log(`Processing ${eventType} event for ${email}`);
 
   // Find recipient by custom args or email
   let recipient;
@@ -182,7 +194,7 @@ async function processEvent(event: any) {
   }
 
   if (!recipient) {
-    console.warn(`Recipient not found for event: ${eventType}, email: ${email}`);
+    logger.warn(`Recipient not found for event: ${eventType}, email: ${email}`);
     return;
   }
 
@@ -217,9 +229,9 @@ async function processEvent(event: any) {
     case 'unsubscribe':
       await handleUnsubscribe(recipient, eventTimestamp);
       break;
-    
+
     default:
-      console.log(`Unhandled event type: ${eventType}`);
+      logger.log(`Unhandled event type: ${eventType}`);
   }
 }
 
@@ -473,7 +485,7 @@ async function handleSpamReport(recipient: any, timestamp: string) {
       });
 
     // TODO: Send alert to admin about spam report
-    console.warn(`SPAM REPORT: Lead ${recipient.lead_id} marked email as spam`);
+    logger.warn(`SPAM REPORT: Lead ${recipient.lead_id} marked email as spam`);
   }
 }
 

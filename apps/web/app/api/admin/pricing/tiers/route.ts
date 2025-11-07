@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { logger } from '@/lib/logger';
 
 // GET all pricing tiers
 export async function GET(request: NextRequest) {
@@ -17,14 +18,14 @@ export async function GET(request: NextRequest) {
       .order('priority', { ascending: false });
 
     if (error) {
-      console.error('Error fetching pricing tiers:', error);
+      logger.error('Error fetching pricing tiers:', error);
       return NextResponse.json({ error: 'Failed to fetch tiers' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, tiers });
 
   } catch (error) {
-    console.error('Error in pricing tiers API:', error);
+    logger.error('Error in pricing tiers API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating pricing tier:', error);
+      logger.error('Error creating pricing tier:', error);
       return NextResponse.json(
         { error: 'Failed to create tier' },
         { status: 500 }
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, tier });
 
   } catch (error) {
-    console.error('Error in pricing tiers POST API:', error);
+    logger.error('Error in pricing tiers POST API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -105,14 +106,14 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating pricing tier:', error);
+      logger.error('Error updating pricing tier:', error);
       return NextResponse.json({ error: 'Failed to update tier' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, tier });
 
   } catch (error) {
-    console.error('Error in pricing tiers PATCH API:', error);
+    logger.error('Error in pricing tiers PATCH API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -138,14 +139,14 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting pricing tier:', error);
+      logger.error('Error deleting pricing tier:', error);
       return NextResponse.json({ error: 'Failed to delete tier' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in pricing tiers DELETE API:', error);
+    logger.error('Error in pricing tiers DELETE API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

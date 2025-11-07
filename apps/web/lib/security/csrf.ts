@@ -9,6 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logSecurityEvent } from '@/lib/logger';
 
 /**
  * Check if the request origin is trusted
@@ -125,12 +126,16 @@ export async function checkCSRF(
       }
     }
 
-    console.warn('CSRF: Blocked request from untrusted origin', {
-      method,
-      pathname: request.nextUrl.pathname,
-      origin: request.headers.get('origin'),
-      referer: request.headers.get('referer'),
-    });
+    logSecurityEvent(
+      'CSRF: Blocked request from untrusted origin',
+      'high',
+      {
+        method,
+        pathname: request.nextUrl.pathname,
+        origin: request.headers.get('origin'),
+        referer: request.headers.get('referer'),
+      }
+    );
 
     return NextResponse.json(
       {
@@ -144,10 +149,14 @@ export async function checkCSRF(
   // For high-risk operations, also verify CSRF token
   if (requireToken) {
     if (!verifyCSRFToken(request)) {
-      console.warn('CSRF: Invalid or missing CSRF token', {
-        method,
-        pathname: request.nextUrl.pathname,
-      });
+      logSecurityEvent(
+        'CSRF: Invalid or missing CSRF token',
+        'high',
+        {
+          method,
+          pathname: request.nextUrl.pathname,
+        }
+      );
 
       return NextResponse.json(
         {

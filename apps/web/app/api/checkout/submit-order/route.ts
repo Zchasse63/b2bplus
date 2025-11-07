@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (cartError) {
-      console.error('Error fetching cart:', cartError);
+      logger.error('Error fetching cart:', cartError);
       return NextResponse.json(
         { error: 'Failed to fetch cart' },
         { status: 500 }
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('Error creating order:', orderError);
+      logger.error('Error creating order:', orderError);
       return NextResponse.json(
         { error: 'Failed to create order' },
         { status: 500 }
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
       .insert(orderItems);
 
     if (itemsError) {
-      console.error('Error creating order items:', itemsError);
+      logger.error('Error creating order items:', itemsError);
       // Rollback: delete the order
       await supabase.from('orders').delete().eq('id', order.id);
       return NextResponse.json(
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (clearError) {
-      console.error('Error clearing cart:', clearError);
+      logger.error('Error clearing cart:', clearError);
       // Don't fail the order if cart clear fails
     }
 
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
         orderId: order.id,
         status: 'submitted',
       }),
-    }).catch(err => console.error('Failed to send notification:', err));
+    }).catch(err => logger.error('Failed to send notification:', err));
 
     return NextResponse.json({
       success: true,
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in checkout API:', error);
+    logger.error('Error in checkout API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

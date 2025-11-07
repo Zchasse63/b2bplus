@@ -5,6 +5,7 @@ import { generateJSON } from '@/lib/gemini';
 import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer';
 import { sanitizeEmailHTML } from '@/lib/security/html-sanitizer';
 import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 
 // PERFORMANCE: Batch size for concurrent email processing
 // Lower batch size for AI-personalized emails due to AI API rate limits
@@ -137,7 +138,7 @@ Return ONLY the personalized email in this exact JSON format:
                 // The AI could potentially generate malicious HTML/JavaScript
                 personalizedBody = sanitizeEmailHTML(aiContent.body || campaign.body_template);
               } catch (parseError) {
-                console.error('Error generating AI personalization:', parseError);
+                logger.error('Error generating AI personalization:', parseError);
                 // Fall back to template-based personalization
               }
             }
@@ -231,7 +232,7 @@ Return ONLY the personalized email in this exact JSON format:
             return { success: true, lead };
 
           } catch (emailError) {
-            console.error(`Error sending email to ${lead.email}:`, emailError);
+            logger.error(`Error sending email to ${lead.email}:`, emailError);
 
             // Track failed send
             await supabase
@@ -284,7 +285,7 @@ Return ONLY the personalized email in this exact JSON format:
     });
 
   } catch (error) {
-    console.error('Error in personalized campaign send:', error);
+    logger.error('Error in personalized campaign send:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
