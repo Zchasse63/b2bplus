@@ -248,6 +248,7 @@ export default function SecuritySettingsPage() {
                     placeholder="Enter verification code"
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value)}
+                    autoComplete="one-time-code"
                     className="w-48"
                   />
                   <Button
@@ -345,6 +346,7 @@ export default function SecuritySettingsPage() {
                     maxLength={6}
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
+                    autoComplete="one-time-code"
                     className="max-w-xs"
                   />
                 </div>

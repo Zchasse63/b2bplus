@@ -95,6 +95,25 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* WCAG 2.4.7 - Ensure all interactive elements have visible focus indicators */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* For elements that already have custom focus rings, ensure they're visible */
+  a:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
 }
 
 @layer utilities {

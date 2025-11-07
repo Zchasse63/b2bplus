@@ -40,17 +40,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // SECURITY: Validate file content (magic numbers) to prevent fake extensions
+    // Read first few bytes to verify actual file type
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const header = buffer.slice(0, 4).toString('hex');
+
+    // Check magic numbers for common image formats
+    const isValidImage =
+      header.startsWith('ffd8ff') ||  // JPEG
+      header.startsWith('89504e47') || // PNG
+      header.startsWith('47494638') || // GIF
+      header.startsWith('52494646');  // WEBP (starts with RIFF)
+
+    if (!isValidImage) {
+      return NextResponse.json(
+        { error: 'Invalid image file. File content does not match a supported image format.' },
+        { status: 400 }
+      );
+    }
+
     // Generate unique filename
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 8);
     const fileExt = file.name.split('.').pop();
     const fileName = `product-${timestamp}-${randomString}.${fileExt}`;
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (buffer already created during validation)
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
       .upload(fileName, buffer, {

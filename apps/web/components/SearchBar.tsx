@@ -49,6 +49,7 @@ export default function SearchBar({
           onChange={(e) => setSearchQuery(e.target.value)}
           className="block w-full rounded-lg border border-gray-300 bg-white py-3 pl-10 pr-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder={placeholder}
+          autoComplete="off"
         />
         {searchQuery && (
           <button

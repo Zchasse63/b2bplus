@@ -149,6 +149,7 @@ export default function Login() {
               }}
               error={errors.email}
               placeholder="you@example.com"
+              autoComplete="email"
               required
             />
 
@@ -162,6 +163,7 @@ export default function Login() {
               }}
               error={errors.password}
               placeholder="••••••••"
+              autoComplete="current-password"
               required
             />
 

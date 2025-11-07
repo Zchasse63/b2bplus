@@ -302,6 +302,7 @@ export default function ContactsPage() {
             placeholder="Search contacts by name, email, or organization..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
             icon={<FiSearch />}
           />
         </div>
@@ -392,12 +393,14 @@ export default function ContactsPage() {
               label="First Name"
               value={formData.first_name}
               onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+              autoComplete="given-name"
               required
             />
             <Input
               label="Last Name"
               value={formData.last_name}
               onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+              autoComplete="family-name"
               required
             />
           </div>
@@ -406,6 +409,7 @@ export default function ContactsPage() {
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            autoComplete="email"
             required
           />
           <Input
@@ -413,11 +417,13 @@ export default function ContactsPage() {
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            autoComplete="tel"
           />
           <Input
             label="Title"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            autoComplete="organization-title"
           />
           <Select
             label="Role"

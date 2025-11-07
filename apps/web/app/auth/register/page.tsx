@@ -143,6 +143,7 @@ export default function Register() {
               onChange={(e) => updateField('fullName', e.target.value)}
               error={errors.fullName}
               placeholder="John Doe"
+              autoComplete="name"
               required
             />
 
@@ -153,6 +154,7 @@ export default function Register() {
               onChange={(e) => updateField('email', e.target.value)}
               error={errors.email}
               placeholder="you@company.com"
+              autoComplete="email"
               required
             />
 
@@ -163,6 +165,7 @@ export default function Register() {
               onChange={(e) => updateField('password', e.target.value)}
               error={errors.password}
               placeholder="••••••••"
+              autoComplete="new-password"
               required
             />
 
@@ -173,6 +176,7 @@ export default function Register() {
               onChange={(e) => updateField('confirmPassword', e.target.value)}
               error={errors.confirmPassword}
               placeholder="••••••••"
+              autoComplete="new-password"
               required
             />
 

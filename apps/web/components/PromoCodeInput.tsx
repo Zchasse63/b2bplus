@@ -92,6 +92,7 @@ export default function PromoCodeInput({
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               onKeyPress={(e) => e.key === 'Enter' && handleApply()}
               placeholder="Enter code"
+              autoComplete="off"
               className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               disabled={loading}
             />

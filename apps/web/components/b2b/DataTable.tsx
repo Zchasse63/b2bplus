@@ -17,6 +17,8 @@ export interface DataTableProps<T> {
   emptyMessage?: string;
   className?: string;
   responsive?: boolean;
+  caption?: string; // Accessible table caption
+  ariaLabel?: string; // Aria-label for the table
 }
 
 /**
@@ -36,12 +38,14 @@ export function DataTable<T extends Record<string, any>>({
   emptyMessage = 'No data available',
   className,
   responsive = true,
+  caption,
+  ariaLabel,
 }: DataTableProps<T>) {
   if (loading) {
     return (
       <Card className={cn('p-8', className)}>
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-b2b-yellow"></div>
+        <div className="flex items-center justify-center" role="status" aria-live="polite">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-b2b-yellow" aria-hidden="true"></div>
           <span className="ml-3 text-b2b-gray-500">Loading...</span>
         </div>
       </Card>
@@ -51,7 +55,7 @@ export function DataTable<T extends Record<string, any>>({
   if (data.length === 0) {
     return (
       <Card className={cn('p-8', className)}>
-        <div className="text-center text-b2b-gray-500">
+        <div className="text-center text-b2b-gray-500" role="status" aria-live="polite">
           {emptyMessage}
         </div>
       </Card>
@@ -88,12 +92,18 @@ export function DataTable<T extends Record<string, any>>({
   const DesktopView = () => (
     <Card padding="none" className={cn('overflow-hidden hidden md:block', className)}>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full" aria-label={ariaLabel}>
+          {caption && (
+            <caption className="sr-only">
+              {caption}
+            </caption>
+          )}
           <thead className="bg-b2b-gray-50 border-b border-b2b-gray-100">
             <tr>
               {columns.map((column) => (
                 <th
                   key={column.key}
+                  scope="col"
                   className={cn(
                     'px-6 py-3 text-left text-xs font-medium text-b2b-gray-500 uppercase tracking-wider',
                     column.className
@@ -109,9 +119,17 @@ export function DataTable<T extends Record<string, any>>({
               <tr
                 key={index}
                 onClick={() => onRowClick?.(item)}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onRowClick(item);
+                  }
+                }}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
                 className={cn(
                   'transition-colors',
-                  onRowClick && 'cursor-pointer hover:bg-b2b-gray-50'
+                  onRowClick && 'cursor-pointer hover:bg-b2b-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-yellow focus-visible:ring-inset'
                 )}
               >
                 {columns.map((column) => (

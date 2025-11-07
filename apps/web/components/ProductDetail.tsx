@@ -332,54 +332,77 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   return (
     <div className="mt-3 animate-fadeIn">
       {/* Breadcrumb */}
-      <div className="mb-5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-        <span className="cursor-pointer hover:text-brand-500" onClick={() => router.push('/products')}>
+      <nav className="mb-5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400" aria-label="Breadcrumb">
+        <button
+          onClick={() => router.push('/products')}
+          className="hover:text-brand-500 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
+          aria-label="Navigate to products page"
+        >
           Products
-        </span>
-        <FiChevronRight />
-        <span className="cursor-pointer hover:text-brand-500">
+        </button>
+        <FiChevronRight aria-hidden="true" />
+        <span className="text-gray-600 dark:text-gray-400">
           {product.category}
         </span>
-        <FiChevronRight />
-        <span className="text-navy-700 dark:text-white">{product.name}</span>
-      </div>
+        <FiChevronRight aria-hidden="true" />
+        <span className="text-navy-700 dark:text-white" aria-current="page">{product.name}</span>
+      </nav>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Product Images */}
         <div className="lg:col-span-1">
           <Card className="p-6">
             {/* Main Image */}
-            <div
-              className="relative mb-4 aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700"
+            <button
+              className="relative mb-4 aspect-square w-full cursor-zoom-in overflow-hidden rounded-lg bg-gray-100 dark:bg-navy-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               onClick={() => setImageModal(true)}
+              aria-label="Zoom in on product image"
+              type="button"
             >
               {selectedImage ? (
-                <Image src={selectedImage} alt={product.name} fill className="object-contain" />
+                <Image
+                  src={selectedImage}
+                  alt={product.name}
+                  fill
+                  priority
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <FiShoppingCart className="h-24 w-24 text-gray-300" />
                 </div>
               )}
               <div className="absolute right-2 top-2 rounded-full bg-white/80 p-2 dark:bg-navy-800/80">
-                <FiZoomIn className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                <FiZoomIn className="h-5 w-5 text-gray-700 dark:text-gray-300" aria-hidden="true" />
               </div>
-            </div>
+            </button>
 
             {/* Thumbnail Images */}
             {allImages.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-2" role="group" aria-label="Product image thumbnails">
                 {allImages.map((img, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 transition-all ${
+                    type="button"
+                    className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
                       selectedImage === img
                         ? 'border-brand-500'
                         : 'border-gray-200 hover:border-brand-300 dark:border-white/10'
                     }`}
                     onClick={() => setSelectedImage(img)}
+                    aria-label={`View image ${idx + 1} of ${allImages.length}`}
+                    aria-pressed={selectedImage === img}
                   >
-                    <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-cover" />
-                  </div>
+                    <Image
+                      src={img}
+                      alt={`${product.name} ${idx + 1}`}
+                      fill
+                      loading="lazy"
+                      className="object-cover"
+                      sizes="(max-width: 768px) 25vw, 10vw"
+                    />
+                  </button>
                 ))}
               </div>
             )}
@@ -645,7 +668,14 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       <Modal isOpen={imageModal} onClose={() => setImageModal(false)} title={product.name} size="xl">
         <div className="relative aspect-square w-full">
           {selectedImage && (
-            <Image src={selectedImage} alt={product.name} fill className="object-contain" />
+            <Image
+              src={selectedImage}
+              alt={product.name}
+              fill
+              loading="lazy"
+              className="object-contain"
+              sizes="(max-width: 1200px) 100vw, 80vw"
+            />
           )}
         </div>
       </Modal>
