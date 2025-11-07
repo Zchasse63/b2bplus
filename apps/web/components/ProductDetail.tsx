@@ -14,6 +14,7 @@ import {
   FiPackage,
 } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 type Product = {
   id: string;
@@ -75,9 +76,8 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   const unitsPerCase = product.units_per_case || 1;
   const effectiveQuantity = orderByCase ? quantity * unitsPerCase : quantity;
 
-  const allImages = [product.image_url, ...(product.additional_images || [])].filter(
-    Boolean
-  ) as string[];
+  const allImages = [product.image_url, ...(product.additional_images || [])]
+    .filter((img): img is string => typeof img === 'string' && img.length > 0);
 
   // Fetch AI-powered recommendations
   const fetchRecommendations = useCallback(async () => {
@@ -100,7 +100,10 @@ export default function ProductDetail({ product, organizationId, relatedProducts
           }
         }
       } catch (error) {
-        console.error('Error fetching recommendations:', error);
+        logger.error('Error fetching recommendations', {
+          productId: product.id,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       } finally {
         setLoadingRecommendations(false);
       }
@@ -152,7 +155,12 @@ export default function ProductDetail({ product, organizationId, relatedProducts
           }
         }
       } catch (error) {
-        console.error('Error fetching price:', error);
+        logger.error('Error fetching price', {
+          productId: product.id,
+          quantity,
+          organizationId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       } finally {
         setLoading(false);
       }
@@ -204,7 +212,11 @@ export default function ProductDetail({ product, organizationId, relatedProducts
 
       setSuccessModal(true);
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      logger.error('Error adding to cart', {
+        productId: product.id,
+        quantity: effectiveQuantity,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       toast({
         title: 'Error',
         description: 'Failed to add to cart',
@@ -212,6 +224,54 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       });
     } finally {
       setAdding(false);
+    }
+  };
+
+  // Helper function for adding recommended products to cart
+  const handleAddRecommendedToCart = async (productId: string, productName: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      const orgId = profile?.current_organization_id;
+
+      if (!orgId) {
+        throw new Error('No organization found for user');
+      }
+
+      const { error } = await supabase.rpc('upsert_cart_item_atomic', {
+        p_user_id: user.id,
+        p_product_id: productId,
+        p_quantity: 1,
+        p_organization_id: orgId
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: `${productName} added to cart`,
+      });
+    } catch (error) {
+      logger.error('Error adding recommended product to cart', {
+        productId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      toast({
+        title: 'Error',
+        description: 'Failed to add to cart',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -548,7 +608,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                   image={rec.image_url || undefined}
                   category={rec.category || undefined}
                   inStock={rec.in_stock}
-                  onAddToCart={() => {}}
+                  onAddToCart={() => handleAddRecommendedToCart(rec.id, rec.name)}
                 />
               ))}
             </div>
@@ -573,7 +633,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                   image={relatedProduct.image_url || undefined}
                   category={relatedProduct.category || undefined}
                   inStock={relatedProduct.in_stock}
-                  onAddToCart={() => {}}
+                  onAddToCart={() => handleAddRecommendedToCart(relatedProduct.id, relatedProduct.name)}
                 />
               ))}
             </div>

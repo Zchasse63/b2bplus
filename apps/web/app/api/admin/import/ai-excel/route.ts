@@ -18,7 +18,7 @@ interface ValidationError {
 }
 
 // POST analyze Excel file and suggest column mappings using AI
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

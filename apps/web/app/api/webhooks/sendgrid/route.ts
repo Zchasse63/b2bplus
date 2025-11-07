@@ -92,7 +92,7 @@ function verifySignature(request: NextRequest, payload: string): boolean {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // SECURITY: Get raw body for signature verification
     const rawBody = await request.text();
@@ -522,7 +522,7 @@ async function handleUnsubscribe(recipient: { email?: string; [key: string]: unk
 }
 
 // Allow GET for webhook verification (SendGrid may send GET requests)
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ 
     status: 'ok',
     message: 'SendGrid webhook endpoint is active'

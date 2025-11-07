@@ -15,7 +15,7 @@ interface SKUMappingToSave {
  * Save SKU Mappings API
  * Saves verified SKU mappings to the database
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 /**
  * Update SKU Mapping Verification Status
  */
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
@@ -175,7 +175,7 @@ export async function PATCH(request: NextRequest) {
 /**
  * Get all SKU mappings
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

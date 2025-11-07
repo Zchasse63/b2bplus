@@ -34,8 +34,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
  * - Email personalization
  * - Business opportunity detection
  */
-export const getFlashModel = () => {
-  return genAI.getGenerativeModel({ 
+export const getFlashModel = (): ReturnType<typeof genAI.getGenerativeModel> => {
+  return genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.7,
@@ -55,7 +55,7 @@ export const getFlashModel = () => {
  * - Product recommendations
  * - Similar product detection
  */
-export const getEmbeddingModel = () => {
+export const getEmbeddingModel = (): ReturnType<typeof genAI.getGenerativeModel> => {
   return genAI.getGenerativeModel({
     model: "text-embedding-004"
   });

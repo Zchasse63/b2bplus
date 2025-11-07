@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { errorMonitor } from '@/lib/error-monitoring';
+import { safeAdd, safeParseFloat } from '@/lib/math-safe';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // SECURITY: Require admin authentication for rebate calculations
     const authCheck = await checkAdminRole();
@@ -30,9 +33,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error calculating rebate:', error);
+      logger.error('Error calculating rebate:', error);
+      errorMonitor.report(error, {
+        category: 'payment',
+        severity: 'high',
+        userId: authCheck?.user?.id,
+        operation: 'calculate-rebate'
+      });
+
+      // Production: Generic message
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'An error occurred. Please try again later.' },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
-        { error: 'Failed to calculate rebate' },
+        { error: 'Failed to calculate rebate', details: error.message },
         { status: 500 }
       );
     }
@@ -53,7 +71,7 @@ export async function POST(request: NextRequest) {
       .lte('created_at', periodEnd)
       .in('status', ['completed', 'shipped', 'delivered']);
 
-    const totalPurchases = orders?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
+    const totalPurchases = orders?.reduce((sum, order) => safeAdd(sum, safeParseFloat(order.total_amount, 0)), 0) || 0;
 
     const rebatePercentage = rebateType === 'monthly' 
       ? user?.buying_groups?.monthly_rebate_percentage 
@@ -74,15 +92,31 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in rebate calculation:', error);
+    logger.error('Error in rebate calculation:', error);
+
+    // Report to error monitoring
+    errorMonitor.report(error instanceof Error ? error : new Error(String(error)), {
+      category: 'payment',
+      severity: 'high',
+      operation: 'rebate-calculation-post'
+    });
+
+    // Production: Generic message, Development: Detailed error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'An error occurred. Please try again later.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', stack: error instanceof Error ? error.stack : undefined },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // SECURITY: Require admin authentication to view all rebates
     const authCheck = await checkAdminRole();

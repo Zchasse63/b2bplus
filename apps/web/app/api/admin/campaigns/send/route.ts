@@ -7,7 +7,7 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 const BATCH_SIZE = 50;
 
 // POST send email campaign
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();

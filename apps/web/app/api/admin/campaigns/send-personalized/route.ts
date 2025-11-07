@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 // Lower batch size for AI-personalized emails due to AI API rate limits
 const BATCH_SIZE = 10;
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const { campaignId, leadIds, useAI = true } = await request.json();
 

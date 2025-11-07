@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { deduplicate } from "@/lib/request-dedup";
+import { cache } from "@/lib/cache";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 
@@ -32,47 +34,67 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Call personalized recommendations function
-    const { data: recommendations, error } = await supabase.rpc(
-      "get_personalized_recommendations",
-      {
-        p_customer_id: profile.organization_id,
-        p_limit: limit,
+    // Use cache key based on organization and limit
+    const cacheKey = `recommendations:personalized:${profile.organization_id}:${limit}`;
+
+    // Deduplicate and cache the recommendation fetching
+    const result = await deduplicate(
+      cacheKey,
+      async () => {
+        // Check cache first
+        const cached = cache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
+
+        // Call personalized recommendations function
+        const { data: recommendations, error } = await supabase.rpc(
+          "get_personalized_recommendations",
+          {
+            p_customer_id: profile.organization_id,
+            p_limit: limit,
+          }
+        );
+
+        if (error) {
+          console.error("Error fetching personalized recommendations:", error);
+          throw new Error("Failed to fetch recommendations");
+        }
+
+        // Fetch full product details for recommendations
+        if (recommendations && recommendations.length > 0) {
+          const productIds = recommendations.map((r: { product_id: string; [key: string]: unknown }) => r.product_id);
+          const { data: products } = await supabase
+            .from("products")
+            .select("id, name, sku, base_price, image_url, category, description")
+            .in("id", productIds);
+
+          // Merge recommendation data with product details
+          const enrichedRecommendations = recommendations.map((rec: any) => {
+            const product = products?.find((p) => p.id === rec.product_id);
+            return {
+              ...rec,
+              product,
+            };
+          });
+
+          const responseData = {
+            recommendations: enrichedRecommendations,
+            total: enrichedRecommendations.length,
+          };
+
+          // Cache for 5 minutes (300 seconds)
+          cache.set(cacheKey, responseData, 300);
+          return responseData;
+        }
+
+        const emptyResponse = { recommendations: [], total: 0 };
+        cache.set(cacheKey, emptyResponse, 60); // Cache empty response for 1 minute
+        return emptyResponse;
       }
     );
 
-    if (error) {
-      console.error("Error fetching personalized recommendations:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch recommendations" },
-        { status: 500 }
-      );
-    }
-
-    // Fetch full product details for recommendations
-    if (recommendations && recommendations.length > 0) {
-      const productIds = recommendations.map((r: { product_id: string; [key: string]: unknown }) => r.product_id);
-      const { data: products } = await supabase
-        .from("products")
-        .select("id, name, sku, base_price, image_url, category, description")
-        .in("id", productIds);
-
-      // Merge recommendation data with product details
-      const enrichedRecommendations = recommendations.map((rec: any) => {
-        const product = products?.find((p) => p.id === rec.product_id);
-        return {
-          ...rec,
-          product,
-        };
-      });
-
-      return NextResponse.json({
-        recommendations: enrichedRecommendations,
-        total: enrichedRecommendations.length,
-      });
-    }
-
-    return NextResponse.json({ recommendations: [], total: 0 });
+    return NextResponse.json(result);
   } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(

@@ -8,6 +8,7 @@ import { Card, Button, Input, Textarea, Select, Modal, PageHeader } from '@/comp
 import { toast } from '@/hooks/use-toast';
 import { FiArrowLeft, FiSave, FiCheckCircle } from 'react-icons/fi';
 import { productSchema } from '@/lib/validation/schemas';
+import { logger } from '@/lib/logger';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -332,7 +333,9 @@ export default function NewProductPage() {
       {/* Success Modal */}
       <Modal
         isOpen={successModal}
-        onClose={() => {}}
+        onClose={() => {
+          logger.debug('Success modal close attempted - user should use action buttons');
+        }}
         title="Product Created!"
         size="sm"
       >

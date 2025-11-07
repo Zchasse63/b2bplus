@@ -11,7 +11,7 @@ import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer'
  * - Competitor pricing
  * - Win probability
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
@@ -326,7 +326,7 @@ Provide a 1-2 sentence recommendation on whether this pricing is optimal and why
 /**
  * Get all pricing suggestions
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

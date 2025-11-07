@@ -7,7 +7,7 @@ import { checkAdminRole } from '@/lib/middleware/admin'
  * Customer Analytics Insights API
  * Provides AI-powered insights about customer purchase patterns
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole()

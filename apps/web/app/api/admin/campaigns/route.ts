@@ -5,7 +5,7 @@ import { sanitizeCampaignHTML } from '@/lib/security/html-sanitizer';
 import { logger } from '@/lib/logger';
 
 // GET all campaigns
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST create campaign
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH update campaign
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();
@@ -226,7 +226,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 // DELETE campaign
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();

@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { deduplicate } from "@/lib/request-dedup";
+import { cache } from "@/lib/cache";
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 
@@ -31,77 +33,100 @@ export async function GET(request: NextRequest) {
 
     // If product_id is provided, get metrics for that product
     if (productId) {
-      const { data, error } = await supabase.rpc("get_product_metrics", {
-        product_id_param: productId,
-      });
+      const cacheKey = `products:metrics:${productId}`;
 
-      if (error) {
-        console.error("Error fetching product metrics:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch metrics" },
-          { status: 500 }
-        );
-      }
+      const result = await deduplicate(
+        cacheKey,
+        async () => {
+          const cached = cache.get(cacheKey);
+          if (cached) return cached;
 
-      return NextResponse.json({ metrics: data });
+          const { data, error } = await supabase.rpc("get_product_metrics", {
+            product_id_param: productId,
+          });
+
+          if (error) {
+            console.error("Error fetching product metrics:", error);
+            throw new Error("Failed to fetch metrics");
+          }
+
+          const metricsData = { metrics: data };
+          cache.set(cacheKey, metricsData, 300); // Cache for 5 minutes
+          return metricsData;
+        }
+      );
+
+      return NextResponse.json(result);
     }
 
     // Otherwise, get metrics for all products
-    const { data: products, error: prodError } = await supabase
-      .from("products")
-      .select("id, name, sku");
+    const cacheKey = 'products:metrics:all';
 
-    if (prodError) {
-      console.error("Error fetching products:", prodError);
-      return NextResponse.json(
-        { error: "Failed to fetch products" },
-        { status: 500 }
-      );
-    }
+    const allMetrics = await deduplicate(
+      cacheKey,
+      async () => {
+        const cached = cache.get(cacheKey);
+        if (cached) return cached;
 
-    // Get metrics for each product in parallel
-    const metricsData = await Promise.all(
-      (products || []).map(async (product) => {
-        const { data: metrics } = await supabase.rpc("get_product_metrics", {
-          product_id_param: product.id,
-        });
+        const { data: products, error: prodError } = await supabase
+          .from("products")
+          .select("id, name, sku");
 
-        // metrics is returned as an array with one row
-        const metricRow = Array.isArray(metrics) ? metrics[0] : metrics;
+        if (prodError) {
+          console.error("Error fetching products:", prodError);
+          throw new Error("Failed to fetch products");
+        }
 
-        return {
-          product_id: product.id,
-          product_name: product.name,
-          product_sku: product.sku,
-          total_orders: metricRow?.total_orders || 0,
-          total_quantity: metricRow?.total_quantity || 0,
-          total_revenue: metricRow?.total_revenue || 0,
-          avg_order_quantity: metricRow?.avg_order_quantity || 0,
-          last_ordered_at: metricRow?.last_ordered_at || null,
+        // Get metrics for each product in parallel
+        const metricsData = await Promise.all(
+          (products || []).map(async (product) => {
+            const { data: metrics } = await supabase.rpc("get_product_metrics", {
+              product_id_param: product.id,
+            });
+
+            // metrics is returned as an array with one row
+            const metricRow = Array.isArray(metrics) ? metrics[0] : metrics;
+
+            return {
+              product_id: product.id,
+              product_name: product.name,
+              product_sku: product.sku,
+              total_orders: metricRow?.total_orders || 0,
+              total_quantity: metricRow?.total_quantity || 0,
+              total_revenue: metricRow?.total_revenue || 0,
+              avg_order_quantity: metricRow?.avg_order_quantity || 0,
+              last_ordered_at: metricRow?.last_ordered_at || null,
+            };
+          })
+        );
+
+        // Sort by total revenue (highest first)
+        metricsData.sort((a, b) => b.total_revenue - a.total_revenue);
+
+        // Calculate aggregate stats
+        const stats = {
+          total_products: metricsData.length,
+          total_revenue: metricsData.reduce((sum, m) => sum + m.total_revenue, 0),
+          avg_revenue_per_product:
+            metricsData.length > 0
+              ? metricsData.reduce((sum, m) => sum + m.total_revenue, 0) /
+                metricsData.length
+              : 0,
+          products_with_sales: metricsData.filter((m) => m.total_orders > 0)
+            .length,
         };
-      })
+
+        const result = {
+          metrics: metricsData,
+          stats,
+        };
+
+        cache.set(cacheKey, result, 300); // Cache for 5 minutes
+        return result;
+      }
     );
 
-    // Sort by total revenue (highest first)
-    metricsData.sort((a, b) => b.total_revenue - a.total_revenue);
-
-    // Calculate aggregate stats
-    const stats = {
-      total_products: metricsData.length,
-      total_revenue: metricsData.reduce((sum, m) => sum + m.total_revenue, 0),
-      avg_revenue_per_product:
-        metricsData.length > 0
-          ? metricsData.reduce((sum, m) => sum + m.total_revenue, 0) /
-            metricsData.length
-          : 0,
-      products_with_sales: metricsData.filter((m) => m.total_orders > 0)
-        .length,
-    };
-
-    return NextResponse.json({
-      metrics: metricsData,
-      stats,
-    });
+    return NextResponse.json(allMetrics);
   } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(

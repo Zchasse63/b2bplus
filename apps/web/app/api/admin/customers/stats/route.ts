@@ -1,12 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { errorMonitor } from '@/lib/error-monitoring';
+import { safeAdd, safeParseFloat, safeParseInt } from '@/lib/math-safe';
+import { logger } from '@/lib/logger';
 
 /**
  * Get customer statistics in bulk (optimized to avoid N+1 queries)
  * GET /api/admin/customers/stats
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();
@@ -69,7 +72,7 @@ export async function GET(request: NextRequest) {
           const existing = statsMap.get(order.organization_id) || { total_orders: 0, total_spent: 0 };
           statsMap.set(order.organization_id, {
             total_orders: existing.total_orders + 1,
-            total_spent: existing.total_spent + parseFloat(order.total || '0')
+            total_spent: safeAdd(existing.total_spent, safeParseFloat(order.total || '0', 0))
           });
         });
       }
@@ -106,9 +109,25 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error: unknown) {
-    console.error('Error in customer stats API:', error);
+    logger.error('Error in customer stats API:', error);
+
+    // Report to error monitoring
+    errorMonitor.report(error instanceof Error ? error : new Error(String(error)), {
+      category: 'api',
+      severity: 'medium',
+      operation: 'fetch-customer-stats'
+    });
+
+    // Production: Generic message, Development: Detailed error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'An error occurred. Please try again later.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', stack: error instanceof Error ? error.stack : undefined },
       { status: 500 }
     );
   }

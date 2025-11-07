@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole();
@@ -14,11 +14,13 @@ export async function POST(request: NextRequest) {
 
     // Get the uploaded file
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const fileData = formData.get('file');
 
-    if (!file) {
+    if (!fileData || !(fileData instanceof File)) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+
+    const file: File = fileData;
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
@@ -85,8 +87,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error('Image upload error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: 'Internal server error: ' + errorMessage },
       { status: 500 }
     );
   }

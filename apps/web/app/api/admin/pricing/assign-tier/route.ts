@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // POST assign customer to pricing tier
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET customer tier assignments
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE remove tier assignment
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

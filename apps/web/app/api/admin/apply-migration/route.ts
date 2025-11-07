@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server'
  *
  * Never expose migration execution through public API endpoints.
  */
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   return NextResponse.json(
     {
       error: 'This endpoint has been disabled for security reasons. Use Supabase CLI for migrations.'
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   )
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<NextResponse> {
   return NextResponse.json(
     {
       error: 'This endpoint has been disabled for security reasons. Use Supabase CLI for migrations.'

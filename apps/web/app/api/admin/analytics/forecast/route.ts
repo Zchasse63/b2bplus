@@ -6,7 +6,7 @@ import { checkAdminRole } from '@/lib/middleware/admin'
  * Product Usage Forecasting API
  * Uses AI to predict future product usage by customer
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole()
@@ -188,7 +188,7 @@ function calculateStdDev(values: number[]): number {
 /**
  * Get all forecasts for a customer
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const authCheck = await checkAdminRole()

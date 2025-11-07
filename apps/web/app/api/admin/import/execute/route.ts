@@ -19,7 +19,7 @@ interface ImportResult {
 }
 
 // POST execute import with confirmed column mappings
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

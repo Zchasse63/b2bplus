@@ -1,26 +1,25 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { apiSuccess, apiError, apiUnauthorized, apiValidationError } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
 
 // GET product recommendations
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
     const type = searchParams.get('type'); // 'also_bought', 'similar', 'frequently_together'
-    const limit = parseInt(searchParams.get('limit') || '5');
+    const limit = parseInt(searchParams.get('limit') || '5', 10);
 
     if (!productId) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
+      return apiValidationError('Product ID is required', ['productId is required']);
     }
 
     // Check if recommendations feature is enabled
@@ -31,10 +30,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!featureFlag?.enabled) {
-      return NextResponse.json({
-        success: true,
-        recommendations: []
-      });
+      return apiSuccess({ recommendations: [] }, 'Feature disabled');
     }
 
     // Get recommendations from database
@@ -46,15 +42,18 @@ export async function GET(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Error fetching recommendations:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch recommendations' },
-        { status: 500 }
-      );
+      logger.error('Error fetching recommendations', {
+        userId: user.id,
+        productId,
+        type,
+        error: error.message,
+        stack: error.stack
+      });
+      return apiError('Failed to fetch recommendations', 500, { productId });
     }
 
     // Track that user viewed these recommendations
-    if (recommendations && recommendations.length > 0) {
+    if (recommendations?.length > 0) {
       for (const rec of recommendations) {
         await supabase
           .from('customer_product_affinities')
@@ -69,48 +68,69 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      recommendations: recommendations || []
-    });
+    return apiSuccess({
+      recommendations: recommendations ?? []
+    }, 'Recommendations fetched successfully');
 
   } catch (error) {
-    console.error('Error in recommendations API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error('Error in recommendations API', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return apiError('Internal server error', 500);
   }
 }
 
 // POST track recommendation interaction
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const body = await request.json();
     const { productId, interactionType } = body;
 
     if (!productId || !interactionType) {
-      return NextResponse.json(
-        { error: 'Product ID and interaction type are required' },
-        { status: 400 }
+      return apiValidationError(
+        'Product ID and interaction type are required',
+        ['productId and interactionType are required']
       );
     }
 
     // Update customer affinity
-    await supabase.rpc('update_customer_affinity', {
+    const { error } = await supabase.rpc('update_customer_affinity', {
       p_customer_id: user.id,
       p_product_id: productId,
       p_interaction_type: interactionType
     });
 
-    return NextResponse.json({ success: true });
+    if (error) {
+      logger.error('Error updating customer affinity', {
+        userId: user.id,
+        productId,
+        interactionType,
+        error: error.message
+      });
+      return apiError('Failed to track interaction', 500);
+    }
+
+    logger.info('Recommendation interaction tracked', {
+      userId: user.id,
+      productId,
+      interactionType
+    });
+
+    return apiSuccess({}, 'Interaction tracked successfully');
 
   } catch (error) {
-    console.error('Error tracking recommendation interaction:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error('Error tracking recommendation interaction', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return apiError('Internal server error', 500);
   }
 }

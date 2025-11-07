@@ -9,7 +9,7 @@ import { sendPushNotification, NotificationTemplates } from '@/lib/services/noti
  * This is called internally when orders are updated
  * Can also be triggered by database webhooks/triggers
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 

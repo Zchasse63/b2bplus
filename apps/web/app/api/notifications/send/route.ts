@@ -11,7 +11,7 @@ import {
  * Send push notifications (Admin only)
  * POST /api/notifications/send
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();

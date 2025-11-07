@@ -57,6 +57,22 @@ export async function updateSession(request: NextRequest) {
   // SECURITY: Check authentication and authorization for protected routes
   const { data: { user }, error } = await supabase.auth.getUser()
 
+  // Check session timeout and auto-refresh if needed
+  if (user) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      const expiresAt = new Date(session.expires_at! * 1000)
+      const now = new Date()
+      const timeRemaining = expiresAt.getTime() - now.getTime()
+      const SESSION_REFRESH_MS = 5 * 60 * 1000 // 5 minutes
+
+      // Auto-refresh session if expiring soon
+      if (timeRemaining > 0 && timeRemaining < SESSION_REFRESH_MS) {
+        await supabase.auth.refreshSession()
+      }
+    }
+  }
+
   const { pathname } = request.nextUrl
 
   // Admin routes require authentication and admin role

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const { email, phone, purpose = 'login', redirectUrl } = await request.json();
 
@@ -49,8 +49,8 @@ export async function POST(request: NextRequest) {
     // Generate unique token
     const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
 
-    // Set expiration (10 minutes from now)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    // Set expiration (60 minutes from now)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
     // Get IP and user agent
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
               </div>
               
               <p style="font-size: 14px; color: #666;">
-                This link expires in 10 minutes and can only be used once.
+                This link expires in 60 minutes (1 hour) and can only be used once.
               </p>
               
               <p style="font-size: 14px; color: #666;">

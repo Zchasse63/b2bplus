@@ -35,7 +35,7 @@ interface SKUMatch {
  * Maps old SKUs (from Bailey or other systems) to current product SKUs
  * Uses Gemini embeddings + fuzzy matching for intelligent product matching
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

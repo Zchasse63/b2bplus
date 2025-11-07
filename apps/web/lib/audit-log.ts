@@ -134,7 +134,13 @@ export async function logAuditEvent(event: AuditEvent): Promise<string | null> {
       return null;
     }
 
-    return data as string;
+    // Validate that data is a string (the audit log ID)
+    if (typeof data !== 'string') {
+      logger.error('Invalid audit log response format', { data });
+      return null;
+    }
+
+    return data;
   } catch (error) {
     logger.error('Error logging audit event:', error);
     return null;

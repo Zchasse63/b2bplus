@@ -4,7 +4,7 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 import { logger } from '@/lib/logger';
 
 // GET all pricing tiers
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // SECURITY: Use standard admin authorization check
     const authCheck = await checkAdminRole();
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST create new pricing tier
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const authCheck = await checkAdminRole();
     if (!authCheck.authorized) {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH update pricing tier
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   try {
     const authCheck = await checkAdminRole();
     if (!authCheck.authorized) {
@@ -125,7 +125,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 // DELETE pricing tier
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     const authCheck = await checkAdminRole();
     if (!authCheck.authorized) {

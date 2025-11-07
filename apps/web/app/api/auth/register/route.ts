@@ -2,17 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { registerSchema } from '@/lib/validation/schemas';
+import { apiSuccess, apiError, apiValidationError, apiRateLimitError } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
 
     // Validate input
     const validation = registerSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json(
-        { error: validation.error.errors[0].message },
-        { status: 400 }
+      return apiValidationError(
+        'Validation failed',
+        validation.error.errors.map(e => e.message)
       );
     }
 
@@ -34,14 +36,16 @@ export async function POST(request: NextRequest) {
 
     if (!rateLimitResult.allowed) {
       const resetMinutes = Math.ceil(
-        (rateLimitResult.resetAt.getTime() - Date.now()) / 60000
+        (rateLimitResult.resetAt?.getTime() - Date.now()) / 60000
       );
-      return NextResponse.json(
-        {
-          error: `Too many registration attempts. Please try again in ${resetMinutes} minute${resetMinutes !== 1 ? 's' : ''}.`,
-          resetAt: rateLimitResult.resetAt.toISOString()
-        },
-        { status: 429 }
+      logger.warn('Registration rate limit exceeded', {
+        email,
+        ipAddress,
+        resetMinutes
+      });
+      return apiRateLimitError(
+        `Too many registration attempts. Please try again in ${resetMinutes} minute${resetMinutes !== 1 ? 's' : ''}.`,
+        resetMinutes * 60
       );
     }
 
@@ -57,23 +61,29 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      logger.warn('Registration failed', {
+        email,
+        error: error.message
+      });
+      return apiError(error.message, 400);
     }
 
-    return NextResponse.json({
-      success: true,
-      user: data.user,
-      session: data.session,
+    logger.info('User registered successfully', {
+      userId: data.user?.id,
+      email
     });
 
+    return apiSuccess({
+      user: data.user,
+      session: data.session,
+    }, 'Registration successful');
+
   } catch (error) {
-    console.error('Error in registration:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    logger.error('Error in registration', {
+      email: body?.email,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    return apiError('Internal server error', 500);
   }
 }

@@ -29,7 +29,7 @@ export function AccessibleButton({
   disabled,
   className = '',
   ...props
-}: AccessibleButtonProps) {
+}: AccessibleButtonProps): JSX.Element {
   const variantClasses = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500',
@@ -87,7 +87,7 @@ export function AccessibleModal({
   size = 'md',
   closeOnEscape = true,
   closeOnOverlayClick = true,
-}: AccessibleModalProps) {
+}: AccessibleModalProps): JSX.Element | null {
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
@@ -101,34 +101,42 @@ export function AccessibleModal({
   useEffect(() => {
     if (isOpen) {
       // Store currently focused element
-      previousActiveElement.current = document.activeElement as HTMLElement;
+      const activeEl = document.activeElement;
+      if (activeEl instanceof HTMLElement) {
+        previousActiveElement.current = activeEl;
+      }
 
       // Focus modal
       modalRef.current?.focus();
 
       // Trap focus within modal
-      const handleTabKey = (e: KeyboardEvent) => {
-        if (!modalRef.current) return;
+      const handleTabKey = (e: globalThis.KeyboardEvent) => {
+        if (e.key !== 'Tab' || !modalRef.current) return;
 
-        const focusableElements = modalRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        const focusableElements = Array.from(
+          modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
         );
-        const firstElement = focusableElements[0] as HTMLElement;
-        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey && document.activeElement === firstElement) {
           e.preventDefault();
-          lastElement?.focus();
+          lastElement.focus();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
           e.preventDefault();
-          firstElement?.focus();
+          firstElement.focus();
         }
       };
 
-      document.addEventListener('keydown', handleTabKey as any);
+      document.addEventListener('keydown', handleTabKey);
 
       return () => {
-        document.removeEventListener('keydown', handleTabKey as any);
+        document.removeEventListener('keydown', handleTabKey);
         // Restore focus
         previousActiveElement.current?.focus();
       };
@@ -218,7 +226,7 @@ export function AccessibleInput({
   id,
   required,
   ...props
-}: AccessibleInputProps) {
+}: AccessibleInputProps): JSX.Element {
   const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const errorId = `${inputId}-error`;
   const helperId = `${inputId}-helper`;
@@ -283,7 +291,7 @@ export function AccessibleSelect({
   id,
   required,
   ...props
-}: AccessibleSelectProps) {
+}: AccessibleSelectProps): JSX.Element {
   const selectId = id || `select-${label.toLowerCase().replace(/\s+/g, '-')}`;
   const errorId = `${selectId}-error`;
 
@@ -339,7 +347,7 @@ interface AccessibleAlertProps {
   onClose?: () => void;
 }
 
-export function AccessibleAlert({ type, title, children, onClose }: AccessibleAlertProps) {
+export function AccessibleAlert({ type, title, children, onClose }: AccessibleAlertProps): JSX.Element {
   const typeConfig = {
     info: {
       bgColor: 'bg-blue-50',
@@ -418,7 +426,7 @@ export function AccessibleAlert({ type, title, children, onClose }: AccessibleAl
 // Skip Navigation Link
 // ============================================
 
-export function SkipToContent() {
+export function SkipToContent(): JSX.Element {
   return (
     <a
       href="#main-content"

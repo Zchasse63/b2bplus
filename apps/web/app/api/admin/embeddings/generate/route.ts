@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { generateEmbedding } from '@/lib/gemini';
 
 // POST generate embeddings for products
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET check embedding status
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { PricingService } from '@b2b-plus/shared';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -145,9 +145,37 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
+    // Get user ID for error tracking
+    let userId: string | undefined;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    } catch {
+      // Ignore errors getting user for error tracking
+    }
+
     console.error('Pricing calculation error:', error);
+
+    // Report to error monitoring
+    const { errorMonitor } = await import('@/lib/error-monitoring');
+    errorMonitor.report(error instanceof Error ? error : new Error(String(error)), {
+      category: 'pricing',
+      severity: 'high',
+      userId,
+      operation: 'calculate-price'
+    });
+
+    // Production: Generic message, Development: Detailed error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        { error: 'An error occurred while calculating price. Please try again later.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error', stack: error instanceof Error ? error.stack : undefined },
       { status: 500 }
     );
   }

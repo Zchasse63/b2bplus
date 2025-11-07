@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * Register or update a user's Expo push token
  * POST /api/notifications/register
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
  * Unregister a user's push token (for logout or opt-out)
  * DELETE /api/notifications/register
  */
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 

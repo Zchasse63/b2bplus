@@ -11,7 +11,7 @@ import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer'
  * - Upsell opportunities
  * - New product recommendations
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
@@ -358,7 +358,7 @@ Write a brief, actionable reason why this is a sales opportunity (1-2 sentences)
 /**
  * Get all opportunities
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateEmbedding } from '@/lib/gemini';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
+import { deduplicate } from '@/lib/request-dedup';
+import { cache } from '@/lib/cache';
 
 // POST semantic search
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
 
@@ -69,89 +71,113 @@ export async function POST(request: NextRequest) {
       return performKeywordSearch(supabase, query, limit);
     }
 
-    // Generate embedding for search query using Gemini text-embedding-004
-    const queryEmbedding = await generateEmbedding(query);
+    // Create cache key for this search
+    const cacheKey = `search:semantic:${query}:${limit}:${threshold}:${includeKeywordSearch}`;
 
-    // Perform semantic search using vector similarity
-    const { data: semanticResults, error: searchError } = await supabase
-      .rpc('semantic_search_products', {
-        query_embedding: JSON.stringify(queryEmbedding),
-        match_threshold: threshold,
-        match_count: limit
-      });
+    // Use deduplication and caching for search
+    const finalResults = await deduplicate(
+      cacheKey,
+      async () => {
+        // Check cache first
+        const cached = cache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
 
-    if (searchError) {
-      logger.error('Semantic search error:', searchError);
-      // Fall back to keyword search
-      return performKeywordSearch(supabase, query, limit);
-    }
+        // Generate embedding for search query using Gemini text-embedding-004
+        const queryEmbedding = await generateEmbedding(query);
 
-    interface SemanticResult {
-      product_id: string;
-      similarity: number;
-    }
+        // Perform semantic search using vector similarity
+        const { data: semanticResults, error: searchError } = await supabase
+          .rpc('semantic_search_products', {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_threshold: threshold,
+            match_count: limit
+          });
 
-    // Get full product details
-    const productIds = semanticResults.map((r: SemanticResult) => r.product_id);
+        if (searchError) {
+          logger.error('Semantic search error:', searchError);
+          throw searchError;
+        }
 
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('*')
-      .in('id', productIds);
+        interface SemanticResult {
+          product_id: string;
+          similarity: number;
+        }
 
-    if (productsError) {
-      logger.error('Error fetching products:', productsError);
-      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
-    }
+        // Get full product details
+        const productIds = semanticResults.map((r: SemanticResult) => r.product_id);
 
-    // Merge similarity scores with product data
-    const results = products?.map(product => {
-      const match = semanticResults.find((r: SemanticResult) => r.product_id === product.id);
-      return {
-        ...product,
-        similarity: match?.similarity || 0,
-        searchType: 'semantic'
-      };
-    }).sort((a, b) => b.similarity - a.similarity);
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
 
-    // Log search query for analytics
+        if (productsError) {
+          logger.error('Error fetching products:', productsError);
+          throw productsError;
+        }
+
+        // Merge similarity scores with product data
+        const results = products?.map(product => {
+          const match = semanticResults.find((r: SemanticResult) => r.product_id === product.id);
+          return {
+            ...product,
+            similarity: match?.similarity || 0,
+            searchType: 'semantic'
+          };
+        }).sort((a, b) => b.similarity - a.similarity);
+
+        // If semantic search returns few results and keyword search is enabled, combine with keyword results
+        if (includeKeywordSearch && results && results.length < 5) {
+          const keywordResults = await performKeywordSearch(supabase, query, limit - results.length);
+
+          if (keywordResults.ok) {
+            const keywordData = await keywordResults.json();
+            const combinedResults = [
+              ...results,
+              ...keywordData.products.filter((kp: { id: string }) =>
+                !results.some(sr => sr.id === kp.id)
+              )
+            ];
+
+            const response = {
+              success: true,
+              products: combinedResults.slice(0, limit),
+              searchType: 'hybrid',
+              semanticCount: results.length,
+              keywordCount: keywordData.products.length
+            };
+
+            // Cache for 10 minutes
+            cache.set(cacheKey, response, 600);
+            return response;
+          }
+        }
+
+        const response = {
+          success: true,
+          products: results || [],
+          searchType: 'semantic'
+        };
+
+        // Cache for 10 minutes
+        cache.set(cacheKey, response, 600);
+        return response;
+      }
+    );
+
+    // Log search query for analytics (outside cache to track all searches)
     await supabase
       .from('search_queries')
       .insert({
         user_id: user.id,
         query_text: query,
         query_type: 'semantic',
-        results_count: results?.length || 0
+        results_count: finalResults.products?.length || 0
       });
 
-    // If semantic search returns few results and keyword search is enabled, combine with keyword results
-    if (includeKeywordSearch && results && results.length < 5) {
-      const keywordResults = await performKeywordSearch(supabase, query, limit - results.length);
-      
-      if (keywordResults.ok) {
-        const keywordData = await keywordResults.json();
-        const combinedResults = [
-          ...results,
-          ...keywordData.products.filter((kp: { id: string }) => 
-            !results.some(sr => sr.id === kp.id)
-          )
-        ];
-        
-        return NextResponse.json({
-          success: true,
-          products: combinedResults.slice(0, limit),
-          searchType: 'hybrid',
-          semanticCount: results.length,
-          keywordCount: keywordData.products.length
-        });
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      products: results || [],
-      searchType: 'semantic'
-    });
+    return NextResponse.json(finalResults);
 
   } catch (error) {
     logger.error('Error in semantic search API:', error);
@@ -217,7 +243,7 @@ async function performKeywordSearch(supabase: { from: (table: string) => any }, 
 }
 
 // GET search suggestions (autocomplete)
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

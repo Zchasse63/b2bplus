@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { SkipToContent } from "@/components/ui/AccessibleComponents";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   title: "B2B+ Platform",
@@ -27,6 +28,7 @@ export default function RootLayout({
         <Footer />
         <FloatingCartButton />
         <Toaster />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

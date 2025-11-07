@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendEmail, createEmailTemplate, addUtmParameters, EMAIL_CONFIG } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/gemini';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

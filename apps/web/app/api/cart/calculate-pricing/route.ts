@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { apiSuccess, apiError, apiUnauthorized, apiValidationError } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
+import { errorMonitor } from '@/lib/error-monitoring';
+import { safeAdd, safeMultiply, safeParseFloat, safeRound, safeDivide } from '@/lib/math-safe';
 
 /**
  * Server-side cart pricing calculation endpoint
@@ -29,31 +33,25 @@ interface PricingBreakdown {
   }>;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Require authentication
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiUnauthorized();
     }
 
     const { cartItems, promoCode, shippingAddressId } = await request.json();
 
     if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Cart items are required' },
-        { status: 400 }
-      );
+      return apiValidationError('Cart items are required', ['Cart cannot be empty']);
     }
 
     // Validate cart items
     for (const item of cartItems) {
-      if (!item.product_id || typeof item.quantity !== 'number' || item.quantity < 1) {
-        return NextResponse.json(
-          { error: 'Invalid cart item format' },
-          { status: 400 }
-        );
+      if (!item?.product_id || typeof item?.quantity !== 'number' || item.quantity < 1) {
+        return apiValidationError('Invalid cart item format', ['Each item must have product_id and valid quantity']);
       }
     }
 
@@ -65,25 +63,28 @@ export async function POST(request: NextRequest) {
       .in('id', productIds);
 
     if (productsError || !products) {
-      return NextResponse.json(
-        { error: 'Failed to fetch product prices' },
-        { status: 500 }
-      );
+      logger.error('Failed to fetch product prices', {
+        userId: user.id,
+        productIds,
+        error: productsError?.message
+      });
+      return apiError('Failed to fetch product prices', 500);
     }
 
     // Check for inactive products
-    const inactiveProducts = products.filter(p => !p.is_active);
+    const inactiveProducts = products.filter(p => !p?.is_active);
     if (inactiveProducts.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'Cart contains unavailable products',
-          unavailable_products: inactiveProducts.map(p => p.name)
-        },
-        { status: 400 }
+      logger.warn('Cart contains unavailable products', {
+        userId: user.id,
+        unavailableProducts: inactiveProducts.map(p => p?.name ?? 'Unknown')
+      });
+      return apiValidationError(
+        'Cart contains unavailable products',
+        inactiveProducts.map(p => `${p?.name ?? 'Unknown'} is no longer available`)
       );
     }
 
-    // Calculate subtotal using SERVER-SIDE prices only
+    // Calculate subtotal using SERVER-SIDE prices only with safe math operations
     let subtotal = 0;
     const itemsBreakdown = cartItems.map((cartItem: CartItem) => {
       const product = products.find(p => p.id === cartItem.product_id);
@@ -91,16 +92,16 @@ export async function POST(request: NextRequest) {
         throw new Error(`Product ${cartItem.product_id} not found`);
       }
 
-      const unitPrice = parseFloat(String(product.base_price));
-      const lineTotal = unitPrice * cartItem.quantity;
-      subtotal += lineTotal;
+      const unitPrice = safeParseFloat(product.base_price, 0);
+      const lineTotal = safeMultiply(unitPrice, cartItem.quantity);
+      subtotal = safeAdd(subtotal, lineTotal);
 
       return {
         product_id: product.id,
         name: product.name,
         quantity: cartItem.quantity,
-        unit_price: unitPrice,
-        line_total: lineTotal
+        unit_price: safeRound(unitPrice, 2),
+        line_total: safeRound(lineTotal, 2)
       };
     });
 
@@ -132,11 +133,12 @@ export async function POST(request: NextRequest) {
               .eq('user_id', user.id);
 
             if (!promo.max_uses_per_customer || (usageCount || 0) < promo.max_uses_per_customer) {
-              // Apply discount
+              // Apply discount with safe math operations
               if (promo.discount_type === 'percentage') {
-                promoDiscount = subtotal * (promo.discount_value / 100);
+                const discountPercent = safeDivide(safeParseFloat(promo.discount_value, 0), 100, 0);
+                promoDiscount = safeMultiply(subtotal, discountPercent);
               } else if (promo.discount_type === 'fixed') {
-                promoDiscount = Math.min(promo.discount_value, subtotal);
+                promoDiscount = Math.min(safeParseFloat(promo.discount_value, 0), subtotal);
               }
 
               validPromoCode = promo.code;
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const subtotalAfterDiscount = subtotal - promoDiscount;
+    const subtotalAfterDiscount = safeAdd(subtotal, -promoDiscount);
 
     // Calculate shipping (server-side business logic)
     // TODO: Implement proper shipping calculation based on address, weight, etc.
@@ -154,35 +156,70 @@ export async function POST(request: NextRequest) {
     const STANDARD_SHIPPING = 50;
     const shipping = subtotalAfterDiscount >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING;
 
-    // Calculate tax (server-side based on shipping address)
+    // Calculate tax (server-side based on shipping address) with safe math
     // TODO: Implement proper tax calculation based on jurisdiction
     const TAX_RATE = 0.08; // 8% - should be dynamic based on location
-    const tax = subtotalAfterDiscount * TAX_RATE;
+    const tax = safeMultiply(subtotalAfterDiscount, TAX_RATE);
 
-    // Calculate final total
-    const total = subtotalAfterDiscount + shipping + tax;
+    // Calculate final total with safe addition
+    const total = safeAdd(subtotalAfterDiscount, shipping, tax);
 
     const pricingBreakdown: PricingBreakdown = {
-      subtotal: Math.round(subtotal * 100) / 100,
-      promoDiscount: Math.round(promoDiscount * 100) / 100,
+      subtotal: safeRound(subtotal, 2),
+      promoDiscount: safeRound(promoDiscount, 2),
       promoCode: validPromoCode,
-      subtotalAfterDiscount: Math.round(subtotalAfterDiscount * 100) / 100,
-      shipping: Math.round(shipping * 100) / 100,
-      tax: Math.round(tax * 100) / 100,
-      total: Math.round(total * 100) / 100,
+      subtotalAfterDiscount: safeRound(subtotalAfterDiscount, 2),
+      shipping: safeRound(shipping, 2),
+      tax: safeRound(tax, 2),
+      total: safeRound(total, 2),
       items: itemsBreakdown
     };
 
-    return NextResponse.json({
-      success: true,
-      pricing: pricingBreakdown
+    logger.info('Cart pricing calculated', {
+      userId: user?.id,
+      itemCount: cartItems.length,
+      total: pricingBreakdown.total,
+      promoCode: validPromoCode
     });
 
+    return apiSuccess(
+      { pricing: pricingBreakdown },
+      'Pricing calculated successfully'
+    );
+
   } catch (error) {
-    console.error('Error calculating cart pricing:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+    // Get user ID for error tracking
+    let userId: string | undefined;
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    } catch {
+      // Ignore errors getting user for error tracking
+    }
+
+    logger.error('Error calculating cart pricing', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      userId
+    });
+
+    // Report to error monitoring
+    errorMonitor.report(error instanceof Error ? error : new Error(String(error)), {
+      category: 'payment',
+      severity: 'high',
+      userId,
+      operation: 'calculate-cart-pricing'
+    });
+
+    // Production: Generic message, Development: Detailed error
+    if (process.env.NODE_ENV === 'production') {
+      return apiError('An error occurred while calculating pricing. Please try again.', 500);
+    }
+
+    return apiError(
+      error instanceof Error ? error.message : 'Internal server error',
+      500
     );
   }
 }

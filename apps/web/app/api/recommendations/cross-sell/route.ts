@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * - Products in categories they buy from but haven't tried
  * - Frequently bought together patterns
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

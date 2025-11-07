@@ -23,6 +23,17 @@ interface CachedEmbedding {
 }
 
 /**
+ * Type guard to validate embedding array
+ * Ensures the value is a valid number array
+ */
+function isValidEmbedding(value: unknown): value is number[] {
+  if (!Array.isArray(value)) return false;
+  if (value.length === 0) return false;
+  // Use Number.isFinite() which automatically checks for NaN and Infinity
+  return value.every(v => typeof v === 'number' && Number.isFinite(v));
+}
+
+/**
  * Generate cache key from text content
  * Uses SHA256 hash of normalized text
  */
@@ -128,11 +139,19 @@ export async function getCachedEmbedding(
         })
         .eq('id', cached.id);
 
-      return {
-        embedding: cached.embedding as number[],
-        fromCache: true,
-        cacheKey,
-      };
+      // Validate cached embedding
+      if (!isValidEmbedding(cached.embedding)) {
+        logger.warn('Invalid cached embedding format, regenerating', { cacheKey });
+        // Delete invalid cache entry
+        await supabase.from('embedding_cache').delete().eq('id', cached.id);
+        // Fall through to generate new embedding
+      } else {
+        return {
+          embedding: cached.embedding,
+          fromCache: true,
+          cacheKey,
+        };
+      }
     }
 
     // Cache miss - generate new embedding (with rate limiting if userId provided)
@@ -229,10 +248,15 @@ export async function getBatchCachedEmbeddings(
     const cacheMap = new Map<string, { embedding: number[]; id: string }>();
     if (cachedEmbeddings) {
       cachedEmbeddings.forEach(cached => {
-        cacheMap.set(cached.cache_key, {
-          embedding: cached.embedding as number[],
-          id: cached.id,
-        });
+        // Validate cached embedding before adding to map
+        if (isValidEmbedding(cached.embedding)) {
+          cacheMap.set(cached.cache_key, {
+            embedding: cached.embedding,
+            id: cached.id,
+          });
+        } else {
+          logger.warn('Skipping invalid cached embedding', { cacheKey: cached.cache_key });
+        }
       });
     }
 
@@ -407,7 +431,9 @@ export async function getCacheStats(): Promise<{
     }
 
     const totalUses = data.reduce((sum, entry) => sum + entry.use_count, 0);
-    const avgUsesPerEntry = data.length > 0 ? totalUses / data.length : 0;
+    const avgUsesPerEntry = data.length > 0 && Number.isFinite(totalUses)
+      ? totalUses / data.length
+      : 0;
 
     return {
       totalEntries: data.length,

@@ -26,7 +26,7 @@ interface HistoricalOrder {
  * Imports historical orders from Bailey (2023-2024) or Brokerage (2025)
  * Maps old SKUs to current products using SKU mappings table
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
@@ -240,7 +240,7 @@ async function updateCustomerAnalytics(
 /**
  * Get import statistics
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     

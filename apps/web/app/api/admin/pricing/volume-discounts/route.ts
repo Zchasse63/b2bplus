@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET volume discounts for a product
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST create volume discount
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH update volume discount
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     
@@ -203,7 +203,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 // DELETE volume discount
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient();
     

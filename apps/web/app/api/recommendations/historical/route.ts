@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
  * Shows customers products they used to buy but haven't purchased recently
  * "You used to buy this" feature
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
     
