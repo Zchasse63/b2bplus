@@ -1,8 +1,17 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { checkCSRF } from '@/lib/security/csrf'
+import { checkAdminRateLimit } from '@/lib/middleware/rate-limit-admin'
 
 export async function middleware(request: NextRequest) {
+  // SECURITY: Apply rate limiting to all admin API endpoints
+  if (request.nextUrl.pathname.startsWith('/api/admin/')) {
+    const rateLimitCheck = await checkAdminRateLimit(request);
+    if (rateLimitCheck) {
+      return rateLimitCheck; // Return rate limit error response
+    }
+  }
+
   // SECURITY: Check CSRF for all state-changing API requests
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const csrfCheck = await checkCSRF(request);
