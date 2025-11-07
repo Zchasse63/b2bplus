@@ -139,90 +139,30 @@ export default function CheckoutPage() {
     setSubmitting(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_organization_id')
-        .eq('id', user.id)
-        .single()
-
-      // Calculate totals
-      const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) => 
-        sum + (item.products.base_price * item.quantity), 0
-      )
-      const tax = subtotal * 0.08 // 8% tax rate
-      const shippingCost = subtotal > 500 ? 0 : 50 // Free shipping over $500
-      const total = subtotal + tax + shippingCost
-
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          organization_id: profile?.current_organization_id,
-          user_id: user.id,
-          status: 'submitted',
-          subtotal,
-          tax,
-          shipping_cost: shippingCost,
-          total,
-          shipping_address_id: selectedAddressId,
-          po_number: poNumber || null,
+      // SECURITY: Use server-side endpoint that validates all pricing
+      // This prevents price manipulation attacks
+      const response = await fetch('/api/checkout/submit-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shippingAddressId: selectedAddressId,
+          poNumber: poNumber || null,
           notes: notes || null,
-          submitted_at: new Date().toISOString(),
-        })
-        .select()
-        .single()
+        }),
+      })
 
-      if (orderError) throw orderError
+      const data = await response.json()
 
-      // Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        sku: item.products.sku,
-        name: item.products.name,
-        quantity: item.quantity,
-        unit_price: item.products.base_price,
-        line_total: item.products.base_price * item.quantity,
-      }))
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-
-      if (itemsError) throw itemsError
-
-      // Clear cart
-      const { error: clearError } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('user_id', user.id)
-
-      if (clearError) throw clearError
-
-      // Send push notification for order submission
-      try {
-        await fetch('/api/notifications/order-update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId: order.id,
-            status: 'submitted',
-          }),
-        })
-      } catch (notifError) {
-        // Don't fail the order if notification fails
-        console.error('Failed to send order notification:', notifError)
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit order')
       }
 
-      setOrderNumber(order.order_number)
+      setOrderNumber(data.order.order_number)
       setSuccessModal(true)
 
     } catch (error) {
       console.error('Error submitting order:', error)
-      alert('Failed to submit order. Please try again.')
+      alert(error instanceof Error ? error.message : 'Failed to submit order. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -236,6 +176,9 @@ export default function CheckoutPage() {
     )
   }
 
+  // NOTE: These calculations are for DISPLAY ONLY
+  // Real pricing is calculated server-side during order submission
+  // This prevents price manipulation attacks
   const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) =>
     sum + (item.products.base_price * item.quantity), 0
   )
