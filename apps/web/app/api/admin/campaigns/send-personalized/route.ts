@@ -4,6 +4,11 @@ import { sendEmail } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/gemini';
 import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer';
 import { sanitizeEmailHTML } from '@/lib/security/html-sanitizer';
+import crypto from 'crypto';
+
+// PERFORMANCE: Batch size for concurrent email processing
+// Lower batch size for AI-personalized emails due to AI API rate limits
+const BATCH_SIZE = 10;
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,26 +73,32 @@ export async function POST(request: NextRequest) {
     let sentCount = 0;
     let failedCount = 0;
 
-    // Send emails to each lead
-    for (const lead of leads) {
-      try {
-        // Personalize email content
-        let personalizedSubject = campaign.subject;
-        let personalizedBody = campaign.body_template;
+    // PERFORMANCE: Process leads in batches for better performance
+    // This dramatically reduces processing time for large campaigns
+    for (let i = 0; i < leads.length; i += BATCH_SIZE) {
+      const batch = leads.slice(i, i + BATCH_SIZE);
 
-        if (useAI) {
-          // SECURITY: Sanitize all user inputs before using in AI prompts
-          const sanitizedLead = {
-            company_name: sanitizeForPrompt(lead.company_name),
-            contact_name: sanitizeForPrompt(lead.contact_name),
-            industry: sanitizeForPrompt(lead.industry || 'Not specified'),
-            region: sanitizeForPrompt(lead.regions?.name || 'Not specified'),
-            buying_group: sanitizeForPrompt(lead.buying_groups?.name || 'None'),
-            lead_score: Math.max(0, Math.min(100, Number(lead.lead_score) || 0))
-          };
+      // Process all emails in this batch concurrently
+      const batchResults = await Promise.allSettled(
+        batch.map(async (lead) => {
+          try {
+            // Personalize email content
+            let personalizedSubject = campaign.subject;
+            let personalizedBody = campaign.body_template;
 
-          // Use AI to personalize the email
-          const aiPrompt = `
+            if (useAI) {
+              // SECURITY: Sanitize all user inputs before using in AI prompts
+              const sanitizedLead = {
+                company_name: sanitizeForPrompt(lead.company_name),
+                contact_name: sanitizeForPrompt(lead.contact_name),
+                industry: sanitizeForPrompt(lead.industry || 'Not specified'),
+                region: sanitizeForPrompt(lead.regions?.name || 'Not specified'),
+                buying_group: sanitizeForPrompt(lead.buying_groups?.name || 'None'),
+                lead_score: Math.max(0, Math.min(100, Number(lead.lead_score) || 0))
+              };
+
+              // Use AI to personalize the email
+              const aiPrompt = `
 You are a B2B sales expert. Personalize this email for the following lead:
 
 Lead Information:
@@ -115,123 +126,142 @@ Return ONLY the personalized email in this exact JSON format:
 }
 `;
 
-          try {
-            const aiContent = await generateJSON(aiPrompt, {
-              temperature: 0.7,
-              systemPrompt: 'You are a B2B sales expert specializing in personalized email campaigns.'
+              try {
+                const aiContent = await generateJSON(aiPrompt, {
+                  temperature: 0.7,
+                  systemPrompt: 'You are a B2B sales expert specializing in personalized email campaigns.'
+                });
+
+                personalizedSubject = aiContent.subject || campaign.subject;
+                // SECURITY: Sanitize AI-generated HTML to prevent XSS attacks
+                // The AI could potentially generate malicious HTML/JavaScript
+                personalizedBody = sanitizeEmailHTML(aiContent.body || campaign.body_template);
+              } catch (parseError) {
+                console.error('Error generating AI personalization:', parseError);
+                // Fall back to template-based personalization
+              }
+            }
+
+            // SECURITY: Also sanitize the campaign template body
+            // This protects against XSS in manually created campaigns
+            if (!useAI || !personalizedBody) {
+              personalizedBody = sanitizeEmailHTML(campaign.body_template);
+            }
+
+            // Apply template variables (fallback or additional personalization)
+            personalizedSubject = personalizedSubject
+              .replace(/{{company_name}}/g, lead.company_name)
+              .replace(/{{contact_name}}/g, lead.contact_name || 'there')
+              .replace(/{{region}}/g, lead.regions?.name || '');
+
+            personalizedBody = personalizedBody
+              .replace(/{{company_name}}/g, lead.company_name)
+              .replace(/{{contact_name}}/g, lead.contact_name || 'there')
+              .replace(/{{region}}/g, lead.regions?.name || '')
+              .replace(/{{buying_group}}/g, lead.buying_groups?.name || 'None');
+
+            // Generate magic link if this is an offer campaign
+            let magicLink = '';
+            if (campaign.campaign_type === 'promotional' || campaign.campaign_type === 'sample_offer') {
+              const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
+              const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
+
+              await supabase
+                .from('magic_link_tokens')
+                .insert({
+                  lead_id: lead.id,
+                  token,
+                  email: lead.email,
+                  purpose: 'offer_access',
+                  redirect_url: '/products',
+                  expires_at: expiresAt,
+                });
+
+              magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/magic-link/verify?token=${token}`;
+
+              // Add magic link to email body
+              personalizedBody += `
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${magicLink}"
+                     style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                    View Your Personalized Pricing
+                  </a>
+                </div>
+              `;
+            }
+
+            // Send email via SendGrid
+            await sendEmail({
+              to: lead.email,
+              subject: personalizedSubject,
+              html: personalizedBody,
             });
 
-            personalizedSubject = aiContent.subject || campaign.subject;
-            // SECURITY: Sanitize AI-generated HTML to prevent XSS attacks
-            // The AI could potentially generate malicious HTML/JavaScript
-            personalizedBody = sanitizeEmailHTML(aiContent.body || campaign.body_template);
-          } catch (parseError) {
-            console.error('Error generating AI personalization:', parseError);
-            // Fall back to template-based personalization
+            // Track email send
+            await supabase
+              .from('email_campaign_recipients')
+              .insert({
+                campaign_id: campaignId,
+                lead_id: lead.id,
+                email: lead.email,
+                personalization_data: {
+                  company_name: lead.company_name,
+                  contact_name: lead.contact_name,
+                  region: lead.regions?.name,
+                  buying_group: lead.buying_groups?.name,
+                },
+                status: 'sent',
+                sent_at: new Date().toISOString(),
+                magic_link_token: magicLink ? magicLink.split('token=')[1] : null,
+              });
+
+            // Log activity
+            await supabase
+              .from('lead_activities')
+              .insert({
+                lead_id: lead.id,
+                activity_type: 'email_sent',
+                subject: personalizedSubject,
+                description: `Email campaign sent: ${campaign.name}`,
+                metadata: {
+                  campaign_id: campaignId,
+                },
+              });
+
+            return { success: true, lead };
+
+          } catch (emailError) {
+            console.error(`Error sending email to ${lead.email}:`, emailError);
+
+            // Track failed send
+            await supabase
+              .from('email_campaign_recipients')
+              .insert({
+                campaign_id: campaignId,
+                lead_id: lead.id,
+                email: lead.email,
+                status: 'failed',
+                error_message: emailError instanceof Error ? emailError.message : 'Unknown error'
+              });
+
+            return { success: false, lead, error: emailError };
           }
+        })
+      );
+
+      // Count successes and failures for this batch
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled' && result.value.success) {
+          sentCount++;
+        } else {
+          failedCount++;
         }
+      }
 
-        // SECURITY: Also sanitize the campaign template body
-        // This protects against XSS in manually created campaigns
-        if (!useAI || !personalizedBody) {
-          personalizedBody = sanitizeEmailHTML(campaign.body_template);
-        }
-
-        // Apply template variables (fallback or additional personalization)
-        personalizedSubject = personalizedSubject
-          .replace(/{{company_name}}/g, lead.company_name)
-          .replace(/{{contact_name}}/g, lead.contact_name || 'there')
-          .replace(/{{region}}/g, lead.regions?.name || '');
-
-        personalizedBody = personalizedBody
-          .replace(/{{company_name}}/g, lead.company_name)
-          .replace(/{{contact_name}}/g, lead.contact_name || 'there')
-          .replace(/{{region}}/g, lead.regions?.name || '')
-          .replace(/{{buying_group}}/g, lead.buying_groups?.name || 'None');
-
-        // Generate magic link if this is an offer campaign
-        let magicLink = '';
-        if (campaign.campaign_type === 'promotional' || campaign.campaign_type === 'sample_offer') {
-          const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-          const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
-
-          await supabase
-            .from('magic_link_tokens')
-            .insert({
-              lead_id: lead.id,
-              token,
-              email: lead.email,
-              purpose: 'offer_access',
-              redirect_url: '/products',
-              expires_at: expiresAt,
-            });
-
-          magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/magic-link/verify?token=${token}`;
-          
-          // Add magic link to email body
-          personalizedBody += `
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${magicLink}" 
-                 style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                View Your Personalized Pricing
-              </a>
-            </div>
-          `;
-        }
-
-        // Send email via SendGrid
-        await sendEmail({
-          to: lead.email,
-          subject: personalizedSubject,
-          html: personalizedBody,
-        });
-
-        // Track email send
-        await supabase
-          .from('email_campaign_recipients')
-          .insert({
-            campaign_id: campaignId,
-            lead_id: lead.id,
-            email: lead.email,
-            personalization_data: {
-              company_name: lead.company_name,
-              contact_name: lead.contact_name,
-              region: lead.regions?.name,
-              buying_group: lead.buying_groups?.name,
-            },
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-            magic_link_token: magicLink ? magicLink.split('token=')[1] : null,
-          });
-
-        // Log activity
-        await supabase
-          .from('lead_activities')
-          .insert({
-            lead_id: lead.id,
-            activity_type: 'email_sent',
-            subject: personalizedSubject,
-            description: `Email campaign sent: ${campaign.name}`,
-            metadata: {
-              campaign_id: campaignId,
-            },
-          });
-
-        sentCount++;
-
-      } catch (emailError) {
-        console.error(`Error sending email to ${lead.email}:`, emailError);
-        failedCount++;
-
-        // Track failed send
-        await supabase
-          .from('email_campaign_recipients')
-          .insert({
-            campaign_id: campaignId,
-            lead_id: lead.id,
-            email: lead.email,
-            status: 'failed',
-          });
+      // Small delay between batches to avoid overwhelming AI API and email service
+      // This is especially important for AI-personalized campaigns
+      if (i + BATCH_SIZE < leads.length) {
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
       }
     }
 
