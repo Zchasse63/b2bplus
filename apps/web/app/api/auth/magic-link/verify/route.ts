@@ -108,9 +108,14 @@ export async function GET(request: NextRequest) {
       }
 
       // Create user account
+      // SECURITY FIX: Generate a strong random password using crypto.randomBytes
+      // Previous implementation used a single UUID which is weak
+      // User won't need this password as they'll use magic links
+      const randomPassword = crypto.randomBytes(32).toString('base64').slice(0, 64);
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: lead.email,
-        password: crypto.randomUUID(), // Generate random password (user won't need it)
+        password: randomPassword,
         options: {
           data: {
             full_name: lead.contact_name,
