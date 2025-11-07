@@ -1,15 +1,44 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateEmbedding } from '@/lib/gemini';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 // POST semantic search
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // SECURITY: Rate limit semantic search to prevent abuse
+    // Embedding generation is expensive (AI API calls + processing)
+    const rateLimitResult = await checkRateLimit(supabase, {
+      key: 'semantic-search',
+      identifier: user.id,
+      maxRequests: 20, // 20 searches per minute
+      windowSeconds: 60,
+    });
+
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded. Please try again later.',
+          resetAt: rateLimitResult.resetAt.toISOString(),
+          limit: rateLimitResult.limit,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+            'Retry-After': Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000).toString(),
+          },
+        }
+      );
     }
 
     const body = await request.json();
@@ -137,25 +166,33 @@ export async function POST(request: NextRequest) {
 
 // Fallback keyword search
 async function performKeywordSearch(supabase: any, query: string, limit: number) {
-  const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
-  
+  // SECURITY FIX: Sanitize search terms to prevent SQL injection
+  const searchTerms = query
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except word chars, spaces, hyphens
+    .split(' ')
+    .filter(term => term.length > 2)
+    .slice(0, 10); // Limit number of terms
+
   let productsQuery = supabase
     .from('products')
     .select('*')
     .eq('is_active', true)
     .limit(limit);
 
-  // Build OR conditions for name, description, SKU, category
-  const orConditions = searchTerms.map(term => {
-    return [
-      `name.ilike.%${term}%`,
-      `description.ilike.%${term}%`,
-      `sku.ilike.%${term}%`,
-      `category.ilike.%${term}%`
-    ].join(',');
-  }).join(',');
+  // Build OR conditions safely - terms are now sanitized
+  if (searchTerms.length > 0) {
+    const orConditions = searchTerms.map(term => {
+      // Escape % and _ which are SQL wildcard characters
+      const escapedTerm = term.replace(/[%_]/g, '\\$&');
+      return [
+        `name.ilike.%${escapedTerm}%`,
+        `description.ilike.%${escapedTerm}%`,
+        `sku.ilike.%${escapedTerm}%`,
+        `category.ilike.%${escapedTerm}%`
+      ].join(',');
+    }).join(',');
 
-  if (orConditions) {
     productsQuery = productsQuery.or(orConditions);
   }
 
