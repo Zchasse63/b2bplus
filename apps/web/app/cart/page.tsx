@@ -141,33 +141,51 @@ export default function CartPage() {
 
     setApplyingPromo(true);
 
-    // Simulate promo code validation (replace with actual API call)
-    // Valid codes: SAVE10 (10%), SAVE20 (20%), FREESHIP (free shipping)
-    const validCodes: Record<string, number> = {
-      'SAVE10': 0.10,
-      'SAVE20': 0.20,
-      'WELCOME15': 0.15,
-    };
+    // SECURITY FIX: Validate promo codes server-side only
+    try {
+      // Calculate cart items for API
+      const cartItemsForAPI = cartItems.map(item => ({
+        product_id: item.product_id,
+        quantity: item.quantity
+      }));
 
-    setTimeout(() => {
-      const discount = validCodes[promoCode.toUpperCase()];
+      const response = await fetch('/api/cart/calculate-pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cartItems: cartItemsForAPI,
+          promoCode: promoCode.toUpperCase()
+        })
+      });
 
-      if (discount) {
-        setAppliedPromo({ code: promoCode.toUpperCase(), discount });
+      const data = await response.json();
+
+      if (response.ok && data.success && data.pricing.promoCode) {
+        setAppliedPromo({
+          code: data.pricing.promoCode,
+          discount: data.pricing.promoDiscount / data.pricing.subtotal
+        });
         toast({
           title: 'Success!',
-          description: `Promo code "${promoCode.toUpperCase()}" applied successfully`,
+          description: `Promo code "${data.pricing.promoCode}" applied successfully`,
         });
       } else {
         toast({
           title: 'Invalid Code',
-          description: 'The promo code you entered is not valid',
+          description: 'The promo code you entered is not valid or has expired',
           variant: 'destructive',
         });
       }
-
+    } catch (error) {
+      console.error('Error applying promo code:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply promo code. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
       setApplyingPromo(false);
-    }, 500);
+    }
   }
 
   function removePromoCode() {
@@ -179,6 +197,10 @@ export default function CartPage() {
     });
   }
 
+  // WARNING: These client-side calculations are for display only
+  // SECURITY: Server-side validation occurs at checkout
+  // DO NOT rely on these values for actual order processing
+  // TODO: Fetch pricing from /api/cart/calculate-pricing for real-time validation
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.products.base_price * item.quantity,
     0
