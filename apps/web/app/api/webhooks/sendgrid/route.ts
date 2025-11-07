@@ -1,6 +1,6 @@
 /**
  * SendGrid Webhook Handler
- * 
+ *
  * Receives real-time events from SendGrid for email tracking:
  * - delivered: Email was successfully delivered
  * - open: Email was opened
@@ -8,10 +8,18 @@
  * - bounce: Email bounced
  * - spamreport: Email was marked as spam
  * - unsubscribe: Recipient unsubscribed
+ *
+ * SECURITY SETUP:
+ * 1. In SendGrid dashboard, go to Settings > Mail Settings > Event Webhook
+ * 2. Enable "Signed Event Webhook Requests"
+ * 3. Copy the "Verification Key" (base64-encoded public key)
+ * 4. Add to .env as: SENDGRID_WEBHOOK_VERIFICATION_KEY=<verification-key>
+ * 5. This webhook will reject requests without valid signatures
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 // Use service role key for webhook (bypasses RLS)
 const supabase = createClient(
@@ -19,9 +27,76 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+/**
+ * Verify SendGrid webhook signature
+ * SECURITY: This prevents unauthorized webhook requests
+ */
+function verifySignature(request: NextRequest, payload: string): boolean {
+  const verificationKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
+
+  if (!verificationKey) {
+    console.error('SENDGRID_WEBHOOK_VERIFICATION_KEY not configured');
+    // In development, you might want to skip verification
+    // In production, this should always be required
+    return process.env.NODE_ENV === 'development';
+  }
+
+  const signature = request.headers.get('X-Twilio-Email-Event-Webhook-Signature');
+  const timestamp = request.headers.get('X-Twilio-Email-Event-Webhook-Timestamp');
+
+  if (!signature || !timestamp) {
+    console.error('Missing signature or timestamp headers');
+    return false;
+  }
+
+  // Verify timestamp is recent (within 10 minutes)
+  const timestampMs = parseInt(timestamp) * 1000;
+  const now = Date.now();
+  const maxAge = 10 * 60 * 1000; // 10 minutes
+
+  if (Math.abs(now - timestampMs) > maxAge) {
+    console.error('Webhook timestamp too old or in future');
+    return false;
+  }
+
+  // Compute expected signature using ECDSA
+  const signedPayload = timestamp + payload;
+
+  try {
+    const verifier = crypto.createVerify('sha256WithRSAEncryption');
+    verifier.update(signedPayload);
+
+    // SendGrid uses ECDSA P-256 for signing
+    // The verification key is a base64-encoded public key
+    const publicKey = Buffer.from(verificationKey, 'base64').toString('utf8');
+    const isValid = verifier.verify(publicKey, signature, 'base64');
+
+    if (!isValid) {
+      console.error('Invalid webhook signature');
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('Error verifying signature:', error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const events = await request.json();
+    // SECURITY: Get raw body for signature verification
+    const rawBody = await request.text();
+
+    // SECURITY: Verify webhook signature before processing
+    if (!verifySignature(request, rawBody)) {
+      console.error('Webhook signature verification failed');
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid signature' },
+        { status: 401 }
+      );
+    }
+
+    const events = JSON.parse(rawBody);
     
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
