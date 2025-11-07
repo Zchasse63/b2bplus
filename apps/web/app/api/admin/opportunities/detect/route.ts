@@ -1,14 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateText } from '@/lib/gemini'
+import { generateTextPro } from '@/lib/gemini'
 
 /**
  * Opportunity Detection API
- * Automatically identifies sales opportunities across all customers
- * - Products they stopped buying
- * - Cross-sell opportunities
- * - Upsell opportunities
+ * Uses Gemini 2.5 Pro for sophisticated opportunity analysis:
+ * - Churn risk detection (stopped purchases)
+ * - Cross-sell pattern recognition
+ * - Upsell opportunity scoring
  * - New product recommendations
+ * - Multi-dimensional opportunity ranking
  */
 export async function POST(request: NextRequest) {
   try {
@@ -332,10 +333,10 @@ Average frequency: every ${data.avg_frequency_days} days
 Write a brief, actionable reason why this is a sales opportunity (1-2 sentences).`
     }
 
-    const response = await generateText(prompt, {
-      temperature: 0.7,
-      maxTokens: 100,
-      systemPrompt: 'You are a B2B sales analyst. Provide concise, actionable insights.'
+    const response = await generateTextPro(prompt, {
+      temperature: 0.3,  // Lower for analytical reasoning
+      maxTokens: 150,
+      systemPrompt: 'You are a B2B sales analyst specializing in opportunity detection and revenue optimization. Apply deep analytical reasoning to identify high-value opportunities.'
     })
 
     return response || 'Opportunity detected based on purchase history'

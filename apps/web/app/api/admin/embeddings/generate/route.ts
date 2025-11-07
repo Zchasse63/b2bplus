@@ -29,8 +29,7 @@ export async function POST(request: NextRequest) {
     // Get products to generate embeddings for
     let query = supabase
       .from('products')
-      .select('id, name, description, category, sku')
-      .eq('is_active', true);
+      .select('id, name, description, category, sku');
 
     if (productIds && Array.isArray(productIds) && productIds.length > 0) {
       query = query.in('id', productIds);
@@ -147,8 +146,7 @@ export async function GET(request: NextRequest) {
     // Count total products
     const { count: totalProducts } = await supabase
       .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+      .select('*', { count: 'exact', head: true });
 
     // Count products with embeddings
     const { count: withEmbeddings } = await supabase

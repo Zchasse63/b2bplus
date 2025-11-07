@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { PageHeader, Card, ProductCard, Input, Button, Select } from '@/components/b2b';
+import { PageHeader, Card, Input, Button, Select } from '@/components/b2b';
+import ProductCardWithPricing from '@/components/ProductCardWithPricing';
 import { FiSearch, FiGrid, FiList } from 'react-icons/fi';
 import type { Product } from '@b2b-plus/supabase';
+import { fadeIn, fast } from '@/lib/animations';
 
 export default function ProductsPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,27 +83,6 @@ export default function ProductsPage() {
     setFilteredProducts(filtered);
   }
 
-  async function handleAddToCart(productId: string) {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    // Add to cart logic
-    const { error } = await supabase.from('cart_items').insert({
-      user_id: user.id,
-      product_id: productId,
-      quantity: 1,
-    });
-
-    if (!error) {
-      // Show success notification (you can add a toast here)
-      console.log('Added to cart');
-    }
-  }
-
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
     ...categories.map((cat) => ({ value: cat.name, label: cat.name })),
@@ -123,7 +103,13 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <motion.div
+      className="space-y-6"
+      variants={fadeIn}
+      initial="hidden"
+      animate="visible"
+      transition={fast}
+    >
       {/* Page Header */}
       <PageHeader
         title="Product Catalog"
@@ -190,21 +176,13 @@ export default function ProductsPage() {
           }
         >
           {filteredProducts.map((product) => (
-            <ProductCard
+            <ProductCardWithPricing
               key={product.id}
-              id={product.id}
-              name={product.name}
-              price={product.base_price}
-              image={product.image_url || undefined}
-              category={product.category || undefined}
-              inStock={product.in_stock}
-              onAddToCart={handleAddToCart}
-              onClick={() => router.push(`/products/${product.id}`)}
-              variant={viewMode}
+              product={product}
             />
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

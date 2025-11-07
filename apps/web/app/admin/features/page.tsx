@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, DataTable, Button } from '@/components/b2b';
 import { FiToggleLeft, FiToggleRight, FiFlag, FiInfo } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface FeatureFlag {
   id: string;
@@ -174,7 +176,7 @@ export default function AdminFeaturesPage() {
   const disabledCount = features.filter(f => !f.enabled).length;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

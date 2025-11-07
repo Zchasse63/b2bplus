@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { DataTable, Button, Card, Badge, Input } from '@/components/b2b';
 import { FiUsers, FiMail, FiPhone, FiMapPin, FiDollarSign, FiShoppingCart, FiSearch } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface Customer {
   id: string;
@@ -165,7 +167,7 @@ export default function AdminCustomersPage() {
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

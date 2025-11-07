@@ -1,10 +1,12 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { PageHeader, Card, Button, Input, Badge, DataTable, Modal, Select, Textarea } from '@/components/b2b';
 import { FiUsers, FiSearch, FiPlus, FiMail, FiPhone, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface Contact {
   id: string;
@@ -259,7 +261,7 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       <PageHeader
         title="Contact Management"
         subtitle="Manage customer contacts and relationships"

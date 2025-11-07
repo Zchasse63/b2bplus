@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/b2b'
 import { MdContentCopy, MdCheck } from 'react-icons/md'
 import { useToast } from '@/hooks/use-toast'
 

@@ -1,0 +1,2160 @@
+
+Running 66 tests using 6 workers
+
+  ✘   1 [chromium] › e2e/admin-opportunities.spec.ts:23:7 › Admin Opportunity Management › admin can navigate to opportunities page (30.9s)
+  ✘   6 [chromium] › e2e/admin-opportunities.spec.ts:99:7 › Admin Opportunity Management › admin can filter opportunities by status (30.9s)
+  ✘   3 [chromium] › e2e/admin-opportunities.spec.ts:61:7 › Admin Opportunity Management › admin can see opportunity details (30.9s)
+  ✘   2 [chromium] › e2e/admin-opportunities.spec.ts:117:7 › Admin Opportunity Management › admin can sort opportunities by score (30.9s)
+  ✘   4 [chromium] › e2e/admin-opportunities.spec.ts:41:7 › Admin Opportunity Management › admin can view list of AI-detected opportunities (31.0s)
+  ✘   5 [chromium] › e2e/admin-opportunities.spec.ts:79:7 › Admin Opportunity Management › admin can filter opportunities by type (31.0s)
+  ✘  10 [chromium] › e2e/admin-opportunities.spec.ts:208:7 › Admin Opportunity Management › admin can view AI reasoning for opportunity (30.9s)
+  ✘  11 [chromium] › e2e/admin-opportunities.spec.ts:236:7 › Admin Opportunity Management › admin can detect new opportunities (31.0s)
+  ✘   7 [chromium] › e2e/admin-opportunities.spec.ts:182:7 › Admin Opportunity Management › admin can dismiss an opportunity (31.0s)
+  ✘  12 [chromium] › e2e/admin-opportunities.spec.ts:225:7 › Admin Opportunity Management › admin can see opportunity score and confidence (31.0s)
+  ✘   9 [chromium] › e2e/admin-opportunities.spec.ts:133:7 › Admin Opportunity Management › admin can pursue an opportunity (31.0s)
+  ✘   8 [chromium] › e2e/admin-opportunities.spec.ts:152:7 › Admin Opportunity Management › admin can create task from opportunity (31.1s)
+  ✘  15 [chromium] › e2e/admin-opportunities.spec.ts:314:7 › Admin Opportunity Management › admin can view opportunity history/timeline (30.9s)
+  ✘  13 [chromium] › e2e/admin-opportunities.spec.ts:257:7 › Admin Opportunity Management › admin can view customer details from opportunity (30.9s)
+  ✘  18 [chromium] › e2e/admin-pricing.spec.ts:39:7 › Admin Pricing Approval Flow › admin can view list of pricing recommendations (30.9s)
+  ✘  16 [chromium] › e2e/admin-opportunities.spec.ts:298:7 › Admin Opportunity Management › admin can search opportunities (30.9s)
+  ✘  14 [chromium] › e2e/admin-opportunities.spec.ts:276:7 › Admin Opportunity Management › admin can export opportunities list (31.0s)
+  ✘  17 [chromium] › e2e/admin-pricing.spec.ts:23:7 › Admin Pricing Approval Flow › admin can navigate to pricing recommendations page (30.9s)
+  ✘  22 [chromium] › e2e/admin-pricing.spec.ts:73:7 › Admin Pricing Approval Flow › admin can view AI reasoning for pricing recommendation (30.8s)
+  ✘  21 [chromium] › e2e/admin-pricing.spec.ts:105:7 › Admin Pricing Approval Flow › admin can approve pricing recommendation (30.8s)
+  ✘  20 [chromium] › e2e/admin-pricing.spec.ts:56:7 › Admin Pricing Approval Flow › admin can see pricing recommendation details (30.8s)
+  ✘  24 [chromium] › e2e/admin-pricing.spec.ts:157:7 › Admin Pricing Approval Flow › admin can filter recommendations by status (30.8s)
+  ✘  19 [chromium] › e2e/admin-pricing.spec.ts:89:7 › Admin Pricing Approval Flow › admin can see win probability and expected revenue (30.9s)
+  ✘  23 [chromium] › e2e/admin-pricing.spec.ts:131:7 › Admin Pricing Approval Flow › admin can reject pricing recommendation (30.8s)
+  ✘  29 [chromium] › e2e/admin-pricing.spec.ts:191:7 › Admin Pricing Approval Flow › admin can sort recommendations by win probability (34.3s)
+  ✘  30 [chromium] › e2e/admin-pricing.spec.ts:265:7 › Admin Pricing Approval Flow › admin can see price sensitivity analysis (34.4s)
+  ✘  28 [chromium] › e2e/admin-pricing.spec.ts:174:7 › Admin Pricing Approval Flow › admin can filter recommendations by confidence level (34.5s)
+  ✘  25 [chromium] › e2e/admin-pricing.spec.ts:281:7 › Admin Pricing Approval Flow › admin can view customer purchase history (34.5s)
+  ✘  27 [chromium] › e2e/admin-pricing.spec.ts:249:7 › Admin Pricing Approval Flow › admin can view historical pricing data (34.7s)
+  ✘  26 [chromium] › e2e/admin-pricing.spec.ts:206:7 › Admin Pricing Approval Flow › admin can generate new pricing recommendation (34.7s)
+  ✓  35 [chromium] › e2e/auth.spec.ts:36:9 › Authentication › Login › should show error with invalid credentials (2.7s)
+  ✘  36 [chromium] › e2e/auth.spec.ts:53:9 › Authentication › Login › should show validation errors for empty fields (7.5s)
+  ✘  38 [chromium] › e2e/auth.spec.ts:80:9 › Authentication › Signup › should create new account with valid data (130ms)
+  ✘  37 [chromium] › e2e/auth.spec.ts:64:9 › Authentication › Login › should show validation error for invalid email format (6.0s)
+  ✘  39 [chromium] › e2e/auth.spec.ts:103:9 › Authentication › Signup › should show error when passwords do not match (2.0s)
+  ✘  40 [chromium] › e2e/auth.spec.ts:119:9 › Authentication › Signup › should show error for weak password (1.3s)
+  ✘  34 [chromium] › e2e/auth.spec.ts:10:9 › Authentication › Login › should login with valid credentials (13.2s)
+  ✘  33 [chromium] › e2e/admin-pricing.spec.ts:297:7 › Admin Pricing Approval Flow › admin can export pricing recommendations (30.7s)
+  ✘  31 [chromium] › e2e/admin-pricing.spec.ts:316:7 › Admin Pricing Approval Flow › admin can search pricing recommendations (30.8s)
+  ✘  32 [chromium] › e2e/admin-pricing.spec.ts:330:7 › Admin Pricing Approval Flow › pricing approval updates product price (30.8s)
+  ✓  46 [chromium] › e2e/auth.spec.ts:243:9 › Authentication › Protected Routes › should redirect to login when accessing protected route while logged out (2.7s)
+  ✘  42 [chromium] › e2e/auth.spec.ts:135:9 › Authentication › Signup › should show error when email already exists (30.7s)
+  ✘  41 [chromium] › e2e/auth.spec.ts:158:9 › Authentication › Password Reset › should send password reset email (30.8s)
+  ✘  44 [chromium] › e2e/auth.spec.ts:216:9 › Authentication › Logout › should logout successfully (13.1s)
+  ✘  43 [chromium] › e2e/auth.spec.ts:195:9 › Authentication › Password Reset › should show validation error for invalid email (30.8s)
+  ✘  45 [chromium] › e2e/auth.spec.ts:251:9 › Authentication › Protected Routes › should allow access to protected route when logged in (14.8s)
+  ✘  47 [chromium] › e2e/customer-chatbot.spec.ts:23:7 › Customer Chatbot Flow › customer can navigate to chat and see chatbot interface (30.7s)
+  ✘  48 [chromium] › e2e/customer-chatbot.spec.ts:39:7 › Customer Chatbot Flow › customer can send message and receive AI response (30.7s)
+  ✘  49 [chromium] › e2e/customer-chatbot.spec.ts:59:7 › Customer Chatbot Flow › customer can ask about recent orders (30.7s)
+  ✘  50 [chromium] › e2e/customer-chatbot.spec.ts:76:7 › Customer Chatbot Flow › customer can ask about order status and get action executed (30.6s)
+  ✘  51 [chromium] › e2e/customer-chatbot.spec.ts:93:7 › Customer Chatbot Flow › customer can view chat history (30.6s)
+  ✘  52 [chromium] › e2e/customer-chatbot.spec.ts:117:7 › Customer Chatbot Flow › customer can use suggested actions/quick replies (32.2s)
+  ✓  57 [chromium] › e2e/public-chatbot.spec.ts:16:7 › Public Chatbot Lead Capture › visitor can find chatbot widget on landing page (2.8s)
+  ✓  59 [chromium] › e2e/public-chatbot.spec.ts:30:7 › Public Chatbot Lead Capture › visitor can open public chatbot and see welcome message (618ms)
+  ✘  53 [chromium] › e2e/customer-chatbot.spec.ts:137:7 › Customer Chatbot Flow › chatbot handles multiple conversation turns (30.7s)
+  ✘  55 [chromium] › e2e/customer-chatbot.spec.ts:164:7 › Customer Chatbot Flow › customer can clear or start new conversation (30.8s)
+  ✘  54 [chromium] › e2e/customer-chatbot.spec.ts:193:7 › Customer Chatbot Flow › chatbot displays loading state while processing (30.8s)
+  ✘  56 [chromium] › e2e/customer-chatbot.spec.ts:214:7 › Customer Chatbot Flow › customer can access chat from navigation menu (30.7s)
+  ✓  63 [chromium] › e2e/public-chatbot.spec.ts:181:7 › Public Chatbot Lead Capture › public chatbot works without authentication (2.7s)
+  ✓  65 [chromium] › e2e/public-chatbot.spec.ts:243:7 › Public Chatbot Lead Capture › chatbot validates email format (721ms)
+  ✓  66 [chromium] › e2e/public-chatbot.spec.ts:278:7 › Public Chatbot Lead Capture › visitor can close and reopen chatbot (556ms)
+  ✘  58 [chromium] › e2e/public-chatbot.spec.ts:50:7 › Public Chatbot Lead Capture › visitor can send message to public chatbot (30.1s)
+  ✘  60 [chromium] › e2e/public-chatbot.spec.ts:79:7 › Public Chatbot Lead Capture › chatbot prompts visitor for contact information (30.1s)
+  ✘  61 [chromium] › e2e/public-chatbot.spec.ts:107:7 › Public Chatbot Lead Capture › visitor can provide name and email for lead capture (30.1s)
+  ✘  62 [chromium] › e2e/public-chatbot.spec.ts:148:7 › Public Chatbot Lead Capture › visitor receives confirmation after providing lead info (30.1s)
+  ✘  64 [chromium] › e2e/public-chatbot.spec.ts:210:7 › Public Chatbot Lead Capture › chatbot handles multiple questions before lead capture (30.1s)
+
+
+  1) [chromium] › e2e/admin-opportunities.spec.ts:23:7 › Admin Opportunity Management › admin can navigate to opportunities page 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--a3753-igate-to-opportunities-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--a3753-igate-to-opportunities-page-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--a3753-igate-to-opportunities-page-chromium/error-context.md
+
+  2) [chromium] › e2e/admin-opportunities.spec.ts:41:7 › Admin Opportunity Management › admin can view list of AI-detected opportunities 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--62ee4-f-AI-detected-opportunities-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--62ee4-f-AI-detected-opportunities-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--62ee4-f-AI-detected-opportunities-chromium/error-context.md
+
+  3) [chromium] › e2e/admin-opportunities.spec.ts:61:7 › Admin Opportunity Management › admin can see opportunity details 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--01f2e-can-see-opportunity-details-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--01f2e-can-see-opportunity-details-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--01f2e-can-see-opportunity-details-chromium/error-context.md
+
+  4) [chromium] › e2e/admin-opportunities.spec.ts:79:7 › Admin Opportunity Management › admin can filter opportunities by type 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--81864-ilter-opportunities-by-type-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--81864-ilter-opportunities-by-type-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--81864-ilter-opportunities-by-type-chromium/error-context.md
+
+  5) [chromium] › e2e/admin-opportunities.spec.ts:99:7 › Admin Opportunity Management › admin can filter opportunities by status 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d3951-ter-opportunities-by-status-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d3951-ter-opportunities-by-status-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--d3951-ter-opportunities-by-status-chromium/error-context.md
+
+  6) [chromium] › e2e/admin-opportunities.spec.ts:117:7 › Admin Opportunity Management › admin can sort opportunities by score 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--43a0d-sort-opportunities-by-score-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--43a0d-sort-opportunities-by-score-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--43a0d-sort-opportunities-by-score-chromium/error-context.md
+
+  7) [chromium] › e2e/admin-opportunities.spec.ts:133:7 › Admin Opportunity Management › admin can pursue an opportunity 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--88a57-n-can-pursue-an-opportunity-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--88a57-n-can-pursue-an-opportunity-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--88a57-n-can-pursue-an-opportunity-chromium/error-context.md
+
+  8) [chromium] › e2e/admin-opportunities.spec.ts:152:7 › Admin Opportunity Management › admin can create task from opportunity 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--b1100-reate-task-from-opportunity-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--b1100-reate-task-from-opportunity-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--b1100-reate-task-from-opportunity-chromium/error-context.md
+
+  9) [chromium] › e2e/admin-opportunities.spec.ts:182:7 › Admin Opportunity Management › admin can dismiss an opportunity 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--5bebe--can-dismiss-an-opportunity-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--5bebe--can-dismiss-an-opportunity-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--5bebe--can-dismiss-an-opportunity-chromium/error-context.md
+
+  10) [chromium] › e2e/admin-opportunities.spec.ts:208:7 › Admin Opportunity Management › admin can view AI reasoning for opportunity 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--84bf4-I-reasoning-for-opportunity-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--84bf4-I-reasoning-for-opportunity-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--84bf4-I-reasoning-for-opportunity-chromium/error-context.md
+
+  11) [chromium] › e2e/admin-opportunities.spec.ts:225:7 › Admin Opportunity Management › admin can see opportunity score and confidence 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d2445-tunity-score-and-confidence-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d2445-tunity-score-and-confidence-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--d2445-tunity-score-and-confidence-chromium/error-context.md
+
+  12) [chromium] › e2e/admin-opportunities.spec.ts:236:7 › Admin Opportunity Management › admin can detect new opportunities 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--cd256-an-detect-new-opportunities-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--cd256-an-detect-new-opportunities-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--cd256-an-detect-new-opportunities-chromium/error-context.md
+
+  13) [chromium] › e2e/admin-opportunities.spec.ts:257:7 › Admin Opportunity Management › admin can view customer details from opportunity 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--bdd22-er-details-from-opportunity-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--bdd22-er-details-from-opportunity-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--bdd22-er-details-from-opportunity-chromium/error-context.md
+
+  14) [chromium] › e2e/admin-opportunities.spec.ts:276:7 › Admin Opportunity Management › admin can export opportunities list 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--0ba9c-n-export-opportunities-list-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--0ba9c-n-export-opportunities-list-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--0ba9c-n-export-opportunities-list-chromium/error-context.md
+
+  15) [chromium] › e2e/admin-opportunities.spec.ts:298:7 › Admin Opportunity Management › admin can search opportunities 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d4e51-in-can-search-opportunities-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--d4e51-in-can-search-opportunities-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--d4e51-in-can-search-opportunities-chromium/error-context.md
+
+  16) [chromium] › e2e/admin-opportunities.spec.ts:314:7 › Admin Opportunity Management › admin can view opportunity history/timeline 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Opportunity Management', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to opportunities page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-opportunities.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--947b1-pportunity-history-timeline-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-opportunities-Admin--947b1-pportunity-history-timeline-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-opportunities-Admin--947b1-pportunity-history-timeline-chromium/error-context.md
+
+  17) [chromium] › e2e/admin-pricing.spec.ts:23:7 › Admin Pricing Approval Flow › admin can navigate to pricing recommendations page 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-97b22-ricing-recommendations-page-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-97b22-ricing-recommendations-page-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-97b22-ricing-recommendations-page-chromium/error-context.md
+
+  18) [chromium] › e2e/admin-pricing.spec.ts:39:7 › Admin Pricing Approval Flow › admin can view list of pricing recommendations 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-79e1a--of-pricing-recommendations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-79e1a--of-pricing-recommendations-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-79e1a--of-pricing-recommendations-chromium/error-context.md
+
+  19) [chromium] › e2e/admin-pricing.spec.ts:56:7 › Admin Pricing Approval Flow › admin can see pricing recommendation details 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-293fc-cing-recommendation-details-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-293fc-cing-recommendation-details-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-293fc-cing-recommendation-details-chromium/error-context.md
+
+  20) [chromium] › e2e/admin-pricing.spec.ts:73:7 › Admin Pricing Approval Flow › admin can view AI reasoning for pricing recommendation 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-8f81e--for-pricing-recommendation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-8f81e--for-pricing-recommendation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-8f81e--for-pricing-recommendation-chromium/error-context.md
+
+  21) [chromium] › e2e/admin-pricing.spec.ts:89:7 › Admin Pricing Approval Flow › admin can see win probability and expected revenue 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-294f3-bility-and-expected-revenue-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-294f3-bility-and-expected-revenue-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-294f3-bility-and-expected-revenue-chromium/error-context.md
+
+  22) [chromium] › e2e/admin-pricing.spec.ts:105:7 › Admin Pricing Approval Flow › admin can approve pricing recommendation 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-4035c-rove-pricing-recommendation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-4035c-rove-pricing-recommendation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-4035c-rove-pricing-recommendation-chromium/error-context.md
+
+  23) [chromium] › e2e/admin-pricing.spec.ts:131:7 › Admin Pricing Approval Flow › admin can reject pricing recommendation 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-7c406-ject-pricing-recommendation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-7c406-ject-pricing-recommendation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-7c406-ject-pricing-recommendation-chromium/error-context.md
+
+  24) [chromium] › e2e/admin-pricing.spec.ts:157:7 › Admin Pricing Approval Flow › admin can filter recommendations by status 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-88d41-r-recommendations-by-status-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-88d41-r-recommendations-by-status-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-88d41-r-recommendations-by-status-chromium/error-context.md
+
+  25) [chromium] › e2e/admin-pricing.spec.ts:174:7 › Admin Pricing Approval Flow › admin can filter recommendations by confidence level 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-625be-dations-by-confidence-level-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-625be-dations-by-confidence-level-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-625be-dations-by-confidence-level-chromium/error-context.md
+
+  26) [chromium] › e2e/admin-pricing.spec.ts:191:7 › Admin Pricing Approval Flow › admin can sort recommendations by win probability 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-8b255-ndations-by-win-probability-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-8b255-ndations-by-win-probability-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-8b255-ndations-by-win-probability-chromium/error-context.md
+
+  27) [chromium] › e2e/admin-pricing.spec.ts:206:7 › Admin Pricing Approval Flow › admin can generate new pricing recommendation 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-aa564--new-pricing-recommendation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-aa564--new-pricing-recommendation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-aa564--new-pricing-recommendation-chromium/error-context.md
+
+  28) [chromium] › e2e/admin-pricing.spec.ts:249:7 › Admin Pricing Approval Flow › admin can view historical pricing data 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-f3195-iew-historical-pricing-data-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-f3195-iew-historical-pricing-data-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-f3195-iew-historical-pricing-data-chromium/error-context.md
+
+  29) [chromium] › e2e/admin-pricing.spec.ts:265:7 › Admin Pricing Approval Flow › admin can see price sensitivity analysis 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-81e69--price-sensitivity-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-81e69--price-sensitivity-analysis-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-81e69--price-sensitivity-analysis-chromium/error-context.md
+
+  30) [chromium] › e2e/admin-pricing.spec.ts:281:7 › Admin Pricing Approval Flow › admin can view customer purchase history 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-5eef0-w-customer-purchase-history-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-5eef0-w-customer-purchase-history-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-5eef0-w-customer-purchase-history-chromium/error-context.md
+
+  31) [chromium] › e2e/admin-pricing.spec.ts:297:7 › Admin Pricing Approval Flow › admin can export pricing recommendations 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-53448-ort-pricing-recommendations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-53448-ort-pricing-recommendations-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-53448-ort-pricing-recommendations-chromium/error-context.md
+
+  32) [chromium] › e2e/admin-pricing.spec.ts:316:7 › Admin Pricing Approval Flow › admin can search pricing recommendations 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-11626-rch-pricing-recommendations-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-11626-rch-pricing-recommendations-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-11626-rch-pricing-recommendations-chromium/error-context.md
+
+  33) [chromium] › e2e/admin-pricing.spec.ts:330:7 › Admin Pricing Approval Flow › pricing approval updates product price 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Admin Pricing Approval Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo admin
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Admin');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('admin can navigate to pricing recommendations page', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/admin-pricing.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-eec01-roval-updates-product-price-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/admin-pricing-Admin-Pricin-eec01-roval-updates-product-price-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-pricing-Admin-Pricin-eec01-roval-updates-product-price-chromium/error-context.md
+
+  34) [chromium] › e2e/auth.spec.ts:10:9 › Authentication › Login › should login with valid credentials 
+
+    TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/products" until "load"
+    ============================================================
+
+      22 |
+      23 |       // Should redirect to products page
+    > 24 |       await page.waitForURL('/products', { timeout: 10000 });
+         |                  ^
+      25 |
+      26 |       // Wait for page to fully load and header to render
+      27 |       await page.waitForLoadState('networkidle');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:24:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--6776a-ogin-with-valid-credentials-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--6776a-ogin-with-valid-credentials-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Login--6776a-ogin-with-valid-credentials-chromium/error-context.md
+
+  35) [chromium] › e2e/auth.spec.ts:53:9 › Authentication › Login › should show validation errors for empty fields 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/email.*required/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/email.*required/i')[22m
+
+
+      58 |
+      59 |       // Should show validation errors
+    > 60 |       await expect(page.locator('text=/email.*required/i')).toBeVisible();
+         |                                                             ^
+      61 |       await expect(page.locator('text=/password.*required/i')).toBeVisible();
+      62 |     });
+      63 |
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:60:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--2234b-ion-errors-for-empty-fields-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--2234b-ion-errors-for-empty-fields-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Login--2234b-ion-errors-for-empty-fields-chromium/error-context.md
+
+  36) [chromium] › e2e/auth.spec.ts:64:9 › Authentication › Login › should show validation error for invalid email format 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=/invalid.*email/i')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=/invalid.*email/i')[22m
+
+
+      73 |
+      74 |       // Should show email validation error
+    > 75 |       await expect(page.locator('text=/invalid.*email/i')).toBeVisible();
+         |                                                            ^
+      76 |     });
+      77 |   });
+      78 |
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:75:60
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--31ec2-or-for-invalid-email-format-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Login--31ec2-or-for-invalid-email-format-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Login--31ec2-or-for-invalid-email-format-chromium/error-context.md
+
+  37) [chromium] › e2e/auth.spec.ts:80:9 › Authentication › Signup › should create new account with valid data 
+
+    ReferenceError: generateTestEmail is not defined
+
+      79 |   test.describe('Signup', () => {
+      80 |     test('should create new account with valid data', async ({ page }) => {
+    > 81 |       const testEmail = generateTestEmail();
+         |                         ^
+      82 |
+      83 |       await page.goto('/auth/register');
+      84 |
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:81:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-6e4c9-new-account-with-valid-data-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-6e4c9-new-account-with-valid-data-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  38) [chromium] › e2e/auth.spec.ts:103:9 › Authentication › Signup › should show error when passwords do not match 
+
+    ReferenceError: generateTestEmail is not defined
+
+      105 |
+      106 |       // Fill in signup form with mismatched passwords
+    > 107 |       await page.fill('[data-testid="register-email"]', generateTestEmail());
+          |                  ^
+      108 |       await page.fill('[data-testid="register-password"]', 'Password123!');
+      109 |       await page.fill('[data-testid="register-confirmPassword"]', 'DifferentPassword123!');
+      110 |       await page.fill('[data-testid="register-fullName"]', 'Test User');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:107:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-adc66-when-passwords-do-not-match-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-adc66-when-passwords-do-not-match-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Signup-adc66-when-passwords-do-not-match-chromium/error-context.md
+
+  39) [chromium] › e2e/auth.spec.ts:119:9 › Authentication › Signup › should show error for weak password 
+
+    ReferenceError: generateTestEmail is not defined
+
+      121 |
+      122 |       // Fill in signup form with weak password
+    > 123 |       await page.fill('[data-testid="register-email"]', generateTestEmail());
+          |                  ^
+      124 |       await page.fill('[data-testid="register-password"]', '123');
+      125 |       await page.fill('[data-testid="register-confirmPassword"]', '123');
+      126 |       await page.fill('[data-testid="register-fullName"]', 'Test User');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:123:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-33361-how-error-for-weak-password-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-33361-how-error-for-weak-password-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Signup-33361-how-error-for-weak-password-chromium/error-context.md
+
+  40) [chromium] › e2e/auth.spec.ts:135:9 › Authentication › Signup › should show error when email already exists 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="register-email"]')[22m
+
+
+      137 |
+      138 |       // Try to signup with existing email
+    > 139 |       await page.fill('[data-testid="register-email"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
+          |                  ^
+      140 |       await page.fill('[data-testid="register-password"]', 'Password123!');
+      141 |       await page.fill('[data-testid="register-confirmPassword"]', 'Password123!');
+      142 |       await page.fill('[data-testid="register-fullName"]', 'Test User');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:139:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-64422-r-when-email-already-exists-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Signup-64422-r-when-email-already-exists-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Signup-64422-r-when-email-already-exists-chromium/error-context.md
+
+  41) [chromium] › e2e/auth.spec.ts:158:9 › Authentication › Password Reset › should send password reset email 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="email"]')[22m
+
+
+      164 |
+      165 |       // Fill in email
+    > 166 |       await page.fill('input[name="email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
+          |                  ^
+      167 |
+      168 |       // Submit form
+      169 |       await page.click('button[type="submit"]');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:166:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Passwo-4d3d7-d-send-password-reset-email-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Passwo-4d3d7-d-send-password-reset-email-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Passwo-4d3d7-d-send-password-reset-email-chromium/error-context.md
+
+  42) [chromium] › e2e/auth.spec.ts:195:9 › Authentication › Password Reset › should show validation error for invalid email 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: page.fill: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('input[name="email"]')[22m
+
+
+      200 |
+      201 |       // Fill in invalid email
+    > 202 |       await page.fill('input[name="email"]', 'not-an-email');
+          |                  ^
+      203 |
+      204 |       // Submit form
+      205 |       await page.click('button[type="submit"]');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:202:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Passwo-f4b72-ion-error-for-invalid-email-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Passwo-f4b72-ion-error-for-invalid-email-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Passwo-f4b72-ion-error-for-invalid-email-chromium/error-context.md
+
+  43) [chromium] › e2e/auth.spec.ts:216:9 › Authentication › Logout › should logout successfully ───
+
+    TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/products" until "load"
+      navigated to "http://localhost:3000/"
+    ============================================================
+
+      224 |       await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
+      225 |       await page.click('button[type="submit"]');
+    > 226 |       await page.waitForURL('/products', { timeout: 10000 });
+          |                  ^
+      227 |
+      228 |       // Wait for header to render
+      229 |       await page.waitForLoadState('networkidle');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:226:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Logout-should-logout-successfully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Logout-should-logout-successfully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Logout-should-logout-successfully-chromium/error-context.md
+
+  44) [chromium] › e2e/auth.spec.ts:251:9 › Authentication › Protected Routes › should allow access to protected route when logged in 
+
+    TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/products" until "load"
+      navigated to "http://localhost:3000/"
+    ============================================================
+
+      260 |       await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
+      261 |       await page.click('button[type="submit"]');
+    > 262 |       await page.waitForURL('/products', { timeout: 10000 });
+          |                  ^
+      263 |
+      264 |       // Wait for session to be fully established
+      265 |       await page.waitForTimeout(2000);
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:262:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Protec-d29f3-tected-route-when-logged-in-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/auth-Authentication-Protec-d29f3-tected-route-when-logged-in-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-Authentication-Protec-d29f3-tected-route-when-logged-in-chromium/error-context.md
+
+  45) [chromium] › e2e/customer-chatbot.spec.ts:23:7 › Customer Chatbot Flow › customer can navigate to chat and see chatbot interface 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--945cc-t-and-see-chatbot-interface-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--945cc-t-and-see-chatbot-interface-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--945cc-t-and-see-chatbot-interface-chromium/error-context.md
+
+  46) [chromium] › e2e/customer-chatbot.spec.ts:39:7 › Customer Chatbot Flow › customer can send message and receive AI response 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--b2fe4-age-and-receive-AI-response-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--b2fe4-age-and-receive-AI-response-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--b2fe4-age-and-receive-AI-response-chromium/error-context.md
+
+  47) [chromium] › e2e/customer-chatbot.spec.ts:59:7 › Customer Chatbot Flow › customer can ask about recent orders 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--43b1e-can-ask-about-recent-orders-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--43b1e-can-ask-about-recent-orders-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--43b1e-can-ask-about-recent-orders-chromium/error-context.md
+
+  48) [chromium] › e2e/customer-chatbot.spec.ts:76:7 › Customer Chatbot Flow › customer can ask about order status and get action executed 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--c5493-tus-and-get-action-executed-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--c5493-tus-and-get-action-executed-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--c5493-tus-and-get-action-executed-chromium/error-context.md
+
+  49) [chromium] › e2e/customer-chatbot.spec.ts:93:7 › Customer Chatbot Flow › customer can view chat history 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--46e8c-tomer-can-view-chat-history-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--46e8c-tomer-can-view-chat-history-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--46e8c-tomer-can-view-chat-history-chromium/error-context.md
+
+  50) [chromium] › e2e/customer-chatbot.spec.ts:117:7 › Customer Chatbot Flow › customer can use suggested actions/quick replies 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--24937-ested-actions-quick-replies-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--24937-ested-actions-quick-replies-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--24937-ested-actions-quick-replies-chromium/error-context.md
+
+  51) [chromium] › e2e/customer-chatbot.spec.ts:137:7 › Customer Chatbot Flow › chatbot handles multiple conversation turns 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--a9e6a-multiple-conversation-turns-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--a9e6a-multiple-conversation-turns-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--a9e6a-multiple-conversation-turns-chromium/error-context.md
+
+  52) [chromium] › e2e/customer-chatbot.spec.ts:164:7 › Customer Chatbot Flow › customer can clear or start new conversation 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--1e76f-r-or-start-new-conversation-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--1e76f-r-or-start-new-conversation-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--1e76f-r-or-start-new-conversation-chromium/error-context.md
+
+  53) [chromium] › e2e/customer-chatbot.spec.ts:193:7 › Customer Chatbot Flow › chatbot displays loading state while processing 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--91d6d-ding-state-while-processing-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--91d6d-ding-state-while-processing-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--91d6d-ding-state-while-processing-chromium/error-context.md
+
+  54) [chromium] › e2e/customer-chatbot.spec.ts:214:7 › Customer Chatbot Flow › customer can access chat from navigation menu 
+
+    [31mTest timeout of 30000ms exceeded while running "beforeEach" hook.[39m
+
+      14 |
+      15 | test.describe('Customer Chatbot Flow', () => {
+    > 16 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      17 |     // Login as demo customer
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:16:8
+
+    Error: page.waitForURL: Test timeout of 30000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "/" until "load"
+    ============================================================
+
+      18 |     await page.goto('/auth/login');
+      19 |     await page.click('text=Demo Customer');
+    > 20 |     await page.waitForURL('/');
+         |                ^
+      21 |   });
+      22 |
+      23 |   test('customer can navigate to chat and see chatbot interface', async ({ page }) => {
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/customer-chatbot.spec.ts:20:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--c3109-s-chat-from-navigation-menu-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/customer-chatbot-Customer--c3109-s-chat-from-navigation-menu-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/customer-chatbot-Customer--c3109-s-chat-from-navigation-menu-chromium/error-context.md
+
+  55) [chromium] › e2e/public-chatbot.spec.ts:50:7 › Public Chatbot Lead Capture › visitor can send message to public chatbot 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /send|submit/i }).last()[22m
+
+
+      66 |       // Find and click send button
+      67 |       const sendButton = page.locator('button').filter({ hasText: /send|submit/i }).last();
+    > 68 |       await sendButton.click();
+         |                        ^
+      69 |       
+      70 |       // Wait for response
+      71 |       await page.waitForTimeout(3000);
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/public-chatbot.spec.ts:68:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-edf10-d-message-to-public-chatbot-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-edf10-d-message-to-public-chatbot-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/public-chatbot-Public-Chat-edf10-d-message-to-public-chatbot-chromium/error-context.md
+
+  56) [chromium] › e2e/public-chatbot.spec.ts:79:7 › Public Chatbot Lead Capture › chatbot prompts visitor for contact information 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /send|submit/i }).last()[22m
+
+
+      94 |       
+      95 |       const sendButton = page.locator('button').filter({ hasText: /send|submit/i }).last();
+    > 96 |       await sendButton.click();
+         |                        ^
+      97 |       
+      98 |       // Wait for AI response
+      99 |       await page.waitForTimeout(3000);
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/public-chatbot.spec.ts:96:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-47d39-tor-for-contact-information-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-47d39-tor-for-contact-information-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/public-chatbot-Public-Chat-47d39-tor-for-contact-information-chromium/error-context.md
+
+  57) [chromium] › e2e/public-chatbot.spec.ts:107:7 › Public Chatbot Lead Capture › visitor can provide name and email for lead capture 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /send|submit/i }).last()[22m
+
+
+      122 |       // Initial inquiry
+      123 |       await messageInput.fill('I want pricing information');
+    > 124 |       await sendButton.click();
+          |                        ^
+      125 |       await page.waitForTimeout(3000);
+      126 |       
+      127 |       // Provide name
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/public-chatbot.spec.ts:124:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-a41b4--and-email-for-lead-capture-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-a41b4--and-email-for-lead-capture-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/public-chatbot-Public-Chat-a41b4--and-email-for-lead-capture-chromium/error-context.md
+
+  58) [chromium] › e2e/public-chatbot.spec.ts:148:7 › Public Chatbot Lead Capture › visitor receives confirmation after providing lead info 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /send|submit/i }).last()[22m
+
+
+      162 |       // Quick lead capture flow
+      163 |       await messageInput.fill('I need a quote');
+    > 164 |       await sendButton.click();
+          |                        ^
+      165 |       await page.waitForTimeout(2000);
+      166 |       
+      167 |       await messageInput.fill('Test User');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/public-chatbot.spec.ts:164:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-cf683-n-after-providing-lead-info-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-cf683-n-after-providing-lead-info-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/public-chatbot-Public-Chat-cf683-n-after-providing-lead-info-chromium/error-context.md
+
+  59) [chromium] › e2e/public-chatbot.spec.ts:210:7 › Public Chatbot Lead Capture › chatbot handles multiple questions before lead capture 
+
+    [31mTest timeout of 30000ms exceeded.[39m
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button').filter({ hasText: /send|submit/i }).last()[22m
+
+
+      224 |       // Ask multiple questions
+      225 |       await messageInput.fill('What products do you offer?');
+    > 226 |       await sendButton.click();
+          |                        ^
+      227 |       await page.waitForTimeout(3000);
+      228 |       
+      229 |       await messageInput.fill('What are your prices?');
+        at /Users/zach/projects/b2b-plus/apps/web/e2e/public-chatbot.spec.ts:226:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-962b1-estions-before-lead-capture-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/public-chatbot-Public-Chat-962b1-estions-before-lead-capture-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/public-chatbot-Public-Chat-962b1-estions-before-lead-capture-chromium/error-context.md
+
+  59 failed
+    [chromium] › e2e/admin-opportunities.spec.ts:23:7 › Admin Opportunity Management › admin can navigate to opportunities page 
+    [chromium] › e2e/admin-opportunities.spec.ts:41:7 › Admin Opportunity Management › admin can view list of AI-detected opportunities 
+    [chromium] › e2e/admin-opportunities.spec.ts:61:7 › Admin Opportunity Management › admin can see opportunity details 
+    [chromium] › e2e/admin-opportunities.spec.ts:79:7 › Admin Opportunity Management › admin can filter opportunities by type 
+    [chromium] › e2e/admin-opportunities.spec.ts:99:7 › Admin Opportunity Management › admin can filter opportunities by status 
+    [chromium] › e2e/admin-opportunities.spec.ts:117:7 › Admin Opportunity Management › admin can sort opportunities by score 
+    [chromium] › e2e/admin-opportunities.spec.ts:133:7 › Admin Opportunity Management › admin can pursue an opportunity 
+    [chromium] › e2e/admin-opportunities.spec.ts:152:7 › Admin Opportunity Management › admin can create task from opportunity 
+    [chromium] › e2e/admin-opportunities.spec.ts:182:7 › Admin Opportunity Management › admin can dismiss an opportunity 
+    [chromium] › e2e/admin-opportunities.spec.ts:208:7 › Admin Opportunity Management › admin can view AI reasoning for opportunity 
+    [chromium] › e2e/admin-opportunities.spec.ts:225:7 › Admin Opportunity Management › admin can see opportunity score and confidence 
+    [chromium] › e2e/admin-opportunities.spec.ts:236:7 › Admin Opportunity Management › admin can detect new opportunities 
+    [chromium] › e2e/admin-opportunities.spec.ts:257:7 › Admin Opportunity Management › admin can view customer details from opportunity 
+    [chromium] › e2e/admin-opportunities.spec.ts:276:7 › Admin Opportunity Management › admin can export opportunities list 
+    [chromium] › e2e/admin-opportunities.spec.ts:298:7 › Admin Opportunity Management › admin can search opportunities 
+    [chromium] › e2e/admin-opportunities.spec.ts:314:7 › Admin Opportunity Management › admin can view opportunity history/timeline 
+    [chromium] › e2e/admin-pricing.spec.ts:23:7 › Admin Pricing Approval Flow › admin can navigate to pricing recommendations page 
+    [chromium] › e2e/admin-pricing.spec.ts:39:7 › Admin Pricing Approval Flow › admin can view list of pricing recommendations 
+    [chromium] › e2e/admin-pricing.spec.ts:56:7 › Admin Pricing Approval Flow › admin can see pricing recommendation details 
+    [chromium] › e2e/admin-pricing.spec.ts:73:7 › Admin Pricing Approval Flow › admin can view AI reasoning for pricing recommendation 
+    [chromium] › e2e/admin-pricing.spec.ts:89:7 › Admin Pricing Approval Flow › admin can see win probability and expected revenue 
+    [chromium] › e2e/admin-pricing.spec.ts:105:7 › Admin Pricing Approval Flow › admin can approve pricing recommendation 
+    [chromium] › e2e/admin-pricing.spec.ts:131:7 › Admin Pricing Approval Flow › admin can reject pricing recommendation 
+    [chromium] › e2e/admin-pricing.spec.ts:157:7 › Admin Pricing Approval Flow › admin can filter recommendations by status 
+    [chromium] › e2e/admin-pricing.spec.ts:174:7 › Admin Pricing Approval Flow › admin can filter recommendations by confidence level 
+    [chromium] › e2e/admin-pricing.spec.ts:191:7 › Admin Pricing Approval Flow › admin can sort recommendations by win probability 
+    [chromium] › e2e/admin-pricing.spec.ts:206:7 › Admin Pricing Approval Flow › admin can generate new pricing recommendation 
+    [chromium] › e2e/admin-pricing.spec.ts:249:7 › Admin Pricing Approval Flow › admin can view historical pricing data 
+    [chromium] › e2e/admin-pricing.spec.ts:265:7 › Admin Pricing Approval Flow › admin can see price sensitivity analysis 
+    [chromium] › e2e/admin-pricing.spec.ts:281:7 › Admin Pricing Approval Flow › admin can view customer purchase history 
+    [chromium] › e2e/admin-pricing.spec.ts:297:7 › Admin Pricing Approval Flow › admin can export pricing recommendations 
+    [chromium] › e2e/admin-pricing.spec.ts:316:7 › Admin Pricing Approval Flow › admin can search pricing recommendations 
+    [chromium] › e2e/admin-pricing.spec.ts:330:7 › Admin Pricing Approval Flow › pricing approval updates product price 
+    [chromium] › e2e/auth.spec.ts:10:9 › Authentication › Login › should login with valid credentials 
+    [chromium] › e2e/auth.spec.ts:53:9 › Authentication › Login › should show validation errors for empty fields 
+    [chromium] › e2e/auth.spec.ts:64:9 › Authentication › Login › should show validation error for invalid email format 
+    [chromium] › e2e/auth.spec.ts:80:9 › Authentication › Signup › should create new account with valid data 
+    [chromium] › e2e/auth.spec.ts:103:9 › Authentication › Signup › should show error when passwords do not match 
+    [chromium] › e2e/auth.spec.ts:119:9 › Authentication › Signup › should show error for weak password 
+    [chromium] › e2e/auth.spec.ts:135:9 › Authentication › Signup › should show error when email already exists 
+    [chromium] › e2e/auth.spec.ts:158:9 › Authentication › Password Reset › should send password reset email 
+    [chromium] › e2e/auth.spec.ts:195:9 › Authentication › Password Reset › should show validation error for invalid email 
+    [chromium] › e2e/auth.spec.ts:216:9 › Authentication › Logout › should logout successfully ─────
+    [chromium] › e2e/auth.spec.ts:251:9 › Authentication › Protected Routes › should allow access to protected route when logged in 
+    [chromium] › e2e/customer-chatbot.spec.ts:23:7 › Customer Chatbot Flow › customer can navigate to chat and see chatbot interface 
+    [chromium] › e2e/customer-chatbot.spec.ts:39:7 › Customer Chatbot Flow › customer can send message and receive AI response 
+    [chromium] › e2e/customer-chatbot.spec.ts:59:7 › Customer Chatbot Flow › customer can ask about recent orders 
+    [chromium] › e2e/customer-chatbot.spec.ts:76:7 › Customer Chatbot Flow › customer can ask about order status and get action executed 
+    [chromium] › e2e/customer-chatbot.spec.ts:93:7 › Customer Chatbot Flow › customer can view chat history 
+    [chromium] › e2e/customer-chatbot.spec.ts:117:7 › Customer Chatbot Flow › customer can use suggested actions/quick replies 
+    [chromium] › e2e/customer-chatbot.spec.ts:137:7 › Customer Chatbot Flow › chatbot handles multiple conversation turns 
+    [chromium] › e2e/customer-chatbot.spec.ts:164:7 › Customer Chatbot Flow › customer can clear or start new conversation 
+    [chromium] › e2e/customer-chatbot.spec.ts:193:7 › Customer Chatbot Flow › chatbot displays loading state while processing 
+    [chromium] › e2e/customer-chatbot.spec.ts:214:7 › Customer Chatbot Flow › customer can access chat from navigation menu 
+    [chromium] › e2e/public-chatbot.spec.ts:50:7 › Public Chatbot Lead Capture › visitor can send message to public chatbot 
+    [chromium] › e2e/public-chatbot.spec.ts:79:7 › Public Chatbot Lead Capture › chatbot prompts visitor for contact information 
+    [chromium] › e2e/public-chatbot.spec.ts:107:7 › Public Chatbot Lead Capture › visitor can provide name and email for lead capture 
+    [chromium] › e2e/public-chatbot.spec.ts:148:7 › Public Chatbot Lead Capture › visitor receives confirmation after providing lead info 
+    [chromium] › e2e/public-chatbot.spec.ts:210:7 › Public Chatbot Lead Capture › chatbot handles multiple questions before lead capture 
+  7 passed (5.2m)

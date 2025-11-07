@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -54,7 +55,7 @@ export default function CategoryMenu() {
     return (
       <div className="flex gap-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-6 w-24 animate-pulse rounded bg-gray-200"></div>
+          <div key={i} className="h-6 w-24  rounded bg-gray-200"></div>
         ))}
       </div>
     )

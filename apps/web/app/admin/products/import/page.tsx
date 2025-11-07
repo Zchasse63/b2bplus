@@ -1,19 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
+import { Button } from '@/components/b2b';
+import { Input } from '@/components/b2b';
+import { Card } from '@/components/b2b';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/b2b';
 import { ArrowLeft, RefreshCw, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -198,7 +199,12 @@ export default function ImportProductsPage() {
   if (adminLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <RefreshCw className="h-8 w-8 animate-spin" />
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <RefreshCw className="h-8 w-8" />
+        </motion.div>
       </div>
     );
   }
@@ -325,7 +331,13 @@ export default function ImportProductsPage() {
             >
               {importing ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <motion.div
+                    className="inline-block mr-2"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </motion.div>
                   Importing {csvData.length} products...
                 </>
               ) : (

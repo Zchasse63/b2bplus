@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
@@ -24,7 +23,6 @@ export default function RootLayout({
         </main>
         <Footer />
         <FloatingCartButton />
-        <Toaster />
       </body>
     </html>
   );

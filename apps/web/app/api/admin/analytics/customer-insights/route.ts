@@ -1,11 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateJSON } from '@/lib/gemini'
+import { generateJSONPro } from '@/lib/gemini'
 import { checkAdminRole } from '@/lib/middleware/admin'
 
 /**
  * Customer Analytics Insights API
- * Provides AI-powered insights about customer purchase patterns
+ * Uses Gemini 2.5 Pro for deep customer analysis including:
+ * - Multi-dimensional behavioral patterns
+ * - Lifetime value calculations
+ * - Churn risk prediction
+ * - Strategic recommendations
  */
 export async function GET(request: NextRequest) {
   try {
@@ -310,9 +314,9 @@ Provide:
 
 Format as JSON with keys: observations, risks, recommendations, suggestedProducts`
 
-    const insights = await generateJSON(prompt, {
-      temperature: 0.7,
-      systemPrompt: 'You are a B2B food service sales analyst providing actionable insights to help increase customer retention and revenue.'
+    const insights = await generateJSONPro(prompt, {
+      temperature: 0.3,  // Lower for analytical insights
+      systemPrompt: 'You are a B2B food service sales analyst with expertise in customer behavior analysis, lifetime value optimization, and churn prediction. Apply deep analytical reasoning to provide strategic, data-driven insights.'
     })
     
     return insights

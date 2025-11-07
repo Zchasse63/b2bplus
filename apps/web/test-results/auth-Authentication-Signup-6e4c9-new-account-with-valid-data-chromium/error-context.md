@@ -1,0 +1,115 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "B2B+" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img [ref=e5]
+        - generic [ref=e8]: B2B+
+      - navigation [ref=e9]:
+        - link "Home" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - button "Home" [ref=e11]:
+            - img [ref=e13]
+            - text: Home
+        - link "Products" [ref=e16] [cursor=pointer]:
+          - /url: /products
+          - button "Products" [ref=e17]:
+            - img [ref=e19]
+            - text: Products
+      - generic [ref=e22]:
+        - link "Sign In" [ref=e23] [cursor=pointer]:
+          - /url: /auth/login
+          - button "Sign In" [ref=e24]
+        - link "Sign Up" [ref=e25] [cursor=pointer]:
+          - /url: /auth/register
+          - button "Sign Up" [ref=e26]
+  - main [ref=e27]:
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - heading "B2B+" [level=1] [ref=e31]
+        - paragraph [ref=e32]: Create your account
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Sign Up" [level=2] [ref=e35]
+          - paragraph [ref=e36]: Get started with your B2B+ account
+        - generic [ref=e37]:
+          - generic [ref=e38]: Database error saving new user
+          - generic [ref=e39]:
+            - generic [ref=e40]: Full Name
+            - textbox "John Doe" [ref=e42]: Test User
+          - generic [ref=e43]:
+            - generic [ref=e44]: Email Address
+            - textbox "you@company.com" [ref=e46]: test-1762479542757-3960@e2etest.com
+          - generic [ref=e47]:
+            - generic [ref=e48]: Password
+            - textbox "••••••••" [ref=e50]: NewPassword123!
+          - generic [ref=e51]:
+            - generic [ref=e52]: Confirm Password
+            - textbox "••••••••" [ref=e54]: NewPassword123!
+          - generic [ref=e55]:
+            - checkbox [ref=e56]
+            - generic [ref=e57]:
+              - text: I agree to the
+              - link "Terms of Service" [ref=e58] [cursor=pointer]:
+                - /url: /terms
+              - text: and
+              - link "Privacy Policy" [ref=e59] [cursor=pointer]:
+                - /url: /privacy
+          - button "Create Account" [ref=e60] [cursor=pointer]:
+            - text: Create Account
+            - img [ref=e62]
+        - generic [ref=e65]:
+          - text: Already have an account?
+          - link "Sign in" [ref=e66] [cursor=pointer]:
+            - /url: /auth/login
+      - paragraph [ref=e68]: © 2025 B2B+. All rights reserved.
+  - contentinfo [ref=e69]:
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - img [ref=e74]
+            - generic [ref=e78]: B2B+
+          - paragraph [ref=e79]: Food service disposables ordering platform with container optimization
+        - generic [ref=e80]:
+          - heading "Products" [level=3] [ref=e81]
+          - list [ref=e82]:
+            - listitem [ref=e83]:
+              - link "Browse Catalog" [ref=e84] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e85]:
+              - link "Categories" [ref=e86] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e87]:
+              - link "New Arrivals" [ref=e88] [cursor=pointer]:
+                - /url: /products
+        - generic [ref=e89]:
+          - heading "Company" [level=3] [ref=e90]
+          - list [ref=e91]:
+            - listitem [ref=e92]:
+              - link "About Us" [ref=e93] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e94]:
+              - link "Contact" [ref=e95] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e96]:
+              - link "Support" [ref=e97] [cursor=pointer]:
+                - /url: /
+        - generic [ref=e98]:
+          - heading "Legal" [level=3] [ref=e99]
+          - list [ref=e100]:
+            - listitem [ref=e101]:
+              - link "Privacy Policy" [ref=e102] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e103]:
+              - link "Terms of Service" [ref=e104] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e105]:
+              - link "Cookie Policy" [ref=e106] [cursor=pointer]:
+                - /url: /
+      - paragraph [ref=e108]: © 2025 B2B+ Platform. All rights reserved.
+  - alert [ref=e109]
+```

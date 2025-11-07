@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, Button, Input } from '@/components/b2b';
 import { FiUserPlus } from 'react-icons/fi';
+import { slideUp, smooth } from '@/lib/animations';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -78,7 +80,7 @@ export default function Register() {
     if (data.user) {
       setSuccessMessage('Account created successfully! Redirecting...');
       setTimeout(() => {
-        router.push('/');
+        router.push('/chat');
         router.refresh();
       }, 2000);
     }
@@ -93,7 +95,13 @@ export default function Register() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-b2b-gray-50 px-4 py-12">
-      <div className="w-full max-w-md animate-slide-up">
+      <motion.div
+        className="w-full max-w-md"
+        variants={slideUp}
+        initial="hidden"
+        animate="visible"
+        transition={smooth}
+      >
         {/* Logo/Brand */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-b2b-dark">B2B+</h1>
@@ -111,7 +119,7 @@ export default function Register() {
             </p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form onSubmit={handleRegister} noValidate className="space-y-5">
             {errorMessage && (
               <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
                 {errorMessage}
@@ -132,6 +140,7 @@ export default function Register() {
               error={errors.fullName}
               placeholder="John Doe"
               required
+              data-testid="register-fullName"
             />
 
             <Input
@@ -142,6 +151,7 @@ export default function Register() {
               error={errors.email}
               placeholder="you@company.com"
               required
+              data-testid="register-email"
             />
 
             <Input
@@ -152,6 +162,7 @@ export default function Register() {
               error={errors.password}
               placeholder="••••••••"
               required
+              data-testid="register-password"
             />
 
             <Input
@@ -162,6 +173,7 @@ export default function Register() {
               error={errors.confirmPassword}
               placeholder="••••••••"
               required
+              data-testid="register-confirmPassword"
             />
 
             <div className="flex items-start gap-2">
@@ -208,7 +220,7 @@ export default function Register() {
         <div className="mt-8 text-center text-sm text-b2b-gray-500">
           <p>&copy; 2025 B2B+. All rights reserved.</p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -268,7 +269,7 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
                       {item.products.brand && ` • ${item.products.brand}`}
                     </p>
                     {isLoadingPrice ? (
-                      <div className="mt-1 h-4 w-32 animate-pulse rounded bg-gray-200"></div>
+                      <div className="mt-1 h-4 w-32  rounded bg-gray-200"></div>
                     ) : (
                       <>
                         <p className="mt-1 text-sm text-gray-600">
@@ -284,7 +285,7 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
                   </div>
                   <div className="text-right">
                     {isLoadingPrice ? (
-                      <div className="h-6 w-20 animate-pulse rounded bg-gray-200"></div>
+                      <div className="h-6 w-20  rounded bg-gray-200"></div>
                     ) : (
                       <p className="text-lg font-bold text-gray-900">
                         ${pricing.line_total.toFixed(2)}

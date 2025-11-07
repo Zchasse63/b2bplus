@@ -93,26 +93,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Create campaign
+    // Generate personalized email with AI first
+    const emailContext = context || parseEmailCommand(message || '')?.context || 'general update';
+    const personalizedEmail = await generatePersonalizedEmail(lead, emailContext);
+
+    // Create campaign with subject and content
     const { data: campaign, error: campaignError } = await supabase
       .from('email_campaigns')
       .insert({
         name: `Quick Send - ${lead.company_name}`,
+        subject: customSubject || personalizedEmail.subject,
+        html_content: personalizedEmail.body,
         campaign_type: 'individual',
         status: 'sending',
         total_recipients: 1,
       })
       .select()
       .single();
-    
+
     if (campaignError) {
       console.error('Campaign creation error:', campaignError);
       return NextResponse.json({ error: 'Failed to create campaign' }, { status: 500 });
     }
-
-    // Generate personalized email with AI
-    const emailContext = context || parseEmailCommand(message || '')?.context || 'general update';
-    const personalizedEmail = await generatePersonalizedEmail(lead, emailContext);
 
     // Create magic link for easy access
     const magicLinkToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');

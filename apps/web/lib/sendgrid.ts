@@ -351,6 +351,255 @@ export function createEmailTemplate(options: {
 }
 
 /**
+ * Send lead notification to sales team
+ * Phase 2: AI Backend Logic - Lead Notifications
+ */
+export interface LeadNotificationData {
+  leadId: string;
+  companyName: string | null;
+  contactName: string | null;
+  email: string | null;
+  phone: string | null;
+  leadScore: number;
+  leadCategory: 'hot' | 'warm' | 'cold';
+  industry: string | null;
+  painPoints: string[];
+  nextSteps: string[];
+  notes: string;
+  conversationSummary?: string;
+}
+
+export async function sendLeadNotification(data: LeadNotificationData) {
+  const {
+    leadId,
+    companyName,
+    contactName,
+    email,
+    phone,
+    leadScore,
+    leadCategory,
+    industry,
+    painPoints,
+    nextSteps,
+    notes,
+    conversationSummary,
+  } = data;
+
+  // Determine urgency based on lead category
+  const urgencyEmoji = leadCategory === 'hot' ? '🔥' : leadCategory === 'warm' ? '⚡' : '📋';
+  const urgencyLabel = leadCategory === 'hot' ? 'HOT LEAD' : leadCategory === 'warm' ? 'WARM LEAD' : 'NEW LEAD';
+  const urgencyColor = leadCategory === 'hot' ? '#ef4444' : leadCategory === 'warm' ? '#f59e0b' : '#3b82f6';
+
+  const subject = `${urgencyEmoji} ${urgencyLabel}: ${companyName || contactName || 'New Lead'} (Score: ${leadScore})`;
+
+  const html = createEmailTemplate({
+    body: `
+      <div style="background-color: ${urgencyColor}; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h1 style="margin: 0; color: white;">${urgencyEmoji} ${urgencyLabel}</h1>
+        <p style="margin: 10px 0 0 0; font-size: 18px; color: white;">Lead Score: ${leadScore}/100</p>
+      </div>
+
+      <h2>Contact Information</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Company:</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${companyName || 'Not provided'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Contact Name:</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${contactName || 'Not provided'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Email:</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${email || 'Not provided'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Phone:</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${phone || 'Not provided'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;"><strong>Industry:</strong></td>
+          <td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">${industry || 'Not provided'}</td>
+        </tr>
+      </table>
+
+      ${painPoints.length > 0 ? `
+        <h2>Pain Points</h2>
+        <ul>
+          ${painPoints.map(point => `<li>${point}</li>`).join('')}
+        </ul>
+      ` : ''}
+
+      ${nextSteps.length > 0 ? `
+        <h2>Recommended Next Steps</h2>
+        <ol>
+          ${nextSteps.map(step => `<li>${step}</li>`).join('')}
+        </ol>
+      ` : ''}
+
+      ${conversationSummary ? `
+        <h2>Conversation Summary</h2>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 10px;">
+          <p style="margin: 0; white-space: pre-wrap;">${conversationSummary}</p>
+        </div>
+      ` : ''}
+
+      <h2>AI Notes</h2>
+      <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 10px;">
+        <p style="margin: 0; white-space: pre-wrap;">${notes}</p>
+      </div>
+
+      <div style="margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+        <p style="margin: 0 0 15px 0; font-size: 16px;"><strong>Take Action Now</strong></p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin/leads/${leadId}"
+           style="display: inline-block; background-color: ${urgencyColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          View Lead in CRM
+        </a>
+      </div>
+    `,
+  });
+
+  // Send to sales team (configure recipients in environment)
+  const salesTeamEmails = process.env.SALES_TEAM_EMAILS?.split(',') || [EMAIL_CONFIG.testEmail];
+
+  const results = [];
+  for (const recipient of salesTeamEmails) {
+    try {
+      const result = await sendEmail({
+        to: recipient.trim(),
+        subject,
+        html,
+        customArgs: {
+          lead_id: leadId,
+          lead_category: leadCategory,
+          lead_score: leadScore.toString(),
+        },
+        categories: ['lead_notification', leadCategory],
+      });
+      results.push(result);
+    } catch (error) {
+      console.error(`Failed to send lead notification to ${recipient}:`, error);
+    }
+  }
+
+  return {
+    success: results.length > 0,
+    sentTo: results.map(r => r.to),
+    messageIds: results.map(r => r.messageId),
+  };
+}
+
+/**
+ * Send reorder notification email with product recommendations
+ */
+export interface ReorderProduct {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  image_url: string | null;
+  predicted_quantity: number;
+  confidence_level: number;
+  predicted_reorder_date: string;
+}
+
+export async function sendReorderNotificationEmail(
+  recipientEmail: string,
+  recipientName: string,
+  products: ReorderProduct[]
+) {
+  const subject = `Time to Reorder: ${products.length} Product${products.length > 1 ? 's' : ''} Running Low`;
+
+  // Build product cards HTML
+  const productCards = products
+    .map(
+      (product) => `
+    <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #ffffff;">
+      <div style="display: flex; gap: 16px; align-items: start;">
+        ${
+          product.image_url
+            ? `<img src="${product.image_url}" alt="${product.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;" />`
+            : ''
+        }
+        <div style="flex: 1;">
+          <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600; color: #111827;">${product.name}</h3>
+          <p style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">SKU: ${product.sku}</p>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <span style="display: inline-block; padding: 4px 8px; background-color: #dbeafe; color: #1e40af; border-radius: 4px; font-size: 12px; font-weight: 500;">
+              Qty: ${product.predicted_quantity}
+            </span>
+            <span style="display: inline-block; padding: 4px 8px; background-color: ${
+              product.confidence_level >= 0.8 ? '#d1fae5' : '#fef3c7'
+            }; color: ${
+        product.confidence_level >= 0.8 ? '#065f46' : '#92400e'
+      }; border-radius: 4px; font-size: 12px; font-weight: 500;">
+              ${Math.round(product.confidence_level * 100)}% confidence
+            </span>
+          </div>
+          <p style="margin: 0; font-size: 14px; color: #6b7280;">
+            Predicted reorder date: ${new Date(product.predicted_reorder_date).toLocaleDateString()}
+          </p>
+        </div>
+        <div style="text-align: right;">
+          <p style="margin: 0 0 4px 0; font-size: 24px; font-weight: 700; color: #111827;">$${product.price.toFixed(2)}</p>
+          <p style="margin: 0; font-size: 12px; color: #6b7280;">per unit</p>
+        </div>
+      </div>
+    </div>
+  `
+    )
+    .join('');
+
+  const html = createEmailTemplate({
+    preheader: `${products.length} product${products.length > 1 ? 's' : ''} ready to reorder`,
+    body: `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: 700; color: #111827;">
+          Time to Reorder!
+        </h1>
+        <p style="margin: 0; font-size: 16px; color: #6b7280;">
+          Hi ${recipientName}, based on your purchase history, we predict you'll need these items soon.
+        </p>
+      </div>
+
+      ${productCards}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/notifications" class="button" style="display: inline-block; padding: 14px 28px; background-color: #0066cc; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">
+          View All Recommendations
+        </a>
+      </div>
+
+      <div style="margin-top: 30px; padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid #0066cc;">
+        <p style="margin: 0 0 10px 0; font-weight: 600; color: #111827;">Why am I receiving this?</p>
+        <p style="margin: 0; font-size: 14px; color: #6b7280;">
+          Our AI analyzes your purchase patterns to predict when you'll need to reorder.
+          This helps you avoid running out of essential items and ensures timely delivery.
+        </p>
+      </div>
+    `,
+    footer: `
+      <p style="margin: 0 0 10px 0;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings/notifications" style="color: #0066cc;">
+          Manage notification preferences
+        </a>
+      </p>
+    `,
+  });
+
+  return await sendEmail({
+    to: recipientEmail,
+    subject,
+    html,
+    customArgs: {
+      notification_type: 'reorder_reminder',
+      product_count: products.length.toString(),
+    },
+    categories: ['reorder_notification', 'automated'],
+  });
+}
+
+/**
  * Test SendGrid connection
  */
 export async function testSendGridConnection(): Promise<boolean> {
@@ -378,7 +627,7 @@ export async function testSendGridConnection(): Promise<boolean> {
       },
       categories: ['test', 'connection'],
     });
-    
+
     console.log('SendGrid test email sent successfully:', result);
     return true;
   } catch (error) {

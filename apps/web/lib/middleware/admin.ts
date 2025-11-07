@@ -99,3 +99,65 @@ export async function isSuperAdmin(): Promise<boolean> {
   const { user } = await checkAdminRole(true);
   return user !== null;
 }
+
+/**
+ * Check if user's organization is approved
+ * Throws error if organization is pending or rejected
+ * Phase 1, Task 1.3: Registration Approval System
+ *
+ * @param userId - User ID to check
+ * @throws Error if organization is not approved
+ */
+export async function requireApprovedOrganization(userId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: member, error } = await supabase
+    .from('organization_members')
+    .select(`
+      organization:organizations!inner(
+        id,
+        name,
+        approval_status,
+        rejection_reason
+      )
+    `)
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !member) {
+    throw new Error('Organization membership not found');
+  }
+
+  const org = member.organization as any;
+
+  if (org.approval_status === 'pending') {
+    throw new Error('Organization pending approval. Please wait for admin review.');
+  }
+
+  if (org.approval_status === 'rejected') {
+    const reason = org.rejection_reason
+      ? `Organization registration was rejected: ${org.rejection_reason}`
+      : 'Organization registration was rejected. Please contact support.';
+    throw new Error(reason);
+  }
+
+  if (org.approval_status !== 'approved') {
+    throw new Error('Organization is not approved');
+  }
+}
+
+/**
+ * Check if user's organization is approved (returns boolean)
+ * Use this for non-throwing checks
+ *
+ * @param userId - User ID to check
+ * @returns true if organization is approved, false otherwise
+ */
+export async function isOrganizationApproved(userId: string): Promise<boolean> {
+  try {
+    await requireApprovedOrganization(userId);
+    return true;
+  } catch {
+    return false;
+  }
+}

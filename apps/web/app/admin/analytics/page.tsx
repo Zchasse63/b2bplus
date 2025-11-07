@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Button, Select } from '@/components/b2b';
 import { FiTrendingUp, FiDollarSign, FiShoppingCart, FiUsers, FiPackage, FiBarChart2 } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -203,7 +205,7 @@ export default function AdminAnalyticsPage() {
   ];
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -168,7 +169,7 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
           {!authChecked ? (
             // Show loading while checking authentication
             <div className="flex items-center gap-2">
-              <div className="h-8 w-24 animate-pulse rounded bg-gray-200"></div>
+              <div className="h-8 w-24  rounded bg-gray-200"></div>
               <span className="text-sm text-gray-500">Loading...</span>
             </div>
           ) : !isAuthenticated ? (
@@ -184,7 +185,7 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
             </div>
           ) : pricingLoading ? (
             <div className="flex items-center gap-2">
-              <div className="h-8 w-24 animate-pulse rounded bg-gray-200"></div>
+              <div className="h-8 w-24  rounded bg-gray-200"></div>
               <span className="text-sm text-gray-500">Loading price...</span>
             </div>
           ) : pricingError ? (

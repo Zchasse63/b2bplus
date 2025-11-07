@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -7,6 +8,7 @@ import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Select } from '@/components/b2b';
 import { FiFileText, FiTrendingUp, FiDollarSign, FiShoppingCart, FiUsers } from 'react-icons/fi';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface ReportData {
   revenue_by_day: Array<{ date: string; revenue: number }>;
@@ -131,7 +133,7 @@ export default function AdminReportsPage() {
   const totalCustomers = reportData?.customer_growth.reduce((sum, c) => sum + c.customers, 0) || 0;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

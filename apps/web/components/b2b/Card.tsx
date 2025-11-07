@@ -1,7 +1,11 @@
-import React from 'react';
-import { cn } from '@/lib/utils';
+'use client';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+import React from 'react';
+import { motion, HTMLMotionProps } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { fadeIn, smooth } from '@/lib/animations';
+
+export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
   variant?: 'default' | 'bordered' | 'elevated';
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
@@ -9,7 +13,8 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 /**
  * Card component based on Figma "B2B This One" design system
- * 
+ * Now with Framer Motion animations
+ *
  * Variants:
  * - default: White background with subtle shadow
  * - bordered: White background with border
@@ -27,37 +32,43 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     },
     ref
   ) => {
-    const baseStyles = 'bg-white rounded-lg transition-all';
-    
+    const baseStyles = 'bg-white rounded-lg';
+
     const variants = {
       default: 'shadow-b2b',
       bordered: 'border border-b2b-gray-100',
       elevated: 'shadow-b2b-lg',
     };
-    
+
     const paddings = {
       none: '',
       sm: 'p-3',
       md: 'p-4',
       lg: 'p-6',
     };
-    
-    const hoverStyles = hover ? 'hover:shadow-b2b-lg hover:-translate-y-0.5 cursor-pointer' : '';
-    
+
     return (
-      <div
+      <motion.div
         ref={ref}
         className={cn(
           baseStyles,
           variants[variant],
           paddings[padding],
-          hoverStyles,
+          hover && 'cursor-pointer',
           className
         )}
+        variants={fadeIn}
+        initial="hidden"
+        animate="visible"
+        transition={smooth}
+        whileHover={hover ? {
+          y: -2,
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+        } : undefined}
         {...props}
       >
         {children}
-      </div>
+      </motion.div>
     );
   }
 );

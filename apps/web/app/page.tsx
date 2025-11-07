@@ -1,14 +1,26 @@
+'use client';
+
 import { testUtil } from '@b2b-plus/shared';
+import { motion } from 'framer-motion';
 import { Card, Button, Badge } from '@/components/b2b';
 import Link from 'next/link';
 import { FiArrowRight, FiPackage, FiTrendingUp, FiUsers, FiCheckCircle, FiShield, FiAward, FiStar } from 'react-icons/fi';
+import { LeadCaptureForm } from '@/components/LeadCaptureForm';
+import PublicChatbotWidget from '@/components/PublicChatbotWidget';
+import { fadeIn, fast } from '@/lib/animations';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-b2b-gray-50">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
-        <div className="mx-auto mb-16 max-w-4xl animate-fade-in text-center">
+        <motion.div
+          className="mx-auto mb-16 max-w-4xl text-center"
+          variants={fadeIn}
+          initial="hidden"
+          animate="visible"
+          transition={fast}
+        >
           <h1 className="mb-6 text-5xl md:text-6xl font-bold text-b2b-dark">
             B2B+ Platform
           </h1>
@@ -27,7 +39,7 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-        </div>
+        </motion.div>
 
         {/* Trust Badges */}
         <div className="mb-16 flex flex-wrap justify-center gap-6 items-center">
@@ -206,6 +218,23 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Lead Capture CTA Section */}
+        <div className="mb-16 bg-gradient-to-br from-b2b-blue to-b2b-blue-dark rounded-2xl p-8 md:p-12 text-white">
+          <div className="mx-auto max-w-4xl text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Transform Your Food Service Ordering?
+            </h2>
+            <p className="text-lg md:text-xl text-b2b-blue-100">
+              Join hundreds of food service businesses that have streamlined their operations with B2B+.
+              Get a personalized demo and see how we can help you save time and money.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-3xl">
+            <LeadCaptureForm />
+          </div>
+        </div>
+
         {/* Status Card */}
         <Card padding="lg" className="mx-auto max-w-md">
           <h3 className="mb-4 text-center text-xl font-bold text-b2b-dark">
@@ -222,6 +251,9 @@ export default function Home() {
           </div>
         </Card>
       </div>
+
+      {/* Public Chatbot Widget */}
+      <PublicChatbotWidget />
     </div>
   );
 }

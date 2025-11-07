@@ -1,6 +1,10 @@
+'use client';
+
 import React from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from './Card';
+import { staggerContainer, staggerItem } from '@/lib/animations';
 
 export interface Column<T> {
   key: string;
@@ -21,12 +25,14 @@ export interface DataTableProps<T> {
 
 /**
  * DataTable component based on Figma "B2B This One" design system
- * 
+ * Now with Framer Motion stagger animations
+ *
  * Features:
  * - Responsive: Card-based on mobile, table on desktop
- * - Loading states
+ * - Loading states with Framer Motion spinner
  * - Empty states
  * - Row click handlers
+ * - Stagger animation for rows
  */
 export function DataTable<T extends Record<string, any>>({
   data,
@@ -41,7 +47,11 @@ export function DataTable<T extends Record<string, any>>({
     return (
       <Card className={cn('p-8', className)}>
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-b2b-yellow"></div>
+          <motion.div
+            className="rounded-full h-8 w-8 border-b-2 border-b2b-yellow"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          />
           <span className="ml-3 text-b2b-gray-500">Loading...</span>
         </div>
       </Card>
@@ -58,30 +68,36 @@ export function DataTable<T extends Record<string, any>>({
     );
   }
 
-  // Mobile: Card-based layout
+  // Mobile: Card-based layout with stagger animation
   const MobileView = () => (
-    <div className={cn('space-y-3 md:hidden', className)}>
+    <motion.div
+      className={cn('space-y-3 md:hidden', className)}
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
       {data.map((item, index) => (
-        <Card
-          key={index}
-          padding="md"
-          hover={!!onRowClick}
-          onClick={() => onRowClick?.(item)}
-          className="space-y-2"
-        >
-          {columns.map((column) => (
-            <div key={column.key} className="flex justify-between items-start">
-              <span className="text-sm font-medium text-b2b-gray-500">
-                {column.header}:
-              </span>
-              <span className="text-sm text-b2b-dark text-right ml-2">
-                {column.render ? column.render(item) : item[column.key]}
-              </span>
-            </div>
-          ))}
-        </Card>
+        <motion.div key={index} variants={staggerItem}>
+          <Card
+            padding="md"
+            hover={!!onRowClick}
+            onClick={() => onRowClick?.(item)}
+            className="space-y-2"
+          >
+            {columns.map((column) => (
+              <div key={column.key} className="flex justify-between items-start">
+                <span className="text-sm font-medium text-b2b-gray-500">
+                  {column.header}:
+                </span>
+                <span className="text-sm text-b2b-dark text-right ml-2">
+                  {column.render ? column.render(item) : item[column.key]}
+                </span>
+              </div>
+            ))}
+          </Card>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 
   // Desktop: Traditional table
@@ -104,15 +120,21 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-b2b-gray-100">
+          <motion.tbody
+            className="bg-white divide-y divide-b2b-gray-100"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+          >
             {data.map((item, index) => (
-              <tr
+              <motion.tr
                 key={index}
                 onClick={() => onRowClick?.(item)}
                 className={cn(
-                  'transition-colors',
                   onRowClick && 'cursor-pointer hover:bg-b2b-gray-50'
                 )}
+                variants={staggerItem}
+                whileHover={onRowClick ? { backgroundColor: 'rgba(0, 0, 0, 0.02)' } : undefined}
               >
                 {columns.map((column) => (
                   <td
@@ -125,9 +147,9 @@ export function DataTable<T extends Record<string, any>>({
                     {column.render ? column.render(item) : item[column.key]}
                   </td>
                 ))}
-              </tr>
+              </motion.tr>
             ))}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
     </Card>

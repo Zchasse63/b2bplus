@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Button, Input, Textarea, Select, Modal, PageHeader } from '@/components/b2b';
 import { FiArrowLeft, FiSave, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -161,7 +163,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from './Button';
 import { FiX } from 'react-icons/fi';
+import { modalBackdrop, modalContent, fast } from '@/lib/animations';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ export interface ModalProps {
 
 /**
  * Modal component based on Figma "B2B This One" design system
+ * Now with Framer Motion animations
  */
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -34,11 +37,11 @@ export const Modal: React.FC<ModalProps> = ({
         onClose();
       }
     };
-    
+
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-  
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -46,13 +49,11 @@ export const Modal: React.FC<ModalProps> = ({
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
-  
-  if (!isOpen) return null;
   
   const sizes = {
     sm: 'max-w-sm',
@@ -60,49 +61,63 @@ export const Modal: React.FC<ModalProps> = ({
     lg: 'max-w-lg',
     xl: 'max-w-xl',
   };
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black bg-opacity-50 animate-fade-in"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div
-        className={cn(
-          'relative bg-white rounded-lg shadow-b2b-lg w-full animate-slide-up',
-          sizes[size],
-          className
-        )}
-      >
-        {/* Header */}
-        {title && (
-          <div className="flex items-center justify-between p-6 border-b border-b2b-gray-100">
-            <h2 className="text-xl font-semibold text-b2b-dark">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-b2b-gray-500 hover:text-b2b-dark transition-colors"
-            >
-              <FiX className="w-6 h-6" />
-            </button>
-          </div>
-        )}
-        
-        {/* Content */}
-        <div className="p-6">
-          {children}
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            variants={modalBackdrop}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={fast}
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            className={cn(
+              'relative bg-white rounded-lg shadow-b2b-lg w-full',
+              sizes[size],
+              className
+            )}
+            variants={modalContent}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={fast}
+          >
+            {/* Header */}
+            {title && (
+              <div className="flex items-center justify-between p-6 border-b border-b2b-gray-100">
+                <h2 className="text-xl font-semibold text-b2b-dark">{title}</h2>
+                <button
+                  onClick={onClose}
+                  className="text-b2b-gray-500 hover:text-b2b-dark transition-colors"
+                >
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-6">
+              {children}
+            </div>
+
+            {/* Footer */}
+            {footer && (
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-b2b-gray-100">
+                {footer}
+              </div>
+            )}
+          </motion.div>
         </div>
-        
-        {/* Footer */}
-        {footer && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-b2b-gray-100">
-            {footer}
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };
 

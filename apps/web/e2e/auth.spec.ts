@@ -1,11 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { test as authTest } from './fixtures/auth';
-import { generateTestEmail } from './helpers/test-data';
 
 /**
  * E2E Tests for Authentication Flows
  * Tests login, signup, password reset, and logout functionality
  */
+
+// Helper function to generate unique test emails
+function generateTestEmail(): string {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 10000);
+  return `test-${timestamp}-${random}@e2etest.com`;
+}
 
 test.describe('Authentication', () => {
   test.describe('Login', () => {
@@ -16,14 +21,14 @@ test.describe('Authentication', () => {
       await page.waitForLoadState('networkidle');
 
       // Fill in login form
-      await page.fill('[data-testid="login-email"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
-      await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
+      await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
+      await page.fill('[data-testid="password-input"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
 
       // Submit form
       await page.click('button[type="submit"]');
 
-      // Should redirect to products page
-      await page.waitForURL('/products', { timeout: 10000 });
+      // Should redirect to chat page (customer redirect)
+      await page.waitForURL('/chat', { timeout: 10000 });
 
       // Wait for page to fully load and header to render
       await page.waitForLoadState('networkidle');
@@ -31,16 +36,16 @@ test.describe('Authentication', () => {
       // Additional wait for session to be fully established (especially important for webkit/Mobile Chrome)
       await page.waitForTimeout(2000);
 
-      // Should show user menu (with extended timeout for server component rendering)
-      await expect(page.locator('[data-testid="user-menu"]')).toBeVisible({ timeout: 10000 });
+      // Should show chat interface
+      await expect(page.locator('h1, h2').filter({ hasText: /chat|assistant/i })).toBeVisible({ timeout: 10000 });
     });
 
     test('should show error with invalid credentials', async ({ page }) => {
       await page.goto('/auth/login');
 
       // Fill in login form with invalid credentials
-      await page.fill('[data-testid="login-email"]', 'invalid@example.com');
-      await page.fill('[data-testid="login-password"]', 'WrongPassword123!');
+      await page.fill('[data-testid="email-input"]', 'invalid@example.com');
+      await page.fill('[data-testid="password-input"]', 'WrongPassword123!');
 
       // Submit form
       await page.click('button[type="submit"]');
@@ -67,8 +72,8 @@ test.describe('Authentication', () => {
       await page.goto('/auth/login');
 
       // Fill in invalid email
-      await page.fill('[data-testid="login-email"]', 'not-an-email');
-      await page.fill('[data-testid="login-password"]', 'SomePassword123!');
+      await page.fill('[data-testid="email-input"]', 'not-an-email');
+      await page.fill('[data-testid="password-input"]', 'SomePassword123!');
 
       // Submit form
       await page.click('button[type="submit"]');
@@ -94,11 +99,11 @@ test.describe('Authentication', () => {
       await page.click('button[type="submit"]');
 
       // Should show success message or redirect
-      // The component shows either a success message or redirects to /products if auto-logged in
-      // Wait for either the success screen or redirect to products
+      // The component shows either a success message or redirects to /chat if auto-logged in
+      // Wait for either the success screen or redirect to chat
       await Promise.race([
         expect(page.locator('text=/success/i')).toBeVisible({ timeout: 10000 }),
-        page.waitForURL('/products', { timeout: 10000 })
+        page.waitForURL('/chat', { timeout: 10000 })
       ]);
     });
 
@@ -158,50 +163,31 @@ test.describe('Authentication', () => {
 
   test.describe('Password Reset', () => {
     test('should send password reset email', async ({ page }) => {
-      await page.goto('/auth/reset-password');
+      await page.goto('/auth/forgot-password');
 
       // Wait for page to be fully loaded and hydrated
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
 
-      // Fill in email
-      await page.fill('input[name="email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
+      // Fill in email using data-testid
+      await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
 
       // Submit form
       await page.click('button[type="submit"]');
 
-      // Should show success message OR rate limit message (both are valid)
-      // Supabase rate limits password reset to 60 seconds per email address
-      // When tests run in parallel across browsers, some may hit the rate limit
-      const successMessage = page.locator('[data-testid="success-message"]');
-      const errorMessage = page.locator('[data-testid="error-message"]');
-
-      // Wait for either success or error message to appear
-      await expect(
-        successMessage.or(errorMessage)
-      ).toBeVisible({ timeout: 15000 });
-
-      // Verify the message content
-      const isSuccess = await successMessage.isVisible();
-      const isError = await errorMessage.isVisible();
-
-      if (isSuccess) {
-        // Success message should mention checking email
-        await expect(successMessage).toContainText(/check.*email/i);
-      } else if (isError) {
-        // Error message should be the rate limit error (expected when running in parallel)
-        await expect(errorMessage).toContainText(/security purposes|after \d+ seconds/i);
-      }
+      // Should show success message
+      // Our forgot-password page shows: "Password reset email sent! Check your inbox."
+      await expect(page.locator('text=/password reset email sent/i')).toBeVisible({ timeout: 10000 });
     });
 
     test('should show validation error for invalid email', async ({ page }) => {
-      await page.goto('/auth/reset-password');
+      await page.goto('/auth/forgot-password');
 
       // Wait for page to be fully loaded
       await page.waitForLoadState('networkidle');
 
-      // Fill in invalid email
-      await page.fill('input[name="email"]', 'not-an-email');
+      // Fill in invalid email using data-testid
+      await page.fill('[data-testid="email-input"]', 'not-an-email');
 
       // Submit form
       await page.click('button[type="submit"]');
@@ -222,22 +208,25 @@ test.describe('Authentication', () => {
       // Wait for page to be fully loaded
       await page.waitForLoadState('networkidle');
 
-      await page.fill('[data-testid="login-email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
-      await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
+      await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
+      await page.fill('[data-testid="password-input"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
       await page.click('button[type="submit"]');
-      await page.waitForURL('/products', { timeout: 10000 });
+      await page.waitForURL('/chat', { timeout: 10000 });
 
       // Wait for header to render
       await page.waitForLoadState('networkidle');
 
-      // Click logout button (directly visible in header, no menu click needed)
-      await page.click('button:has-text("Sign Out")');
+      // Click logout button using data-testid
+      await page.click('[data-testid="sign-out-button"]');
 
       // Should redirect to login page
       await page.waitForURL('/auth/login', { timeout: 5000 });
 
-      // User menu should not be visible
-      await expect(page.locator('[data-testid="user-menu"]')).not.toBeVisible();
+      // Wait for page to fully load after redirect
+      await page.waitForLoadState('networkidle');
+
+      // Verify we're on the login page by checking for the login form
+      await expect(page.locator('h2:has-text("Sign In")')).toBeVisible();
     });
   });
 
@@ -258,10 +247,10 @@ test.describe('Authentication', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(1000);
 
-      await page.fill('[data-testid="login-email"]', process.env.TEST_USER_EMAIL || 'test@testmail.app');
-      await page.fill('[data-testid="login-password"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
+      await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
+      await page.fill('[data-testid="password-input"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
       await page.click('button[type="submit"]');
-      await page.waitForURL('/products', { timeout: 10000 });
+      await page.waitForURL('/chat', { timeout: 10000 });
 
       // Wait for session to be fully established
       await page.waitForTimeout(2000);

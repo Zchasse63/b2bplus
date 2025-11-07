@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ import {
   FiAlertTriangle,
   FiTruck,
 } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 import {
   calculateContainerLoad,
   CONTAINER_TYPES,
@@ -112,7 +114,7 @@ export default function ContainerCalculatorPage() {
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header */}
       <Card padding="lg" className="mb-5">
         <div className="flex items-center gap-4">

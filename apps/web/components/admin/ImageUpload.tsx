@@ -1,8 +1,9 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useRef } from 'react';
 import { Button } from '@/components/b2b';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/b2b';
 import { FiUpload, FiX } from 'react-icons/fi';
 import { Loader2 } from 'lucide-react';
 
@@ -118,7 +119,7 @@ export default function ImageUpload({ value, onChange, label = 'Product Image' }
           >
             {uploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <motion.div className="inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}><Loader2 className="h-4 w-4 mr-2 " /></motion.div>
                 Uploading...
               </>
             ) : (

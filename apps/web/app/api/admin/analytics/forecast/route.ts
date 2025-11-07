@@ -4,7 +4,11 @@ import { checkAdminRole } from '@/lib/middleware/admin'
 
 /**
  * Product Usage Forecasting API
- * Uses AI to predict future product usage by customer
+ * Uses Gemini 2.5 Pro for sophisticated demand forecasting with:
+ * - Seasonal pattern analysis
+ * - Trend decomposition
+ * - Confidence scoring
+ * - Multi-period predictions
  */
 export async function POST(request: NextRequest) {
   try {

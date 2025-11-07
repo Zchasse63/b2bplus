@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
@@ -14,6 +15,7 @@ import {
   FiPackage,
 } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
+import { fadeIn, fast } from '@/lib/animations';
 
 type Product = {
   id: string;
@@ -243,7 +245,13 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   };
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <motion.div
+      className="mt-3"
+      variants={fadeIn}
+      initial="hidden"
+      animate="visible"
+      transition={fast}
+    >
       {/* Breadcrumb */}
       <div className="mb-5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
         <span className="cursor-pointer hover:text-brand-500" onClick={() => router.push('/products')}>
@@ -654,6 +662,6 @@ export default function ProductDetail({ product, organizationId, relatedProducts
           </div>
         </div>
       </Modal>
-    </div>
+    </motion.div>
   );
 }

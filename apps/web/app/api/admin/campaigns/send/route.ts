@@ -1,10 +1,79 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { resendEmail, renderTemplate } from '@/lib/email/resend';
+<parameter name="sendEmail } from '@/lib/sendgrid';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { generateJSON } from '@/lib/gemini';
 
 // Batch size for concurrent email sends
 const BATCH_SIZE = 50;
+
+/**
+ * Render email template with variables
+ * Replaces {{variable_name}} with actual values
+ */
+function renderTemplate(template: string, variables: Record<string, string>): string {
+  let rendered = template;
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+    rendered = rendered.replace(regex, value);
+  }
+  return rendered;
+}
+
+/**
+ * Generate AI-personalized email content using Gemini 2.5 Flash
+ * Flash is 15× cheaper than Pro and perfect for high-volume campaigns
+ */
+async function generatePersonalizedContent(
+  baseSubject: string,
+  baseContent: string,
+  recipient: any
+): Promise<{ subject: string; content: string }> {
+  try {
+    const aiPrompt = `
+You are a B2B sales expert. Personalize this email for the recipient while maintaining the core message.
+
+RECIPIENT INFO:
+- Name: ${recipient.customer_name || 'Valued Customer'}
+- Email: ${recipient.email}
+
+ORIGINAL SUBJECT: ${baseSubject}
+
+ORIGINAL CONTENT:
+${baseContent}
+
+Generate a personalized version that:
+1. Addresses the recipient by name naturally
+2. Maintains the core message and call-to-action
+3. Uses a professional, engaging tone
+4. Keeps the same length (don't make it significantly longer)
+
+Return JSON with this exact structure:
+{
+  "subject": "personalized subject line",
+  "content": "personalized email body in HTML format"
+}
+`;
+
+    const result = await generateJSON(aiPrompt, {
+      temperature: 0.7,
+      systemPrompt: 'You are a B2B email personalization expert. Generate engaging, professional email content.',
+      model: 'flash' // Use Gemini 2.5 Flash for cost-effective bulk generation
+    });
+
+    return {
+      subject: result.subject || baseSubject,
+      content: result.content || baseContent
+    };
+  } catch (error) {
+    console.error('AI personalization error:', error);
+    // Fallback to template-based personalization
+    return {
+      subject: baseSubject,
+      content: baseContent
+    };
+  }
+}
 
 // POST send email campaign
 export async function POST(request: NextRequest) {
@@ -16,7 +85,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { campaignId } = body;
+    const { campaignId, useAI = false } = body;
 
     if (!campaignId) {
       return NextResponse.json(
@@ -89,29 +158,53 @@ export async function POST(request: NextRequest) {
               customer_email: recipient.email
             };
 
-            const htmlContent = renderTemplate(campaign.html_content || '', variables);
-            const textContent = campaign.text_content
+            let finalSubject = campaign.subject;
+            let htmlContent = renderTemplate(campaign.html_content || '', variables);
+            let textContent = campaign.text_content
               ? renderTemplate(campaign.text_content, variables)
               : undefined;
 
-            // Send email via Resend
-            const result = await resendEmail.send({
+            // Apply AI personalization if enabled
+            if (useAI) {
+              const personalized = await generatePersonalizedContent(
+                finalSubject,
+                htmlContent,
+                recipient
+              );
+              finalSubject = personalized.subject;
+              htmlContent = personalized.content;
+              // Regenerate text content from AI-generated HTML
+              textContent = htmlContent.replace(/<[^>]*>/g, '').trim();
+            }
+
+            // Send email via SendGrid
+            const result = await sendEmail({
               to: recipient.email,
-              subject: campaign.subject,
+              subject: finalSubject,
               html: htmlContent,
-              text: textContent
+              text: textContent,
+              customArgs: {
+                campaign_id: campaignId,
+                recipient_id: recipient.id,
+                ai_personalized: useAI ? 'true' : 'false',
+              },
+              categories: [
+                'campaign',
+                campaign.name || 'unnamed',
+                useAI ? 'ai-personalized' : 'template-based'
+              ],
             });
 
             return {
               recipient,
               success: result.success,
               messageId: result.messageId,
-              error: result.error
             };
           } catch (error) {
             return {
               recipient,
               success: false,
+              messageId: undefined,
               error: error instanceof Error ? error.message : 'Unknown error'
             };
           }
@@ -129,7 +222,7 @@ export async function POST(request: NextRequest) {
             .update({
               status: 'sent',
               sent_at: new Date().toISOString(),
-              resend_message_id: result.value.messageId
+              sendgrid_message_id: result.value.messageId
             })
             .eq('id', recipient.id);
         } else {

@@ -10,6 +10,9 @@ export type { ButtonProps } from './Button';
 export { Input } from './Input';
 export type { InputProps } from './Input';
 
+export { Label } from './Label';
+export type { LabelProps } from './Label';
+
 export { Card } from './Card';
 export type { CardProps } from './Card';
 
@@ -48,3 +51,9 @@ export type { TooltipProps } from './Tooltip';
 
 export { Drawer } from './Drawer';
 export type { DrawerProps } from './Drawer';
+
+export { AnimatedPage } from './AnimatedPage';
+export type { AnimatedPageProps } from './AnimatedPage';
+
+export { StaggerList } from './StaggerList';
+export type { StaggerListProps } from './StaggerList';

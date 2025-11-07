@@ -1,16 +1,22 @@
 /**
- * Google Gemini 2.5 Flash Integration
- * 
+ * Google Gemini 2.5 Flash & Pro Integration
+ *
  * This module provides helper functions for interacting with Google's Gemini AI models.
  * Used for text generation, embeddings, and semantic search across the B2B+ platform.
- * 
+ *
  * Models:
- * - gemini-2.5-flash: Latest generation model for text generation
+ * - gemini-2.5-flash: Fast, cost-effective model for high-volume operations
+ * - gemini-2.5-pro: Advanced model for complex reasoning and calculations
  * - text-embedding-004: Latest embedding model for semantic search
- * 
- * Cost Savings vs OpenAI:
+ *
+ * Model Selection Strategy:
+ * - Use Flash for: Real-time operations, high-volume tasks, content generation
+ * - Use Pro for: Pricing optimization, forecasting, financial calculations, complex analytics
+ *
+ * Cost Comparison:
+ * - Flash: ~50% cheaper than OpenAI ($0.075-0.30/1M tokens)
+ * - Pro: ~2x Flash cost, but superior accuracy for complex reasoning
  * - Embeddings: ~50% cheaper ($0.01/1M vs $0.02/1M tokens)
- * - Text Generation: ~50% cheaper ($0.075-0.30/1M vs $0.15-0.60/1M tokens)
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -24,20 +30,45 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 /**
  * Get the Gemini 2.5 Flash model for text generation
- * 
+ *
  * Use cases:
  * - Excel column mapping
- * - Pricing optimization
- * - Customer insights
- * - Sales forecasting
  * - Email personalization
- * - Business opportunity detection
+ * - Chatbot responses
+ * - Content generation
+ * - Quick Q&A
+ * - Real-time operations
  */
 export const getFlashModel = () => {
-  return genAI.getGenerativeModel({ 
+  return genAI.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.7,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+    }
+  });
+};
+
+/**
+ * Get the Gemini 2.5 Pro model for complex reasoning
+ *
+ * Use cases:
+ * - Pricing optimization and analysis
+ * - Sales forecasting and predictions
+ * - Customer insights and analytics
+ * - Business opportunity detection
+ * - Invoice processing and reconciliation
+ * - Reorder predictions
+ * - Complex financial calculations
+ * - Multi-step reasoning tasks
+ */
+export const getProModel = () => {
+  return genAI.getGenerativeModel({
+    model: "gemini-2.5-pro",
+    generationConfig: {
+      temperature: 0.3,  // Lower temperature for more deterministic reasoning
       topP: 0.95,
       topK: 40,
       maxOutputTokens: 8192,
@@ -177,6 +208,123 @@ export async function generateJSON<T = any>(prompt: string, options?: {
 }
 
 /**
+ * Generate text using Gemini 2.5 Pro for complex reasoning
+ *
+ * Use this for tasks requiring deep analysis, multi-step reasoning,
+ * or high-accuracy calculations where precision is critical.
+ *
+ * @param prompt - The user prompt/question
+ * @param options - Generation options
+ * @returns Generated text response
+ *
+ * @example
+ * ```typescript
+ * const analysis = await generateTextPro(
+ *   "Analyze pricing strategy considering market dynamics, competitor pricing, and demand elasticity",
+ *   {
+ *     temperature: 0.2,
+ *     systemPrompt: "You are a pricing optimization expert"
+ *   }
+ * );
+ * ```
+ */
+export async function generateTextPro(prompt: string, options?: {
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+}): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-pro",
+    generationConfig: {
+      temperature: options?.temperature ?? 0.3,  // Lower default for Pro
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: options?.maxTokens ?? 8192,
+    }
+  });
+
+  // If system prompt is provided, use chat with history
+  if (options?.systemPrompt) {
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: options.systemPrompt }],
+        },
+        {
+          role: "model",
+          parts: [{ text: "Understood. I'll apply deep reasoning and analysis to provide accurate, well-considered responses." }],
+        }
+      ],
+    });
+
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    return response.text();
+  }
+
+  // Simple generation without system prompt
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  return response.text();
+}
+
+/**
+ * Generate JSON response using Gemini 2.5 Pro for complex structured reasoning
+ *
+ * Use this for tasks requiring precise calculations, financial analysis,
+ * forecasting, or complex decision-making that needs structured output.
+ *
+ * @param prompt - The user prompt/question
+ * @param options - Generation options
+ * @returns Parsed JSON object
+ *
+ * @example
+ * ```typescript
+ * const forecast = await generateJSONPro<ForecastResult>(
+ *   "Predict product demand for next quarter based on historical data",
+ *   {
+ *     temperature: 0.2,
+ *     systemPrompt: "You are a demand forecasting expert"
+ *   }
+ * );
+ * ```
+ */
+export async function generateJSONPro<T = any>(prompt: string, options?: {
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+}): Promise<T> {
+  // Add JSON instruction to system prompt
+  const systemPrompt = options?.systemPrompt
+    ? `${options.systemPrompt}\n\nIMPORTANT: You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON. Apply deep reasoning and analysis to ensure accuracy.`
+    : 'You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON. Apply deep reasoning and analysis to ensure accuracy.';
+
+  const response = await generateTextPro(prompt, {
+    ...options,
+    systemPrompt,
+    temperature: options?.temperature ?? 0.2, // Even lower temperature for Pro JSON
+  });
+
+  // Clean up response (remove markdown code blocks if present)
+  let cleanedResponse = response.trim();
+
+  // Remove markdown code blocks
+  if (cleanedResponse.startsWith('```json')) {
+    cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanedResponse.startsWith('```')) {
+    cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  try {
+    return JSON.parse(cleanedResponse);
+  } catch (error) {
+    console.error('Failed to parse JSON response from Pro model:', cleanedResponse);
+    throw new Error(`Invalid JSON response from Gemini Pro: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Generate embedding vector for text
  * 
  * Uses text-embedding-004 model which produces 768-dimensional vectors.
@@ -259,6 +407,146 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 }
 
 /**
+ * Process a PDF or image document with Gemini multimodal capabilities
+ *
+ * Gemini 2.5 Flash and Pro support multimodal input including PDFs and images.
+ * This function extracts text and structured data from documents.
+ *
+ * @param fileBuffer - Buffer containing the file data
+ * @param mimeType - MIME type of the file (e.g., 'application/pdf', 'image/jpeg')
+ * @param prompt - Instructions for what to extract from the document
+ * @param options - Generation options
+ * @returns Extracted text or data
+ *
+ * @example
+ * ```typescript
+ * const invoiceData = await processDocument(
+ *   pdfBuffer,
+ *   'application/pdf',
+ *   'Extract invoice number, date, vendor name, line items, and total amount',
+ *   { usePro: true }
+ * );
+ * ```
+ */
+export async function processDocument(
+  fileBuffer: Buffer,
+  mimeType: string,
+  prompt: string,
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+    systemPrompt?: string;
+    usePro?: boolean; // Use Pro model for complex documents
+  }
+): Promise<string> {
+  const modelName = options?.usePro ? "gemini-2.5-pro" : "gemini-2.5-flash";
+
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    generationConfig: {
+      temperature: options?.temperature ?? (options?.usePro ? 0.3 : 0.7),
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: options?.maxTokens ?? 8192,
+    }
+  });
+
+  // Convert buffer to base64
+  const base64Data = fileBuffer.toString('base64');
+
+  // Build the parts array with system prompt if provided
+  const parts: any[] = [];
+
+  if (options?.systemPrompt) {
+    parts.push({ text: options.systemPrompt + '\n\n' + prompt });
+  } else {
+    parts.push({ text: prompt });
+  }
+
+  // Add the document as inline data
+  parts.push({
+    inlineData: {
+      mimeType,
+      data: base64Data
+    }
+  });
+
+  const result = await model.generateContent(parts);
+  const response = await result.response;
+  return response.text();
+}
+
+/**
+ * Process a PDF or image document and return structured JSON
+ *
+ * Similar to processDocument but ensures the response is valid JSON.
+ * Ideal for extracting structured data from invoices, receipts, forms, etc.
+ *
+ * @param fileBuffer - Buffer containing the file data
+ * @param mimeType - MIME type of the file
+ * @param prompt - Instructions for what to extract (should specify JSON schema)
+ * @param options - Generation options
+ * @returns Parsed JSON object
+ *
+ * @example
+ * ```typescript
+ * interface InvoiceData {
+ *   invoice_number: string;
+ *   date: string;
+ *   vendor_name: string;
+ *   total: number;
+ *   line_items: Array<{sku: string; description: string; quantity: number; price: number}>;
+ * }
+ *
+ * const data = await processDocumentJSON<InvoiceData>(
+ *   pdfBuffer,
+ *   'application/pdf',
+ *   'Extract invoice data and return as JSON with fields: invoice_number, date, vendor_name, total, line_items',
+ *   { usePro: true }
+ * );
+ * ```
+ */
+export async function processDocumentJSON<T = any>(
+  fileBuffer: Buffer,
+  mimeType: string,
+  prompt: string,
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+    systemPrompt?: string;
+    usePro?: boolean;
+  }
+): Promise<T> {
+  // Add JSON instruction to system prompt
+  const systemPrompt = options?.systemPrompt
+    ? `${options.systemPrompt}\n\nIMPORTANT: You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON.`
+    : 'You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON.';
+
+  const response = await processDocument(fileBuffer, mimeType, prompt, {
+    ...options,
+    systemPrompt,
+    temperature: options?.temperature ?? (options?.usePro ? 0.2 : 0.3),
+  });
+
+  // Clean up response (remove markdown code blocks if present)
+  let cleanedResponse = response.trim();
+
+  // Remove markdown code blocks
+  if (cleanedResponse.startsWith('```json')) {
+    cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanedResponse.startsWith('```')) {
+    cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  try {
+    return JSON.parse(cleanedResponse);
+  } catch (error) {
+    console.error('Failed to parse JSON response from document processing:', cleanedResponse);
+    throw new Error(`Invalid JSON response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
  * Type definitions for common use cases
  */
 export interface GenerateTextOptions {
@@ -270,4 +558,11 @@ export interface GenerateTextOptions {
 export interface EmbeddingResult {
   text: string;
   embedding: number[];
+}
+
+export interface DocumentProcessingOptions {
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  usePro?: boolean;
 }

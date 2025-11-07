@@ -170,11 +170,12 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 # OpenAI (for semantic search & AI features)
 OPENAI_API_KEY=<openai-key>
 
-# SendGrid (for email campaigns)
+# SendGrid (for all email notifications and campaigns)
 SENDGRID_API_KEY=<sendgrid-key>
+SENDGRID_FROM_EMAIL=<your-email@domain.com>
 
-# Resend (for transactional emails)
-RESEND_API_KEY=<resend-key>
+# Google Gemini AI (for AI features)
+GOOGLE_API_KEY=<gemini-api-key>
 ```
 
 **Supabase Project Details:**

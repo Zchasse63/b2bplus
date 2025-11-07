@@ -1,36 +1,41 @@
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { motion } from 'framer-motion';
+import { Card } from '@/components/b2b'
 
 export default function ProductCardSkeleton() {
   return (
-    <Card className="overflow-hidden">
-      <Skeleton className="h-48 w-full rounded-none" />
-      
-      <CardHeader className="space-y-2">
+    <Card className="overflow-hidden ">
+      {/* Image skeleton */}
+      <div className="h-48 w-full bg-b2b-gray-100 rounded-t-lg" />
+
+      {/* Content skeleton */}
+      <div className="p-4 space-y-3">
+        {/* Category and price */}
         <div className="flex items-start justify-between gap-2">
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-4 w-16" />
+          <div className="h-5 w-20 bg-b2b-gray-100 rounded" />
+          <div className="h-4 w-16 bg-b2b-gray-100 rounded" />
         </div>
 
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-      </CardHeader>
+        {/* Title */}
+        <div className="h-6 w-full bg-b2b-gray-100 rounded" />
+        <div className="h-4 w-3/4 bg-b2b-gray-100 rounded" />
 
-      <CardContent className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <Skeleton className="h-8 w-24" />
+        {/* Price and stock */}
+        <div className="flex items-baseline justify-between pt-2">
+          <div className="h-8 w-24 bg-b2b-gray-100 rounded" />
         </div>
 
+        {/* Additional info */}
         <div className="space-y-1">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-3 w-28" />
+          <div className="h-3 w-32 bg-b2b-gray-100 rounded" />
+          <div className="h-3 w-28 bg-b2b-gray-100 rounded" />
         </div>
-      </CardContent>
 
-      <CardFooter className="flex gap-2">
-        <Skeleton className="h-10 w-20" />
-        <Skeleton className="h-10 flex-1" />
-      </CardFooter>
+        {/* Buttons */}
+        <div className="flex gap-2 pt-2">
+          <div className="h-10 w-20 bg-b2b-gray-100 rounded" />
+          <div className="h-10 flex-1 bg-b2b-gray-100 rounded" />
+        </div>
+      </div>
     </Card>
   )
 }

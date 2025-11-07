@@ -14,6 +14,9 @@ import {
   MdHome,
   MdShoppingBag,
   MdReceipt,
+  MdChat,
+  MdShowChart,
+  MdNotifications,
 } from 'react-icons/md';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -146,6 +149,42 @@ export default function Header() {
                   </Button>
                 </Link>
               </Tooltip>
+              <Tooltip content="Chat with AI Assistant">
+                <Link href="/chat">
+                  <Button
+                    variant={isActive('/chat') ? 'primary' : 'ghost'}
+                    size="sm"
+                    icon={<MdChat />}
+                    iconPosition="left"
+                  >
+                    AI Assistant
+                  </Button>
+                </Link>
+              </Tooltip>
+              <Tooltip content="View analytics dashboard">
+                <Link href="/analytics">
+                  <Button
+                    variant={isActive('/analytics') ? 'primary' : 'ghost'}
+                    size="sm"
+                    icon={<MdShowChart />}
+                    iconPosition="left"
+                  >
+                    Analytics
+                  </Button>
+                </Link>
+              </Tooltip>
+              <Tooltip content="View notifications">
+                <Link href="/notifications">
+                  <Button
+                    variant={isActive('/notifications') ? 'primary' : 'ghost'}
+                    size="sm"
+                    icon={<MdNotifications />}
+                    iconPosition="left"
+                  >
+                    Notifications
+                  </Button>
+                </Link>
+              </Tooltip>
 
               {isAdmin && (
                 <>
@@ -194,7 +233,7 @@ export default function Header() {
         </nav>
 
         {/* User Menu */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-testid="user-menu">
           {user ? (
             <>
               <Tooltip content="View your profile">
@@ -214,6 +253,7 @@ export default function Header() {
                   onClick={handleSignOut}
                   icon={<MdLogout className="h-5 w-5" />}
                   iconPosition="left"
+                  data-testid="sign-out-button"
                 />
               </Tooltip>
             </>

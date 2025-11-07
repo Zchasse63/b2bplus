@@ -1,0 +1,20 @@
+[2m[WebServer] [22m<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (122kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+Error: Cannot find module './helpers/test-data'
+Require stack:
+- /Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts
+- /Users/zach/projects/b2b-plus/node_modules/.pnpm/playwright@1.56.1/node_modules/playwright/lib/transform/transform.js
+- /Users/zach/projects/b2b-plus/node_modules/.pnpm/playwright@1.56.1/node_modules/playwright/lib/common/configLoader.js
+- /Users/zach/projects/b2b-plus/node_modules/.pnpm/playwright@1.56.1/node_modules/playwright/lib/program.js
+- /Users/zach/projects/b2b-plus/node_modules/.pnpm/@playwright+test@1.56.1/node_modules/@playwright/test/cli.js
+
+   at auth.spec.ts:3
+
+  1 | import { test, expect } from '@playwright/test';
+  2 | import { test as authTest } from './fixtures/auth';
+> 3 | import { generateTestEmail } from './helpers/test-data';
+    | ^
+  4 |
+  5 | /**
+  6 |  * E2E Tests for Authentication Flows
+    at Object.<anonymous> (/Users/zach/projects/b2b-plus/apps/web/e2e/auth.spec.ts:3:1)
+

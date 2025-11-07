@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, DataTable, Input } from '@/components/b2b';
 import { FiPackage, FiAlertTriangle, FiSearch, FiMapPin } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface InventoryItem {
   id: string;
@@ -193,7 +195,7 @@ export default function AdminInventoryPage() {
   // If feature is not enabled, show message
   if (!featureEnabled) {
     return (
-      <div className="mt-3 animate-fadeIn">
+      <div className="mt-3">
         <Card className="mb-5 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -228,7 +230,7 @@ export default function AdminInventoryPage() {
   const reorderNeeded = inventory.filter(i => i.quantity_available <= i.reorder_point).length;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

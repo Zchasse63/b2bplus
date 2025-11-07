@@ -47,7 +47,7 @@ This is a **Turborepo monorepo** containing:
 
 ### Mobile Features
 - **Offline:** WatermelonDB (bidirectional sync)
-- **Notifications:** Expo Notifications, Twilio (SMS), Resend (email)
+- **Notifications:** Expo Notifications, Twilio (SMS), SendGrid (email)
 
 ## 📋 Prerequisites
 
@@ -103,16 +103,17 @@ NEXT_PUBLIC_SUPABASE_URL=https://[project-ref].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[service-role-key]
 
-# OpenAI (for semantic search and AI features)
-OPENAI_API_KEY=[openai-key]
+# Google Gemini AI (for AI features)
+GOOGLE_API_KEY=[gemini-api-key]
+
+# SendGrid (for email notifications)
+SENDGRID_API_KEY=[sendgrid-key]
+SENDGRID_FROM_EMAIL=[your-email@domain.com]
 
 # Twilio (for SMS notifications)
 TWILIO_ACCOUNT_SID=[twilio-sid]
 TWILIO_AUTH_TOKEN=[twilio-token]
 TWILIO_PHONE_NUMBER=[twilio-number]
-
-# Resend (for email notifications)
-RESEND_API_KEY=[resend-key]
 
 # Mobile (Expo)
 EXPO_PUBLIC_SUPABASE_URL=https://[project-ref].supabase.co

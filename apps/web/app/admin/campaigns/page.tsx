@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, DataTable } from '@/components/b2b';
 import { FiMail, FiSend, FiUsers, FiTrendingUp } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface Campaign {
   id: string;
@@ -53,9 +55,18 @@ export default function AdminCampaignsPage() {
         return;
       }
 
-      // Load campaigns (mock data for now since table might not exist)
-      // In production, this would fetch from email_campaigns table
-      setCampaigns([]);
+      // Load campaigns from database
+      const { data: campaignsData, error } = await supabase
+        .from('email_campaigns')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading campaigns:', error);
+        setCampaigns([]);
+      } else {
+        setCampaigns(campaignsData || []);
+      }
     } catch (error) {
       console.error('Error loading campaigns:', error);
     } finally {
@@ -156,7 +167,7 @@ export default function AdminCampaignsPage() {
   // If feature is not enabled, show message
   if (!featureEnabled) {
     return (
-      <div className="mt-3 animate-fadeIn">
+      <div className="mt-3">
         <Card className="mb-5 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -190,7 +201,7 @@ export default function AdminCampaignsPage() {
   const avgOpenRate = totalSent > 0 ? ((totalOpened / totalSent) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">
@@ -202,7 +213,15 @@ export default function AdminCampaignsPage() {
               Create and manage email marketing campaigns
             </p>
           </div>
-          <FiMail className="h-12 w-12 text-b2b-yellow" />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/admin/campaigns/new')}
+              className="rounded-lg bg-b2b-blue px-4 py-2 text-white hover:bg-b2b-blue-600"
+            >
+              Create Campaign
+            </button>
+            <FiMail className="h-12 w-12 text-b2b-yellow" />
+          </div>
         </div>
       </Card>
 
@@ -269,7 +288,11 @@ export default function AdminCampaignsPage() {
           </p>
         </Card>
       ) : (
-        <DataTable data={campaigns} columns={columns} />
+        <DataTable
+          data={campaigns}
+          columns={columns}
+          onRowClick={(campaign) => router.push(`/admin/campaigns/${campaign.id}`)}
+        />
       )}
     </div>
   );

@@ -61,7 +61,7 @@ AND table_name IN (
 
 ```bash
 cd /home/ubuntu/b2bplus
-pnpm add resend openai
+pnpm add @sendgrid/mail @google/generative-ai
 pnpm install
 ```
 
@@ -72,18 +72,18 @@ pnpm install
 Add to `/home/ubuntu/b2bplus/apps/web/.env.local`:
 
 ```bash
-# Resend Email Service
-RESEND_API_KEY=re_your_api_key_here
-RESEND_FROM_EMAIL=noreply@yourdomain.com
+# SendGrid Email Service
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+SENDGRID_FROM_EMAIL=noreply@yourdomain.com
 
-# OpenAI (should already be configured)
-OPENAI_API_KEY=your_openai_api_key
+# Google Gemini AI (should already be configured)
+GOOGLE_API_KEY=your_gemini_api_key
 ```
 
-**Get Resend API Key:**
-1. Go to https://resend.com
-2. Sign up for free account (50k emails/month free)
-3. Create API key
+**Get SendGrid API Key:**
+1. Go to https://sendgrid.com
+2. Sign up for free account (100 emails/day free)
+3. Create API key with full access
 4. Add to `.env.local`
 
 ---
@@ -164,8 +164,8 @@ VALUES (
 After deployment, verify:
 
 - [ ] All migrations applied successfully (no SQL errors)
-- [ ] Dependencies installed (`resend` and `openai` in package.json)
-- [ ] Environment variables set (RESEND_API_KEY)
+- [ ] Dependencies installed (`@sendgrid/mail` and `@google/generative-ai` in package.json)
+- [ ] Environment variables set (SENDGRID_API_KEY, GOOGLE_API_KEY)
 - [ ] Dev server starts without errors
 - [ ] Feature flags table has 8 entries
 - [ ] Pricing tiers table has 6 tiers (Standard through VIP)
@@ -212,15 +212,15 @@ SELECT feature_name, enabled FROM feature_flags;
 **Error: "Unauthorized" when calling admin APIs**
 - Solution: Ensure you're logged in as admin/super_admin
 
-**Error: "RESEND_API_KEY not set"**
-- Solution: Add RESEND_API_KEY to .env.local and restart server
+**Error: "SENDGRID_API_KEY not set"**
+- Solution: Add SENDGRID_API_KEY to .env.local and restart server
 
 **Error: "Failed to generate embeddings"**
-- Solution: Check OPENAI_API_KEY is set correctly
+- Solution: Check GOOGLE_API_KEY is set correctly
 
 ### Runtime Errors
 
-**Error: "Cannot find module 'resend'"**
+**Error: "Cannot find module '@sendgrid/mail'"**
 - Solution: Run `pnpm install` again
 
 **Error: "Semantic search returns no results"**
@@ -339,11 +339,11 @@ GROUP BY query_type;
 
 **Email Campaigns:**
 ```sql
-SELECT 
+SELECT
   COUNT(*) as emails_sent
 FROM email_campaign_recipients
 WHERE sent_at > NOW() - INTERVAL '30 days';
--- Cost: ~$0.0004 per email (Resend pricing)
+-- Cost: ~$0.0003 per email (SendGrid pricing)
 ```
 
 ---

@@ -1,14 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateText } from '@/lib/gemini'
+import { generateTextPro } from '@/lib/gemini'
 
 /**
  * Pricing Optimization API
- * Uses AI to suggest optimal pricing for customers based on:
+ * Uses Gemini 2.5 Pro for complex pricing optimization based on:
  * - Historical purchase patterns
- * - Price sensitivity
- * - Competitor pricing
- * - Win probability
+ * - Price sensitivity analysis
+ * - Competitor pricing dynamics
+ * - Win probability calculations
+ * - Multi-variable optimization
  */
 export async function POST(request: NextRequest) {
   try {
@@ -300,10 +301,10 @@ Historical Orders: ${historicalOrders.length} orders
 
 Provide a 1-2 sentence recommendation on whether this pricing is optimal and why.`
 
-    const response = await generateText(prompt, {
-      temperature: 0.7,
-      maxTokens: 100,
-      systemPrompt: 'You are a B2B pricing strategist. Provide concise, actionable pricing recommendations.'
+    const response = await generateTextPro(prompt, {
+      temperature: 0.2,  // Lower for precise pricing analysis
+      maxTokens: 150,
+      systemPrompt: 'You are a B2B pricing strategist with expertise in multi-variable optimization. Provide concise, data-driven pricing recommendations based on deep analysis.'
     })
 
     return response || ''

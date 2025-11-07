@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, Button, DataTable } from '@/components/b2b';
 import { FiZap, FiRefreshCw, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface RecommendationStats {
   total_recommendations: number;
@@ -205,7 +207,7 @@ export default function AdminRecommendationsPage() {
   // If feature is not enabled, show message
   if (!featureEnabled) {
     return (
-      <div className="mt-3 animate-fadeIn">
+      <div className="mt-3">
         <Card className="mb-5 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -234,7 +236,7 @@ export default function AdminRecommendationsPage() {
   }
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

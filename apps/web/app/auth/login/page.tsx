@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, Button, Input } from '@/components/b2b';
 import { FiLogIn } from 'react-icons/fi';
+import { slideUp, smooth } from '@/lib/animations';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -53,7 +55,18 @@ export default function Login() {
     }
 
     if (data.user) {
-      router.push('/');
+      // Check user role to determine redirect
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      const role = profile?.role || 'customer';
+      const isAdmin = role === 'admin' || role === 'super_admin';
+
+      // Redirect based on role
+      router.push(isAdmin ? '/admin' : '/chat');
       router.refresh();
     }
   };
@@ -63,7 +76,7 @@ export default function Login() {
     setPassword(demoPassword);
     setErrors({});
     setErrorMessage('');
-    
+
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email: demoEmail,
@@ -77,14 +90,31 @@ export default function Login() {
     }
 
     if (data.user) {
-      router.push('/');
+      // Check user role to determine redirect
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      const role = profile?.role || 'customer';
+      const isAdmin = role === 'admin' || role === 'super_admin';
+
+      // Redirect based on role
+      router.push(isAdmin ? '/admin' : '/chat');
       router.refresh();
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-b2b-gray-50 px-4 py-12">
-      <div className="w-full max-w-md animate-slide-up">
+      <motion.div
+        className="w-full max-w-md"
+        variants={slideUp}
+        initial="hidden"
+        animate="visible"
+        transition={smooth}
+      >
         {/* Logo/Brand */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold text-b2b-dark">B2B+</h1>
@@ -102,7 +132,7 @@ export default function Login() {
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} noValidate className="space-y-5">
             {errorMessage && (
               <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
                 {errorMessage}
@@ -119,6 +149,7 @@ export default function Login() {
               }}
               error={errors.email}
               placeholder="you@example.com"
+              data-testid="email-input"
               required
             />
 
@@ -132,6 +163,7 @@ export default function Login() {
               }}
               error={errors.password}
               placeholder="••••••••"
+              data-testid="password-input"
               required
             />
 
@@ -157,6 +189,7 @@ export default function Login() {
               fullWidth
               disabled={loading}
               icon={<FiLogIn />}
+              data-testid="login-button"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
@@ -177,8 +210,9 @@ export default function Login() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
-                onClick={() => handleDemoLogin('customer@demo.com', 'demo123')}
+                onClick={() => handleDemoLogin('customer@demo.com', 'customer123')}
                 disabled={loading}
+                data-testid="demo-customer-button"
               >
                 Demo Customer
               </Button>
@@ -186,6 +220,7 @@ export default function Login() {
                 variant="outline"
                 onClick={() => handleDemoLogin('admin@demo.com', 'admin123')}
                 disabled={loading}
+                data-testid="demo-admin-button"
               >
                 Demo Admin
               </Button>
@@ -207,7 +242,7 @@ export default function Login() {
         <div className="mt-8 text-center text-sm text-b2b-gray-500">
           <p>&copy; 2025 B2B+. All rights reserved.</p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

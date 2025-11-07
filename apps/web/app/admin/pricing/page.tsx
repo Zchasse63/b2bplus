@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, DataTable, Button, Select } from '@/components/b2b';
 import { FiDollarSign, FiTrendingUp, FiUsers, FiTag, FiPercent } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface PricingTier {
   id: string;
@@ -258,7 +260,7 @@ export default function AdminPricingPage() {
   // If feature is not enabled, show message
   if (!featureEnabled) {
     return (
-      <div className="mt-3 animate-fadeIn">
+      <div className="mt-3">
         <Card className="mb-5 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -291,7 +293,7 @@ export default function AdminPricingPage() {
   const activeVolumeDiscounts = volumeDiscounts.filter(d => d.is_active).length;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

@@ -1,5 +1,9 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { slideDown, fast } from '@/lib/animations';
 
 export interface SelectOption {
   value: string;
@@ -14,6 +18,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 /**
  * Select component based on Figma "B2B This One" design system
+ * Now with Framer Motion animations
  */
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   (
@@ -27,6 +32,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     },
     ref
   ) => {
+    const [isFocused, setIsFocused] = useState(false);
+
     return (
       <div className="w-full">
         {label && (
@@ -34,17 +41,22 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {label}
           </label>
         )}
-        <select
+        <motion.select
           ref={ref}
           className={cn(
             'w-full rounded-lg border border-b2b-gray-300 bg-white px-4 py-2.5 text-b2b-dark',
             'focus:outline-none focus:ring-2 focus:ring-b2b-yellow focus:border-transparent',
             'disabled:bg-b2b-gray-50 disabled:cursor-not-allowed disabled:text-b2b-gray-500',
-            'transition-all',
             error && 'border-red-500 focus:ring-red-500',
             className
           )}
           disabled={disabled}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          animate={{
+            scale: isFocused ? 1.01 : 1,
+          }}
+          transition={fast}
           {...props}
         >
           {options.map((option) => (
@@ -52,10 +64,21 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               {option.label}
             </option>
           ))}
-        </select>
-        {error && (
-          <p className="mt-1.5 text-sm text-red-500">{error}</p>
-        )}
+        </motion.select>
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              className="mt-1.5 text-sm text-red-500"
+              variants={slideDown}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              transition={fast}
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

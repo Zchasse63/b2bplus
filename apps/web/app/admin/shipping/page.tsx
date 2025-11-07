@@ -1,11 +1,13 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { DataTable, Button, Card, Badge, Input, Modal } from '@/components/b2b';
 import { FiTruck, FiMapPin, FiPhone, FiMail, FiEdit, FiTrash2, FiPlus, FiSearch } from 'react-icons/fi';
+import { fadeIn, fast } from '@/lib/animations';
 
 interface ShippingAddress {
   id: string;
@@ -200,7 +202,7 @@ export default function AdminShippingPage() {
   }).length;
 
   return (
-    <div className="mt-3 animate-fadeIn">
+    <div className="mt-3">
       {/* Header Card */}
       <Card className="mb-5 p-6">
         <div className="flex items-center justify-between">

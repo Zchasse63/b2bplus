@@ -13,7 +13,12 @@ import {
   FiSettings,
   FiFileText,
   FiMenu,
-  FiX
+  FiX,
+  FiTarget,
+  FiBarChart2,
+  FiDollarSign,
+  FiUserCheck,
+  FiActivity
 } from 'react-icons/fi';
 
 // Define admin routes for B2B+ platform
@@ -44,6 +49,26 @@ const routes = [
     icon: FiTrendingUp,
   },
   {
+    name: 'Opportunities',
+    path: '/admin/opportunities',
+    icon: FiTarget,
+  },
+  {
+    name: 'Forecasts',
+    path: '/admin/forecasts',
+    icon: FiBarChart2,
+  },
+  {
+    name: 'Pricing',
+    path: '/admin/pricing/recommendations',
+    icon: FiDollarSign,
+  },
+  {
+    name: 'Registrations',
+    path: '/admin/registrations',
+    icon: FiUserCheck,
+  },
+  {
     name: 'Invoices',
     path: '/admin/invoices',
     icon: FiFileText,
@@ -52,6 +77,11 @@ const routes = [
     name: 'Shipping',
     path: '/admin/shipping',
     icon: FiTruck,
+  },
+  {
+    name: 'Monitoring',
+    path: '/admin/monitoring',
+    icon: FiActivity,
   },
   {
     name: 'Settings',
