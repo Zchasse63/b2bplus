@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { generateEmbedding } from '@/lib/gemini';
+import { checkRateLimit } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
 interface CachedEmbedding {
@@ -34,6 +35,43 @@ function generateCacheKey(text: string, modelName: string = 'text-embedding-004'
 }
 
 /**
+ * Rate-limited wrapper for embedding generation
+ * SECURITY: Prevents API abuse and cost overruns
+ *
+ * Rate limits:
+ * - Per user: 100 embeddings per minute
+ * - Per organization: 500 embeddings per minute
+ *
+ * @param text - Text to generate embedding for
+ * @param userId - User ID for rate limiting
+ * @returns Generated embedding vector
+ */
+async function rateLimitedGenerateEmbedding(
+  text: string,
+  userId: string
+): Promise<number[]> {
+  const supabase = await createClient();
+
+  // SECURITY: Check user rate limit (100 embeddings/min per user)
+  const userRateLimit = await checkRateLimit(supabase, {
+    key: 'embedding-generation-user',
+    identifier: userId,
+    maxRequests: 100,
+    windowSeconds: 60,
+  });
+
+  if (!userRateLimit.allowed) {
+    throw new Error(
+      `Rate limit exceeded: You can generate ${userRateLimit.limit} embeddings per minute. ` +
+      `Please try again at ${userRateLimit.resetAt.toISOString()}`
+    );
+  }
+
+  // Generate the embedding
+  return await generateEmbedding(text);
+}
+
+/**
  * Get cached embedding or generate new one
  *
  * @param text - Text to generate embedding for
@@ -45,9 +83,10 @@ export async function getCachedEmbedding(
   options: {
     modelName?: string;
     skipCache?: boolean;
+    userId?: string;  // For rate limiting
   } = {}
 ): Promise<CachedEmbedding> {
-  const { modelName = 'text-embedding-004', skipCache = false } = options;
+  const { modelName = 'text-embedding-004', skipCache = false, userId } = options;
 
   if (!text || text.trim().length === 0) {
     throw new Error('Text content is required for embedding generation');
@@ -55,9 +94,11 @@ export async function getCachedEmbedding(
 
   const cacheKey = generateCacheKey(text, modelName);
 
-  // If skip cache is requested, generate directly
+  // If skip cache is requested, generate directly (with rate limiting)
   if (skipCache) {
-    const embedding = await generateEmbedding(text);
+    const embedding = userId
+      ? await rateLimitedGenerateEmbedding(text, userId)
+      : await generateEmbedding(text);
     return {
       embedding,
       fromCache: false,
@@ -93,8 +134,10 @@ export async function getCachedEmbedding(
       };
     }
 
-    // Cache miss - generate new embedding
-    const embedding = await generateEmbedding(text);
+    // Cache miss - generate new embedding (with rate limiting if userId provided)
+    const embedding = userId
+      ? await rateLimitedGenerateEmbedding(text, userId)
+      : await generateEmbedding(text);
 
     // Store in cache for future use
     await supabase.from('embedding_cache').insert({
@@ -113,9 +156,11 @@ export async function getCachedEmbedding(
       cacheKey,
     };
   } catch (error) {
-    // If caching fails, fall back to direct generation
+    // If caching fails, fall back to direct generation (with rate limiting if userId provided)
     console.error('Embedding cache error, falling back to direct generation:', error);
-    const embedding = await generateEmbedding(text);
+    const embedding = userId
+      ? await rateLimitedGenerateEmbedding(text, userId)
+      : await generateEmbedding(text);
     return {
       embedding,
       fromCache: false,
@@ -137,9 +182,10 @@ export async function getBatchCachedEmbeddings(
   options: {
     modelName?: string;
     skipCache?: boolean;
+    userId?: string;  // For rate limiting
   } = {}
 ): Promise<CachedEmbedding[]> {
-  const { modelName = 'text-embedding-004', skipCache = false } = options;
+  const { modelName = 'text-embedding-004', skipCache = false, userId } = options;
 
   if (!texts || texts.length === 0) {
     return [];
@@ -149,8 +195,14 @@ export async function getBatchCachedEmbeddings(
   const cacheKeys = texts.map(text => generateCacheKey(text, modelName));
 
   if (skipCache) {
-    // Generate all embeddings directly
-    const embeddings = await Promise.all(texts.map(text => generateEmbedding(text)));
+    // Generate all embeddings directly (with rate limiting if userId provided)
+    const embeddings = await Promise.all(
+      texts.map(text =>
+        userId
+          ? rateLimitedGenerateEmbedding(text, userId)
+          : generateEmbedding(text)
+      )
+    );
     return embeddings.map((embedding, i) => ({
       embedding,
       fromCache: false,
@@ -216,9 +268,15 @@ export async function getBatchCachedEmbeddings(
       }
     }
 
-    // Generate missing embeddings
+    // Generate missing embeddings (with rate limiting if userId provided)
     if (misses.length > 0) {
-      const newEmbeddings = await Promise.all(misses.map(miss => generateEmbedding(miss.text)));
+      const newEmbeddings = await Promise.all(
+        misses.map(miss =>
+          userId
+            ? rateLimitedGenerateEmbedding(miss.text, userId)
+            : generateEmbedding(miss.text)
+        )
+      );
 
       // Store new embeddings in cache (batch insert)
       const toInsert = misses.map((miss, i) => ({
@@ -245,9 +303,15 @@ export async function getBatchCachedEmbeddings(
 
     return results;
   } catch (error) {
-    // If batch caching fails, fall back to direct generation
+    // If batch caching fails, fall back to direct generation (with rate limiting if userId provided)
     console.error('Batch embedding cache error, falling back to direct generation:', error);
-    const embeddings = await Promise.all(texts.map(text => generateEmbedding(text)));
+    const embeddings = await Promise.all(
+      texts.map(text =>
+        userId
+          ? rateLimitedGenerateEmbedding(text, userId)
+          : generateEmbedding(text)
+      )
+    );
     return embeddings.map((embedding, i) => ({
       embedding,
       fromCache: false,
