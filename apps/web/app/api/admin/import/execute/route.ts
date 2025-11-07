@@ -29,12 +29,21 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, organization_id')
+      .select('role, current_organization_id')
       .eq('id', user.id)
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // SECURITY: Validate organization_id exists for multi-tenant data isolation
+    // All imports must be associated with an organization to prevent data leakage
+    if (!profile.current_organization_id) {
+      return NextResponse.json(
+        { error: 'Organization not found. Please select an organization.' },
+        { status: 400 }
+      );
     }
 
     const body = await request.json();
@@ -90,7 +99,7 @@ export async function POST(request: NextRequest) {
 
         // Add organization_id and created_by
         if (importType === 'products') {
-          mappedData.organization_id = profile.organization_id;
+          mappedData.organization_id = profile.current_organization_id;
           mappedData.created_by = user.id;
         }
 
