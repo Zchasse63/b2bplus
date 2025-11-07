@@ -60,13 +60,18 @@ export default function CartPage() {
           if (data.recommendations && data.recommendations.length > 0) {
             // Fetch full product details
             const productIds = data.recommendations.map((r: any) => r.recommended_product_id);
+
+            // SECURITY FIX: No SQL string concatenation - use parameterized query and filter client-side
             const { data: products } = await supabase
               .from('products')
               .select('id, name, sku, base_price, image_url, category')
-              .in('id', productIds)
-              .not('id', 'in', `(${cartItems.map(item => item.product_id).join(',')})`); // Exclude items already in cart
+              .in('id', productIds);
 
-            setRecommendations(products || []);
+            // Filter out cart items client-side (safer than SQL string concatenation)
+            const cartProductIds = new Set(cartItems.map(item => item.product_id));
+            const filtered = (products || []).filter(p => !cartProductIds.has(p.id));
+
+            setRecommendations(filtered);
           }
         }
       } catch (error) {
