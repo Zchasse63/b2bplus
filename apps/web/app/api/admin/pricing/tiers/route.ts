@@ -1,26 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
 
 // GET all pricing tiers
 export async function GET(request: NextRequest) {
   try {
+    // SECURITY: Use standard admin authorization check
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { data: tiers, error } = await supabase
       .from('pricing_tiers')
@@ -43,22 +32,10 @@ export async function GET(request: NextRequest) {
 // POST create new pricing tier
 export async function POST(request: NextRequest) {
   try {
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const body = await request.json();
     const { name, description, discountPercentage, priority, isActive } = body;
@@ -101,22 +78,10 @@ export async function POST(request: NextRequest) {
 // PATCH update pricing tier
 export async function PATCH(request: NextRequest) {
   try {
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const body = await request.json();
     const { id, name, description, discountPercentage, priority, isActive } = body;
@@ -155,22 +120,10 @@ export async function PATCH(request: NextRequest) {
 // DELETE pricing tier
 export async function DELETE(request: NextRequest) {
   try {
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

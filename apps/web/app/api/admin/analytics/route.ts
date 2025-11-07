@@ -1,32 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { checkAdminRole } from "@/lib/middleware/admin";
 
 export async function GET(request: Request) {
   try {
+    // SECURITY FIX: Use standard admin authorization check
+    // Previous code checked organization_members table which was wrong
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "overview";
     const days = parseInt(searchParams.get("days") || "30");
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin role
-    const { data: memberData } = await supabase
-      .from("organization_members")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!memberData || memberData.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Fetch analytics based on type
     switch (type) {
