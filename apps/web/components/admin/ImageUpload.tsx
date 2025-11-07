@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/b2b';
 import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
 import { FiUpload, FiX } from 'react-icons/fi';
 import { Loader2 } from 'lucide-react';
 
@@ -24,14 +25,22 @@ export default function ImageUpload({ value, onChange, label = 'Product Image' }
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.');
+      toast({
+        title: 'Invalid File Type',
+        description: 'Only JPEG, PNG, WebP, and GIF are allowed.',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert('File too large. Maximum size is 5MB.');
+      toast({
+        title: 'File Too Large',
+        description: 'Maximum size is 5MB.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -61,9 +70,14 @@ export default function ImageUpload({ value, onChange, label = 'Product Image' }
       const data = await response.json();
       onChange(data.url);
       setPreviewUrl(data.url);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
-      alert('Failed to upload image: ' + error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload image: ' + message,
+        variant: 'destructive',
+      });
       setPreviewUrl(value); // Revert to original
     } finally {
       setUploading(false);

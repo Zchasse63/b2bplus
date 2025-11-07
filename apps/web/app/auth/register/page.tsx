@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, Button, Input } from '@/components/b2b';
 import { FiUserPlus } from 'react-icons/fi';
+import { registerSchema } from '@/lib/validation/schemas';
+import { toast } from '@/hooks/use-toast';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -22,32 +24,32 @@ export default function Register() {
   const supabase = createClient();
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    // Validate with Zod
+    const validation = registerSchema.safeParse(formData);
 
-    if (!formData.fullName) {
-      newErrors.fullName = 'Full name is required';
+    if (!validation.success) {
+      // Extract field-specific errors
+      const fieldErrors = validation.error.flatten().fieldErrors;
+      const newErrors: Record<string, string> = {};
+
+      Object.keys(fieldErrors).forEach((key) => {
+        const errorArray = fieldErrors[key as keyof typeof fieldErrors];
+        if (errorArray && errorArray.length > 0) {
+          newErrors[key] = errorArray[0];
+        }
+      });
+
+      setErrors(newErrors);
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors and try again',
+        variant: 'destructive',
+      });
+      return false;
     }
 
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -59,28 +61,38 @@ export default function Register() {
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
-          full_name: formData.fullName,
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
-    });
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          fullName: formData.fullName,
+        }),
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      if (data.success) {
+        setSuccessMessage('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          router.push('/');
+          router.refresh();
+        }, 2000);
+      }
+    } catch (error) {
+      setErrorMessage('An unexpected error occurred');
       setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      setSuccessMessage('Account created successfully! Redirecting...');
-      setTimeout(() => {
-        router.push('/');
-        router.refresh();
-      }, 2000);
     }
   };
 

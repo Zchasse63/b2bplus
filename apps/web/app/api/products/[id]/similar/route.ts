@@ -39,7 +39,7 @@ export async function GET(
 
     // Fetch full product details
     if (limitedResults.length > 0) {
-      const productIds = limitedResults.map((p: any) => p.similar_product_id);
+      const productIds = limitedResults.map((p: { id?: string; [key: string]: unknown }) => p.similar_product_id);
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, base_price, image_url, category, description")
@@ -61,10 +61,10 @@ export async function GET(
     }
 
     return NextResponse.json({ similar_products: [], total: 0 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

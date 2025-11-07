@@ -66,37 +66,37 @@ export default function AdminDashboard() {
         <StatCard
           title="Total Revenue"
           value={loading ? '...' : `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          icon={<FiDollarSign className="h-6 w-6" />}
+          icon={<FiDollarSign className="h-6 w-6" aria-hidden="true" />}
         />
 
         {/* Total Orders Card */}
         <StatCard
           title="Total Orders"
           value={loading ? '...' : stats.totalOrders.toLocaleString()}
-          icon={<FiShoppingCart className="h-6 w-6" />}
+          icon={<FiShoppingCart className="h-6 w-6" aria-hidden="true" />}
         />
 
         {/* Total Customers Card */}
         <StatCard
           title="Total Customers"
           value={loading ? '...' : stats.totalCustomers.toLocaleString()}
-          icon={<FiUsers className="h-6 w-6" />}
+          icon={<FiUsers className="h-6 w-6" aria-hidden="true" />}
         />
 
         {/* Average Order Value Card */}
         <StatCard
           title="Avg Order Value"
           value={loading ? '...' : `$${stats.averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          icon={<FiTrendingUp className="h-6 w-6" />}
+          icon={<FiTrendingUp className="h-6 w-6" aria-hidden="true" />}
         />
       </div>
 
       {/* Welcome Card */}
       <Card padding="lg" className="mt-6">
         <div className="mb-6">
-          <h3 className="text-2xl font-bold text-b2b-dark">
+          <h2 className="text-2xl font-bold text-b2b-dark">
             Welcome to B2B+ Admin Dashboard
-          </h3>
+          </h2>
           <p className="mt-2 text-base text-b2b-gray-500">
             Manage your products, orders, customers, and analytics from this central hub.
           </p>
@@ -104,17 +104,17 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-lg bg-b2b-yellow bg-opacity-10 border border-b2b-yellow p-4">
-            <h4 className="text-lg font-bold text-b2b-dark">Quick Actions</h4>
+            <h3 className="text-lg font-bold text-b2b-dark">Quick Actions</h3>
             <p className="mt-2 text-sm text-b2b-gray-500">Add products, create orders, manage inventory</p>
           </div>
 
           <div className="rounded-lg bg-b2b-green bg-opacity-10 border border-b2b-green p-4">
-            <h4 className="text-lg font-bold text-b2b-dark">Analytics</h4>
+            <h3 className="text-lg font-bold text-b2b-dark">Analytics</h3>
             <p className="mt-2 text-sm text-b2b-gray-500">View sales trends, customer insights, revenue reports</p>
           </div>
 
           <div className="rounded-lg bg-b2b-gray-100 border border-b2b-gray-300 p-4">
-            <h4 className="text-lg font-bold text-b2b-dark">Settings</h4>
+            <h3 className="text-lg font-bold text-b2b-dark">Settings</h3>
             <p className="mt-2 text-sm text-b2b-gray-500">Configure pricing, shipping, taxes, and more</p>
           </div>
         </div>

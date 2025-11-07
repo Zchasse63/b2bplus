@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, Button, DataTable } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiZap, FiRefreshCw, FiTrendingUp, FiUsers } from 'react-icons/fi';
 
 interface RecommendationStats {
@@ -95,7 +96,16 @@ export default function AdminRecommendationsPage() {
         // Group by product and calculate stats
         const productMap = new Map<string, { name: string; sku: string; count: number; totalScore: number }>();
         
-        products.forEach((p: any) => {
+        interface ProductRecommendationData {
+          recommended_product_id: string;
+          score: number;
+          products?: {
+            name: string;
+            sku: string;
+          };
+        }
+
+        products.forEach((p: ProductRecommendationData) => {
           const id = p.recommended_product_id;
           const existing = productMap.get(id);
           
@@ -143,13 +153,20 @@ export default function AdminRecommendationsPage() {
       }
 
       const data = await response.json();
-      alert(`Successfully refreshed recommendations! Generated ${data.generated || 0} recommendations.`);
-      
+      toast({
+        title: 'Success',
+        description: `Successfully refreshed recommendations! Generated ${data.generated || 0} recommendations.`,
+      });
+
       // Reload data
       await checkFeatureAndLoadData();
     } catch (error) {
       console.error('Error refreshing recommendations:', error);
-      alert('Failed to refresh recommendations');
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh recommendations',
+        variant: 'destructive',
+      });
     } finally {
       setRefreshing(false);
     }

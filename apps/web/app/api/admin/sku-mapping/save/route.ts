@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
       message: `Successfully saved ${data?.length || 0} SKU mappings`
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Save SKU mapping error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to save SKU mappings' },
+      { error: error instanceof Error ? error.message : 'Failed to save SKU mappings' },
       { status: 500 }
     )
   }
@@ -125,7 +125,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       verified,
       verified_by: verified ? user.id : null,
       verified_at: verified ? new Date().toISOString() : null
@@ -163,10 +163,10 @@ export async function PATCH(request: NextRequest) {
       mapping: data
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Update SKU mapping error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to update SKU mapping' },
+      { error: error instanceof Error ? error.message : 'Failed to update SKU mapping' },
       { status: 500 }
     )
   }
@@ -224,10 +224,10 @@ export async function GET(request: NextRequest) {
       mappings: data
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get SKU mappings error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch SKU mappings' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch SKU mappings' },
       { status: 500 }
     )
   }

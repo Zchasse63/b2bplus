@@ -125,10 +125,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Notification sent successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in order update notification:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

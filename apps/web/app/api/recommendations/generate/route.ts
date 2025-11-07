@@ -46,70 +46,117 @@ export async function POST(request: NextRequest) {
     }
 
     let generated = 0;
-    const errors: any[] = [];
+    const errors: Array<{ message: string; [key: string]: unknown }> = [];
+    const allRecommendations: Array<{
+      product_id: string;
+      recommended_product_id: string;
+      recommendation_type: string;
+      score: number;
+      reason: string;
+      updated_at: string;
+    }> = [];
 
-    // Generate "also bought" recommendations based on order history
-    for (const product of products) {
-      try {
-        // Find products frequently bought together
-        const { data: alsoBought } = await supabase.rpc('get_also_bought_products', {
+    // OPTIMIZED: Process products in batches to avoid overwhelming the database
+    const BATCH_SIZE = 50;
+    const now = new Date().toISOString();
+
+    for (let i = 0; i < products.length; i += BATCH_SIZE) {
+      const batch = products.slice(i, i + BATCH_SIZE);
+      const batchProductIds = batch.map(p => p.id);
+
+      // OPTIMIZED: Batch fetch "also bought" recommendations for all products in batch
+      const alsoBoughtPromises = batch.map(product =>
+        supabase.rpc('get_also_bought_products', {
           p_product_id: product.id,
           p_limit: 5
-        });
+        }).then(result => ({
+          productId: product.id,
+          alsoBought: result.data || []
+        }))
+      );
 
-        if (alsoBought && alsoBought.length > 0) {
-          for (const rec of alsoBought) {
-            await supabase
-              .from('product_recommendations')
-              .upsert({
-                product_id: product.id,
-                recommended_product_id: rec.recommended_product_id,
-                recommendation_type: 'also_bought',
-                score: rec.score,
-                reason: `Frequently bought together (${rec.times_bought} times)`,
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'product_id,recommended_product_id,recommendation_type'
-              });
+      const alsoBoughtResults = await Promise.all(alsoBoughtPromises);
+
+      // Collect all "also bought" recommendations
+      for (const result of alsoBoughtResults) {
+        if (result.alsoBought.length > 0) {
+          for (const rec of result.alsoBought) {
+            allRecommendations.push({
+              product_id: result.productId,
+              recommended_product_id: rec.recommended_product_id,
+              recommendation_type: 'also_bought',
+              score: rec.score,
+              reason: `Frequently bought together (${rec.times_bought} times)`,
+              updated_at: now
+            });
           }
           generated++;
         }
+      }
 
-        // Generate "similar" recommendations based on category and price
-        const { data: similar } = await supabase
+      // OPTIMIZED: Generate "similar" recommendations using a more efficient approach
+      // Group products by category for batch processing
+      const categoryGroups = new Map<string, typeof batch>();
+      for (const product of batch) {
+        if (!categoryGroups.has(product.category)) {
+          categoryGroups.set(product.category, []);
+        }
+        categoryGroups.get(product.category)!.push(product);
+      }
+
+      // For each category, find similar products in batch
+      for (const [category, categoryProducts] of categoryGroups) {
+        const { data: similarProducts } = await supabase
           .from('products')
-          .select('id')
-          .eq('category', product.category)
-          .neq('id', product.id)
-          .gte('base_price', product.base_price * 0.8)
-          .lte('base_price', product.base_price * 1.2)
+          .select('id, base_price')
+          .eq('category', category)
           .eq('is_active', true)
-          .limit(3);
+          .not('id', 'in', `(${categoryProducts.map(p => p.id).join(',')})`);
 
-        if (similar && similar.length > 0) {
-          for (let i = 0; i < similar.length; i++) {
-            await supabase
-              .from('product_recommendations')
-              .upsert({
+        if (similarProducts && similarProducts.length > 0) {
+          // For each product in category, find 3 most similar by price
+          for (const product of categoryProducts) {
+            const similar = similarProducts
+              .filter(sp =>
+                sp.base_price >= product.base_price * 0.8 &&
+                sp.base_price <= product.base_price * 1.2
+              )
+              .slice(0, 3);
+
+            for (let j = 0; j < similar.length; j++) {
+              allRecommendations.push({
                 product_id: product.id,
-                recommended_product_id: similar[i].id,
+                recommended_product_id: similar[j].id,
                 recommendation_type: 'similar',
-                score: 0.8 - (i * 0.1), // Decreasing score
+                score: 0.8 - (j * 0.1),
                 reason: 'Similar category and price range',
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'product_id,recommended_product_id,recommendation_type'
+                updated_at: now
               });
+            }
           }
         }
+      }
+    }
 
-      } catch (error) {
-        console.error('Error generating recommendations for product:', product.id, error);
-        errors.push({
-          productId: product.id,
-          productName: product.name,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+    // OPTIMIZED: Batch upsert ALL recommendations at once (instead of one at a time)
+    if (allRecommendations.length > 0) {
+      // Split into chunks of 1000 for large datasets
+      const UPSERT_CHUNK_SIZE = 1000;
+      for (let i = 0; i < allRecommendations.length; i += UPSERT_CHUNK_SIZE) {
+        const chunk = allRecommendations.slice(i, i + UPSERT_CHUNK_SIZE);
+        const { error: upsertError } = await supabase
+          .from('product_recommendations')
+          .upsert(chunk, {
+            onConflict: 'product_id,recommended_product_id,recommendation_type'
+          });
+
+        if (upsertError) {
+          errors.push({
+            message: 'Failed to upsert recommendations chunk',
+            error: upsertError.message,
+            chunkStart: i
+          });
+        }
       }
     }
 

@@ -29,6 +29,9 @@ export default function AdminProductsPage() {
     open: false,
   });
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -36,14 +39,29 @@ export default function AdminProductsPage() {
     } else if (isAdmin) {
       loadProducts();
     }
-  }, [isAdmin, adminLoading, router]);
+  }, [isAdmin, adminLoading, router, page]);
 
   async function loadProducts() {
     const supabase = createClient();
+
+    // Get total count
+    const { count } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true });
+
+    if (count !== null) {
+      setTotalCount(count);
+    }
+
+    // Get paginated data
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .range(from, to);
 
     if (!error && data) {
       setProducts(data);
@@ -211,6 +229,61 @@ export default function AdminProductsPage() {
         data={products}
         columns={columns}
       />
+
+      {/* Pagination Controls */}
+      {totalCount > pageSize && (
+        <Card className="mt-5 p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} products
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.ceil(totalCount / pageSize) }, (_, i) => i + 1)
+                  .filter(p => {
+                    // Show first page, last page, current page, and pages around current
+                    return p === 1 ||
+                           p === Math.ceil(totalCount / pageSize) ||
+                           (p >= page - 1 && p <= page + 1);
+                  })
+                  .map((p, i, arr) => {
+                    // Add ellipsis if there's a gap
+                    const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                    return (
+                      <div key={p} className="flex items-center gap-1">
+                        {showEllipsis && <span className="px-2 text-gray-400">...</span>}
+                        <Button
+                          variant={p === page ? 'primary' : 'ghost'}
+                          size="sm"
+                          onClick={() => setPage(p)}
+                          className="min-w-[40px]"
+                        >
+                          {p}
+                        </Button>
+                      </div>
+                    );
+                  })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={page >= Math.ceil(totalCount / pageSize)}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal

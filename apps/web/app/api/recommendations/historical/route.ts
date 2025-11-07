@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
         : 'No historical purchase recommendations at this time'
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Historical recommendations error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to get recommendations' },
+      { error: error instanceof Error ? error.message : 'Failed to get recommendations' },
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PageHeader, Card, Button, Input, Badge, DataTable } from '@/components/b2b';
@@ -42,11 +42,7 @@ export default function HistoricalOrdersPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadHistoricalOrders();
-  }, []);
-
-  async function loadHistoricalOrders() {
+  const loadHistoricalOrders = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -94,7 +90,11 @@ export default function HistoricalOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [router, supabase, toast]);
+
+  useEffect(() => {
+    loadHistoricalOrders();
+  }, [loadHistoricalOrders]);
 
   async function handleReorder(order: HistoricalOrder) {
     try {
@@ -105,6 +105,19 @@ export default function HistoricalOrdersPage() {
       if (!user) {
         router.push('/auth/login');
         return;
+      }
+
+      // Get user's organization
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      const organizationId = profile?.current_organization_id;
+
+      if (!organizationId) {
+        throw new Error('No organization found for user');
       }
 
       // Get order items with current product mappings
@@ -121,20 +134,25 @@ export default function HistoricalOrdersPage() {
         return;
       }
 
-      // Add items to cart
-      const cartItems = itemsToAdd.map((item) => ({
-        user_id: user.id,
-        product_id: item.current_product_id,
-        quantity: item.quantity,
-      }));
+      // ATOMIC: Add items to cart using database function to prevent race conditions
+      const upsertPromises = itemsToAdd.map(async (item) => {
+        const { data, error } = await supabase.rpc('upsert_cart_item_atomic', {
+          p_user_id: user.id,
+          p_product_id: item.current_product_id,
+          p_quantity: item.quantity,
+          p_organization_id: organizationId
+        });
 
-      const { error } = await supabase.from('cart_items').insert(cartItems);
+        if (error) throw error;
+        return data?.[0]?.success || false;
+      });
 
-      if (error) throw error;
+      const results = await Promise.all(upsertPromises);
+      const successCount = results.filter(success => success).length;
 
       toast({
         title: 'Items Added to Cart',
-        description: `${cartItems.length} items from order ${order.order_number} have been added to your cart`,
+        description: `${successCount} items from order ${order.order_number} have been added to your cart`,
       });
 
       router.push('/cart');

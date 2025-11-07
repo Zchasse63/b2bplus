@@ -17,7 +17,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/products">
-              <Button variant="primary" size="lg" icon={<FiArrowRight />}>
+              <Button variant="primary" size="lg" icon={<FiArrowRight aria-hidden="true" />}>
                 Browse Products
               </Button>
             </Link>
@@ -32,19 +32,19 @@ export default function Home() {
         {/* Trust Badges */}
         <div className="mb-16 flex flex-wrap justify-center gap-6 items-center">
           <div className="flex items-center gap-2 text-b2b-gray-600">
-            <FiShield className="h-5 w-5 text-b2b-green" />
+            <FiShield className="h-5 w-5 text-b2b-green" aria-hidden="true" />
             <span className="text-sm font-medium">SSL Secured</span>
           </div>
           <div className="flex items-center gap-2 text-b2b-gray-600">
-            <FiAward className="h-5 w-5 text-b2b-green" />
+            <FiAward className="h-5 w-5 text-b2b-green" aria-hidden="true" />
             <span className="text-sm font-medium">FDA Certified</span>
           </div>
           <div className="flex items-center gap-2 text-b2b-gray-600">
-            <FiCheckCircle className="h-5 w-5 text-b2b-green" />
+            <FiCheckCircle className="h-5 w-5 text-b2b-green" aria-hidden="true" />
             <span className="text-sm font-medium">ISO 9001 Certified</span>
           </div>
           <div className="flex items-center gap-2 text-b2b-gray-600">
-            <FiStar className="h-5 w-5 text-b2b-orange" />
+            <FiStar className="h-5 w-5 text-b2b-orange" aria-hidden="true" />
             <span className="text-sm font-medium">4.9/5 Rating</span>
           </div>
         </div>
@@ -72,36 +72,36 @@ export default function Home() {
         {/* Feature Cards */}
         <div className="mb-12 grid gap-6 md:grid-cols-3">
           <Card padding="lg" hover className="group">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-b2b-yellow bg-opacity-10 transition-transform group-hover:scale-110">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-b2b-yellow bg-opacity-10 transition-transform group-hover:scale-110" aria-hidden="true">
               <FiPackage className="h-8 w-8 text-b2b-yellow" />
             </div>
-            <h3 className="mb-2 text-xl font-bold text-b2b-dark">
+            <h2 className="mb-2 text-xl font-bold text-b2b-dark">
               Smart Ordering
-            </h3>
+            </h2>
             <p className="text-b2b-gray-500">
               Streamlined ordering process with intelligent product recommendations
             </p>
           </Card>
 
           <Card padding="lg" hover className="group">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-blue-100 transition-transform group-hover:scale-110">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-blue-100 transition-transform group-hover:scale-110" aria-hidden="true">
               <FiTrendingUp className="h-8 w-8 text-blue-600" />
             </div>
-            <h3 className="mb-2 text-xl font-bold text-b2b-dark">
+            <h2 className="mb-2 text-xl font-bold text-b2b-dark">
               Container Optimization
-            </h3>
+            </h2>
             <p className="text-b2b-gray-500">
               Maximize efficiency with our advanced container optimization system
             </p>
           </Card>
 
           <Card padding="lg" hover className="group">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-green-100 transition-transform group-hover:scale-110">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-green-100 transition-transform group-hover:scale-110" aria-hidden="true">
               <FiUsers className="h-8 w-8 text-b2b-green" />
             </div>
-            <h3 className="mb-2 text-xl font-bold text-b2b-dark">
+            <h2 className="mb-2 text-xl font-bold text-b2b-dark">
               Multi-Organization
-            </h3>
+            </h2>
             <p className="text-b2b-gray-500">
               Manage multiple locations and teams from a single platform
             </p>
@@ -208,13 +208,13 @@ export default function Home() {
 
         {/* Status Card */}
         <Card padding="lg" className="mx-auto max-w-md">
-          <h3 className="mb-4 text-center text-xl font-bold text-b2b-dark">
+          <h2 className="mb-4 text-center text-xl font-bold text-b2b-dark">
             System Status
-          </h3>
+          </h2>
           <div className="text-center">
             <p className="mb-2 text-sm text-b2b-gray-500">Monorepo Status:</p>
             <div className="flex items-center justify-center gap-2">
-              <FiCheckCircle className="h-6 w-6 text-b2b-green" />
+              <FiCheckCircle className="h-6 w-6 text-b2b-green" aria-hidden="true" />
               <p className="text-lg font-semibold text-b2b-green">
                 {testUtil()}
               </p>

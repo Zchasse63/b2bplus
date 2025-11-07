@@ -9,10 +9,17 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 export async function GET(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
+
+    // Get pagination parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
     // Get all organizations with their order stats in a single optimized query
     const { data: stats, error: statsError } = await supabase
@@ -22,11 +29,20 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching customer stats:', statsError);
 
       // Fallback to manual aggregation if RPC doesn't exist yet
-      // Get all organizations
+      // Get total count
+      const { count } = await supabase
+        .from('organizations')
+        .select('*', { count: 'exact', head: true });
+
+      // Get paginated organizations
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
         .select('id, name, slug, type, phone, website, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (orgsError) {
         return NextResponse.json(
@@ -67,18 +83,32 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        customers: customersWithStats
+        customers: customersWithStats,
+        pagination: {
+          page,
+          pageSize,
+          totalCount: count || 0,
+          totalPages: Math.ceil((count || 0) / pageSize)
+        }
       });
     }
 
+    // If using RPC, we still need to handle pagination
+    // For now, return all results if RPC is used (assuming it returns reasonable amount)
     return NextResponse.json({
       success: true,
-      customers: stats
+      customers: stats,
+      pagination: {
+        page: 1,
+        pageSize: stats?.length || 0,
+        totalCount: stats?.length || 0,
+        totalPages: 1
+      }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in customer stats API:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

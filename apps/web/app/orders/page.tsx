@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -52,15 +52,48 @@ export default function OrdersPage() {
     amountRange: { min: '', max: '' },
   })
 
-  useEffect(() => {
-    loadOrders()
-  }, [])
+  const loadOrders = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/auth/login')
+        return
+      }
 
-  useEffect(() => {
-    applyFilters()
-  }, [searchQuery, orders, filters])
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single()
 
-  const applyFilters = () => {
+      if (!profile?.current_organization_id) {
+        throw new Error('No organization found')
+      }
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (
+            id,
+            quantity,
+            name
+          )
+        `)
+        .eq('organization_id', profile.current_organization_id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setOrders(data || [])
+      setFilteredOrders(data || [])
+    } catch (error) {
+      console.error('Error loading orders:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [router, supabase]);
+
+  const applyFilters = useCallback(() => {
     let filtered = [...orders]
 
     // Apply search query
@@ -101,7 +134,15 @@ export default function OrdersPage() {
     }
 
     setFilteredOrders(filtered)
-  }
+  }, [orders, searchQuery, filters]);
+
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
+
+  useEffect(() => {
+    applyFilters()
+  }, [applyFilters])
 
   const getActiveFilterCount = () => {
     let count = 0
@@ -118,47 +159,6 @@ export default function OrdersPage() {
       amountRange: { min: '', max: '' },
     })
     setSearchQuery('')
-  }
-
-  const loadOrders = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/auth/login')
-        return
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('current_organization_id')
-        .eq('id', user.id)
-        .single()
-
-      if (!profile?.current_organization_id) {
-        throw new Error('No organization found')
-      }
-
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            quantity,
-            name
-          )
-        `)
-        .eq('organization_id', profile.current_organization_id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setOrders(data || [])
-      setFilteredOrders(data || [])
-    } catch (error) {
-      console.error('Error loading orders:', error)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const getTotalItems = (order: Order) => {

@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const messages = allProfiles.map((p: any) => ({
+        const messages = allProfiles.map((p: { id?: string; [key: string]: unknown }) => ({
           pushToken: p.expo_push_token,
           notification,
         }));
@@ -116,10 +116,10 @@ export async function POST(request: NextRequest) {
       success: true,
       result,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending notification:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

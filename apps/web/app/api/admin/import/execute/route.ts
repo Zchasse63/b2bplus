@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
       errors: []
     };
 
-    // Process each row
+    // Map all rows first
+    const mappedRows: Array<{ data: ImportRow; rowNumber: number; originalRow: any }> = [];
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNumber = i + 2; // +2 for header row and 0-index
@@ -78,11 +80,11 @@ export async function POST(request: NextRequest) {
       try {
         // Map row data to target fields
         const mappedData: ImportRow = {};
-        
+
         mappings.forEach((mapping: any) => {
           if (mapping.targetField && row[mapping.sourceColumn] !== undefined) {
             let value = row[mapping.sourceColumn];
-            
+
             // Type conversion based on target field
             if (mapping.targetField === 'base_price' || mapping.targetField === 'cost_price') {
               value = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
             } else if (mapping.targetField === 'is_active') {
               value = ['true', 'yes', '1', 'active'].includes(String(value).toLowerCase());
             }
-            
+
             mappedData[mapping.targetField] = value;
           }
         });
@@ -104,14 +106,12 @@ export async function POST(request: NextRequest) {
           mappedData.created_by = user.id;
         }
 
-        // Execute import based on type
-        if (importType === 'products') {
-          await importProduct(supabase, mappedData, updateExisting, result, rowNumber);
-        } else if (importType === 'prices') {
-          await updatePrices(supabase, mappedData, result, rowNumber);
-        } else if (importType === 'inventory') {
-          await updateInventory(supabase, mappedData, result, rowNumber);
+        // Validate required fields early
+        if (importType === 'products' && (!mappedData.sku || !mappedData.name)) {
+          throw new Error('SKU and name are required');
         }
+
+        mappedRows.push({ data: mappedData, rowNumber, originalRow: row });
 
       } catch (error) {
         result.failed++;
@@ -121,6 +121,15 @@ export async function POST(request: NextRequest) {
           data: row
         });
       }
+    }
+
+    // Execute batch import based on type
+    if (importType === 'products') {
+      await importProductsBatch(supabase, mappedRows, updateExisting, result, profile.current_organization_id);
+    } else if (importType === 'prices') {
+      await updatePricesBatch(supabase, mappedRows, result);
+    } else if (importType === 'inventory') {
+      await updateInventoryBatch(supabase, mappedRows, result);
     }
 
     return NextResponse.json({
@@ -137,96 +146,204 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function importProduct(
-  supabase: any,
-  data: ImportRow,
+// Batch import products - processes multiple rows at once
+async function importProductsBatch(
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
+  mappedRows: Array<{ data: ImportRow; rowNumber: number; originalRow: any }>,
   updateExisting: boolean,
   result: ImportResult,
-  rowNumber: number
+  organizationId: string
 ) {
-  // Validate required fields
-  if (!data.sku || !data.name) {
-    throw new Error('SKU and name are required');
-  }
+  if (mappedRows.length === 0) return;
 
-  // Check if product exists
-  const { data: existing } = await supabase
-    .from('products')
-    .select('id')
-    .eq('sku', data.sku)
-    .eq('organization_id', data.organization_id)
-    .single();
+  const BATCH_SIZE = 500; // Process in chunks of 500
 
-  if (existing && updateExisting) {
-    // Update existing product
-    const { error } = await supabase
+  // Process in batches
+  for (let i = 0; i < mappedRows.length; i += BATCH_SIZE) {
+    const batch = mappedRows.slice(i, i + BATCH_SIZE);
+
+    // Get all SKUs in this batch
+    const skus = batch.map(row => row.data.sku);
+
+    // Check which products already exist (single query for the whole batch)
+    const { data: existingProducts } = await supabase
       .from('products')
-      .update({
-        ...data,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existing.id);
+      .select('id, sku')
+      .eq('organization_id', organizationId)
+      .in('sku', skus);
 
-    if (error) throw error;
-    result.updated++;
-  } else if (!existing) {
-    // Insert new product
-    const { error } = await supabase
-      .from('products')
-      .insert(data);
+    const existingSkuMap = new Map(
+      (existingProducts || []).map(p => [p.sku, p.id])
+    );
 
-    if (error) throw error;
-    result.imported++;
-  } else {
-    // Skip if exists and updateExisting is false
-    result.failed++;
-    result.errors.push({
-      row: rowNumber,
-      error: 'Product already exists (SKU: ' + data.sku + ')',
-      data: data
-    });
+    const toInsert: ImportRow[] = [];
+    const toUpdate: Array<{ id: string; data: ImportRow; rowNumber: number }> = [];
+    const toSkip: Array<{ rowNumber: number; sku: string; data: any }> = [];
+
+    // Categorize rows
+    for (const row of batch) {
+      const existingId = existingSkuMap.get(row.data.sku);
+
+      if (existingId && updateExisting) {
+        toUpdate.push({ id: existingId, data: row.data, rowNumber: row.rowNumber });
+      } else if (!existingId) {
+        toInsert.push(row.data);
+      } else {
+        toSkip.push({ rowNumber: row.rowNumber, sku: row.data.sku, data: row.data });
+      }
+    }
+
+    // Batch insert new products
+    if (toInsert.length > 0) {
+      const { error, data: insertedData } = await supabase
+        .from('products')
+        .insert(toInsert)
+        .select();
+
+      if (error) {
+        logger.error('Batch insert error:', error);
+        // Mark all as failed
+        toInsert.forEach((item, idx) => {
+          result.failed++;
+          result.errors.push({
+            row: batch[idx].rowNumber,
+            error: error.message,
+            data: item
+          });
+        });
+      } else {
+        result.imported += insertedData?.length || toInsert.length;
+      }
+    }
+
+    // Batch update existing products
+    // Note: Supabase doesn't support batch updates directly, so we chunk them
+    if (toUpdate.length > 0) {
+      const UPDATE_CHUNK_SIZE = 100;
+
+      for (let j = 0; j < toUpdate.length; j += UPDATE_CHUNK_SIZE) {
+        const updateChunk = toUpdate.slice(j, j + UPDATE_CHUNK_SIZE);
+
+        // Use Promise.all for parallel updates within chunk
+        const updatePromises = updateChunk.map(async (item) => {
+          const { error } = await supabase
+            .from('products')
+            .update({
+              ...item.data,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id);
+
+          if (error) {
+            result.failed++;
+            result.errors.push({
+              row: item.rowNumber,
+              error: error.message,
+              data: item.data
+            });
+            return false;
+          }
+          return true;
+        });
+
+        const updateResults = await Promise.all(updatePromises);
+        result.updated += updateResults.filter(r => r).length;
+      }
+    }
+
+    // Handle skipped items
+    if (toSkip.length > 0 && !updateExisting) {
+      toSkip.forEach(item => {
+        result.failed++;
+        result.errors.push({
+          row: item.rowNumber,
+          error: `Product already exists (SKU: ${item.sku})`,
+          data: item.data
+        });
+      });
+    }
   }
 }
 
-async function updatePrices(
-  supabase: any,
-  data: ImportRow,
-  result: ImportResult,
-  rowNumber: number
+// Batch update prices - processes multiple rows at once
+async function updatePricesBatch(
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
+  mappedRows: Array<{ data: ImportRow; rowNumber: number; originalRow: any }>,
+  result: ImportResult
 ) {
-  // Find product by SKU
-  const { data: product, error: findError } = await supabase
-    .from('products')
-    .select('id')
-    .eq('sku', data.sku)
-    .single();
+  if (mappedRows.length === 0) return;
 
-  if (findError || !product) {
-    throw new Error('Product not found with SKU: ' + data.sku);
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < mappedRows.length; i += BATCH_SIZE) {
+    const batch = mappedRows.slice(i, i + BATCH_SIZE);
+    const skus = batch.map(row => row.data.sku);
+
+    // Find all products by SKU in one query
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, sku')
+      .in('sku', skus);
+
+    const productSkuMap = new Map(
+      (products || []).map(p => [p.sku, p.id])
+    );
+
+    // Update prices in parallel chunks
+    const UPDATE_CHUNK_SIZE = 100;
+
+    for (let j = 0; j < batch.length; j += UPDATE_CHUNK_SIZE) {
+      const chunk = batch.slice(j, j + UPDATE_CHUNK_SIZE);
+
+      const updatePromises = chunk.map(async (row) => {
+        const productId = productSkuMap.get(row.data.sku);
+
+        if (!productId) {
+          result.failed++;
+          result.errors.push({
+            row: row.rowNumber,
+            error: `Product not found with SKU: ${row.data.sku}`,
+            data: row.data
+          });
+          return false;
+        }
+
+        const updates: any = { updated_at: new Date().toISOString() };
+        if (row.data.base_price !== undefined) updates.base_price = row.data.base_price;
+        if (row.data.cost_price !== undefined) updates.cost_price = row.data.cost_price;
+
+        const { error } = await supabase
+          .from('products')
+          .update(updates)
+          .eq('id', productId);
+
+        if (error) {
+          result.failed++;
+          result.errors.push({
+            row: row.rowNumber,
+            error: error.message,
+            data: row.data
+          });
+          return false;
+        }
+        return true;
+      });
+
+      const updateResults = await Promise.all(updatePromises);
+      result.updated += updateResults.filter(r => r).length;
+    }
   }
-
-  // Update prices
-  const updates: any = {};
-  if (data.base_price !== undefined) updates.base_price = data.base_price;
-  if (data.cost_price !== undefined) updates.cost_price = data.cost_price;
-  updates.updated_at = new Date().toISOString();
-
-  const { error } = await supabase
-    .from('products')
-    .update(updates)
-    .eq('id', product.id);
-
-  if (error) throw error;
-  result.updated++;
 }
 
-async function updateInventory(
-  supabase: any,
-  data: ImportRow,
-  result: ImportResult,
-  rowNumber: number
+// Batch update inventory - processes multiple rows at once
+async function updateInventoryBatch(
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
+  mappedRows: Array<{ data: ImportRow; rowNumber: number; originalRow: any }>,
+  result: ImportResult
 ) {
-  // Check if inventory management is enabled
+  if (mappedRows.length === 0) return;
+
+  // Check if inventory management is enabled (once)
   const { data: featureFlag } = await supabase
     .from('feature_flags')
     .select('enabled')
@@ -234,48 +351,107 @@ async function updateInventory(
     .single();
 
   if (!featureFlag?.enabled) {
-    throw new Error('Inventory management feature is not enabled');
-  }
-
-  // Find product by SKU
-  const { data: product, error: findError } = await supabase
-    .from('products')
-    .select('id')
-    .eq('sku', data.sku)
-    .single();
-
-  if (findError || !product) {
-    throw new Error('Product not found with SKU: ' + data.sku);
-  }
-
-  // Find or create location
-  let locationId = data.location_id;
-  if (!locationId && data.location) {
-    const { data: location } = await supabase
-      .from('inventory_locations')
-      .select('id')
-      .eq('code', data.location)
-      .single();
-
-    locationId = location?.id;
-  }
-
-  if (!locationId) {
-    throw new Error('Location not found');
-  }
-
-  // Upsert inventory
-  const { error } = await supabase
-    .from('product_inventory')
-    .upsert({
-      product_id: product.id,
-      location_id: locationId,
-      quantity_on_hand: data.quantity || 0,
-      last_updated_at: new Date().toISOString()
-    }, {
-      onConflict: 'product_id,location_id'
+    mappedRows.forEach(row => {
+      result.failed++;
+      result.errors.push({
+        row: row.rowNumber,
+        error: 'Inventory management feature is not enabled',
+        data: row.data
+      });
     });
+    return;
+  }
 
-  if (error) throw error;
-  result.updated++;
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < mappedRows.length; i += BATCH_SIZE) {
+    const batch = mappedRows.slice(i, i + BATCH_SIZE);
+    const skus = batch.map(row => row.data.sku);
+
+    // Find all products by SKU in one query
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, sku')
+      .in('sku', skus);
+
+    const productSkuMap = new Map(
+      (products || []).map(p => [p.sku, p.id])
+    );
+
+    // Get unique location codes
+    const locationCodes = [...new Set(
+      batch
+        .map(row => row.data.location)
+        .filter(loc => loc)
+    )];
+
+    // Fetch all locations in one query
+    const { data: locations } = await supabase
+      .from('inventory_locations')
+      .select('id, code')
+      .in('code', locationCodes);
+
+    const locationCodeMap = new Map(
+      (locations || []).map(l => [l.code, l.id])
+    );
+
+    // Prepare upsert data
+    const inventoryData = [];
+
+    for (const row of batch) {
+      const productId = productSkuMap.get(row.data.sku);
+
+      if (!productId) {
+        result.failed++;
+        result.errors.push({
+          row: row.rowNumber,
+          error: `Product not found with SKU: ${row.data.sku}`,
+          data: row.data
+        });
+        continue;
+      }
+
+      const locationId = row.data.location_id || locationCodeMap.get(row.data.location);
+
+      if (!locationId) {
+        result.failed++;
+        result.errors.push({
+          row: row.rowNumber,
+          error: 'Location not found',
+          data: row.data
+        });
+        continue;
+      }
+
+      inventoryData.push({
+        product_id: productId,
+        location_id: locationId,
+        quantity_on_hand: row.data.quantity || 0,
+        last_updated_at: new Date().toISOString()
+      });
+    }
+
+    // Batch upsert inventory
+    if (inventoryData.length > 0) {
+      const { error } = await supabase
+        .from('product_inventory')
+        .upsert(inventoryData, {
+          onConflict: 'product_id,location_id'
+        });
+
+      if (error) {
+        logger.error('Batch inventory upsert error:', error);
+        result.failed += inventoryData.length;
+        inventoryData.forEach((_, idx) => {
+          result.errors.push({
+            row: batch[idx].rowNumber,
+            error: error.message,
+            data: batch[idx].data
+          });
+        });
+      } else {
+        result.updated += inventoryData.length;
+      }
+    }
+  }
 }

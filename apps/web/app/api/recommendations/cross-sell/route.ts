@@ -38,10 +38,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cross-sell recommendations error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to get recommendations' },
+      { error: error instanceof Error ? error.message : 'Failed to get recommendations' },
       { status: 500 }
     )
   }
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
  * Get cross-sell recommendations for a specific product
  */
 async function getCrossSellForProduct(
-  supabase: any,
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
   productId: string,
   userId: string,
   limit: number
@@ -78,7 +78,7 @@ async function getCrossSellForProduct(
       .limit(2)
 
     if (categoryProducts) {
-      recommendations.push(...categoryProducts.map((p: any) => ({
+      recommendations.push(...categoryProducts.map((p: { id?: string; [key: string]: unknown }) => ({
         product: p,
         reason: `Pairs well with ${product.name}`,
         type: 'complementary',
@@ -128,7 +128,7 @@ async function getCrossSellForProduct(
  * Get general cross-sell recommendations for customer
  */
 async function getGeneralCrossSell(
-  supabase: any,
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
   userId: string,
   limit: number
 ) {
@@ -148,13 +148,13 @@ async function getGeneralCrossSell(
   }
 
   const purchasedCategories = [...new Set(
-    customerPurchases.map((p: any) => p.products?.category).filter(Boolean)
+    customerPurchases.map((p: { id?: string; [key: string]: unknown }) => p.products?.category).filter(Boolean)
   )]
   const purchasedProductIds = new Set(
-    customerPurchases.map((p: any) => p.product_id)
+    customerPurchases.map((p: { id?: string; [key: string]: unknown }) => p.product_id)
   )
 
-  const recommendations: any[] = []
+  const recommendations: Array<Record<string, unknown>> = []
 
   // Find products in their categories they haven't bought
   for (const category of purchasedCategories) {
@@ -165,7 +165,7 @@ async function getGeneralCrossSell(
       .limit(3)
 
     if (categoryProducts) {
-      categoryProducts.forEach((product: any) => {
+      categoryProducts.forEach((product: { [key: string]: unknown }) => {
         if (!purchasedProductIds.has(product.id)) {
           recommendations.push({
             product,
@@ -187,7 +187,7 @@ async function getGeneralCrossSell(
         .limit(2)
 
       if (compProducts) {
-        compProducts.forEach((product: any) => {
+        compProducts.forEach((product: { [key: string]: unknown }) => {
           if (!purchasedProductIds.has(product.id)) {
             recommendations.push({
               product,

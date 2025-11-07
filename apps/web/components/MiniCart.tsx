@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Drawer, Button, Badge } from '@/components/b2b';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -35,33 +35,7 @@ export const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadCart();
-      
-      // Set up real-time subscription
-      const channel = supabase
-        .channel('cart-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'cart_items',
-          },
-          () => {
-            loadCart();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [isOpen]);
-
-  async function loadCart() {
+  const loadCart = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -86,7 +60,33 @@ export const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
       console.error('Error loading cart:', err);
     }
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCart();
+
+      // Set up real-time subscription
+      const channel = supabase
+        .channel('cart-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart_items',
+          },
+          () => {
+            loadCart();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [isOpen, loadCart, supabase]);
 
   async function updateQuantity(itemId: string, newQuantity: number) {
     if (newQuantity < 1) return;

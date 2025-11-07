@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/hooks/use-toast'
 import type { CartItem, Product } from '@b2b-plus/supabase'
 
 interface CartItemWithProduct extends CartItem {
@@ -38,7 +39,11 @@ export default function CartView({ initialCartItems }: CartViewProps) {
       ))
     } catch (error) {
       console.error('Error updating quantity:', error)
-      alert('Failed to update quantity')
+      toast({
+        title: 'Error',
+        description: 'Failed to update quantity',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(null)
     }
@@ -57,7 +62,11 @@ export default function CartView({ initialCartItems }: CartViewProps) {
       setCartItems(cartItems.filter(item => item.id !== itemId))
     } catch (error) {
       console.error('Error removing item:', error)
-      alert('Failed to remove item')
+      toast({
+        title: 'Error',
+        description: 'Failed to remove item',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(null)
     }

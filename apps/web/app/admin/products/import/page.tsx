@@ -7,15 +7,17 @@ import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, RefreshCw, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { productBulkImportSchema } from '@/lib/validation/schemas';
 
 interface CSVRow {
   [key: string]: string;
@@ -104,7 +106,11 @@ export default function ImportProductsPage() {
   const validateMapping = (): boolean => {
     for (const field of requiredFields) {
       if (!columnMapping[field]) {
-        alert(`Please map the required field: ${field}`);
+        toast({
+          title: 'Missing Required Field',
+          description: `Please map the required field: ${field}`,
+          variant: 'destructive',
+        });
         return false;
       }
     }
@@ -118,36 +124,65 @@ export default function ImportProductsPage() {
     const supabase = createClient();
     const results: ImportResult = { success: 0, failed: 0, errors: [] };
 
-    for (let i = 0; i < csvData.length; i++) {
-      const row = csvData[i];
-      
-      try {
-        // Map CSV columns to product fields
-        const productData: any = {};
-        
-        // Required fields
-        productData.name = row[columnMapping.name];
-        productData.sku = row[columnMapping.sku];
-        productData.category = row[columnMapping.category];
-        productData.base_price = parseFloat(row[columnMapping.base_price]);
+    // Prepare all products for bulk validation
+    const productsToImport = csvData.map((row, i) => {
+      return {
+        sku: row[columnMapping.sku] || '',
+        name: row[columnMapping.name] || '',
+        description: columnMapping.description ? (row[columnMapping.description] || '') : '',
+        category: row[columnMapping.category] || '',
+        basePrice: parseFloat(row[columnMapping.base_price] || '0'),
+        unitOfMeasure: 'case' as const, // Default value
+      };
+    });
 
-        // Optional fields
-        if (columnMapping.description) {
-          productData.description = row[columnMapping.description] || null;
-        }
+    // Validate all products with Zod bulk import schema
+    const validation = productBulkImportSchema.safeParse(productsToImport);
+
+    if (!validation.success) {
+      // Extract validation errors
+      const zodErrors = validation.error.errors;
+      zodErrors.forEach(error => {
+        const path = error.path.join('.');
+        results.failed++;
+        results.errors.push(`Validation error at ${path}: ${error.message}`);
+      });
+
+      setImportResult(results);
+      setImporting(false);
+      toast({
+        title: 'Validation Failed',
+        description: `${results.failed} products failed validation. Check the errors below.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Use validated data for import
+    const validatedProducts = validation.data;
+
+    for (let i = 0; i < validatedProducts.length; i++) {
+      const validatedProduct = validatedProducts[i];
+      const row = csvData[i];
+
+      try {
+        // Map validated data to database columns
+        const productData: any = {
+          name: validatedProduct.name,
+          sku: validatedProduct.sku,
+          category: validatedProduct.category,
+          description: validatedProduct.description,
+          base_price: validatedProduct.basePrice,
+          unit_of_measure: validatedProduct.unitOfMeasure,
+        };
+
+        // Optional fields from CSV
         if (columnMapping.stock_quantity) {
           const stock = parseInt(row[columnMapping.stock_quantity]);
           productData.stock_quantity = isNaN(stock) ? null : stock;
         }
         if (columnMapping.image_url) {
           productData.image_url = row[columnMapping.image_url] || null;
-        }
-
-        // Validate required data
-        if (!productData.name || !productData.sku || !productData.category || isNaN(productData.base_price)) {
-          results.failed++;
-          results.errors.push(`Row ${i + 2}: Missing or invalid required fields`);
-          continue;
         }
 
         // Insert product
@@ -162,7 +197,7 @@ export default function ImportProductsPage() {
           results.errors.push(`Row ${i + 2} (${productData.sku}): ${error.message}`);
         } else {
           results.success++;
-          
+
           // Log activity
           await supabase.rpc('log_admin_activity', {
             p_action: 'import',
@@ -171,14 +206,22 @@ export default function ImportProductsPage() {
             p_details: { product_name: data.name, sku: data.sku, source: 'csv_import' },
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         results.failed++;
-        results.errors.push(`Row ${i + 2}: ${error.message}`);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        results.errors.push(`Row ${i + 2}: ${message}`);
       }
     }
 
     setImportResult(results);
     setImporting(false);
+
+    if (results.success > 0) {
+      toast({
+        title: 'Import Complete',
+        description: `Successfully imported ${results.success} products${results.failed > 0 ? ` with ${results.failed} failures` : ''}.`,
+      });
+    }
   };
 
   const downloadTemplate = () => {

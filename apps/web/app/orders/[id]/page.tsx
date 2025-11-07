@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Card, Button, DataTable, Modal, PageHeader } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import {
   FiArrowLeft,
   FiShoppingCart,
@@ -54,7 +55,7 @@ interface Order {
   shipping_addresses: ShippingAddress;
 }
 
-const statusConfig: Record<string, { header: string; color: string; icon: any }> = {
+const statusConfig: Record<string, { header: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
   draft: { header: 'Draft', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300', icon: FiShoppingCart },
   submitted: { header: 'Submitted', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: FiFileText },
   processing: { header: 'Processing', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: FiShoppingCart },
@@ -74,12 +75,7 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
   const supabase = createClient();
   const router = useRouter();
 
-  useEffect(() => {
-    loadOrder();
-    checkInvoice();
-  }, [params.id]);
-
-  async function loadOrder() {
+  const loadOrder = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -114,9 +110,20 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       return;
     }
 
+    interface RawOrderItem {
+      id: string;
+      quantity: number;
+      unit_price: number;
+      line_total: number;
+      products: {
+        sku: string;
+        name: string;
+      };
+    }
+
     const formattedOrder: Order = {
       ...data,
-      order_items: data.order_items.map((item: any) => ({
+      order_items: data.order_items.map((item: RawOrderItem) => ({
         id: item.id,
         sku: item.products.sku,
         name: item.products.name,
@@ -128,9 +135,9 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
 
     setOrder(formattedOrder);
     setLoading(false);
-  }
+  }, [params.id, router, supabase]);
 
-  async function checkInvoice() {
+  const checkInvoice = useCallback(async () => {
     const { data } = await supabase
       .from('invoices')
       .select('id')
@@ -141,7 +148,12 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       setHasInvoice(true);
       setInvoiceId(data.id);
     }
-  }
+  }, [params.id, supabase]);
+
+  useEffect(() => {
+    loadOrder();
+    checkInvoice();
+  }, [loadOrder, checkInvoice]);
 
   async function handleReorder() {
     if (!order) return;
@@ -176,7 +188,11 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       setReorderModal(true);
     } catch (error) {
       console.error('Error reordering:', error);
-      alert('Failed to add items to cart');
+      toast({
+        title: 'Error',
+        description: 'Failed to add items to cart',
+        variant: 'destructive',
+      });
     } finally {
       setReordering(false);
     }
@@ -200,7 +216,11 @@ export default function OrderDetailsPage({ params }: { params: { id: string } })
       router.push(`/invoices/${newInvoiceId}`);
     } catch (error) {
       console.error('Error generating invoice:', error);
-      alert('Failed to generate invoice');
+      toast({
+        title: 'Error',
+        description: 'Failed to generate invoice',
+        variant: 'destructive',
+      });
     } finally {
       setGeneratingInvoice(false);
     }

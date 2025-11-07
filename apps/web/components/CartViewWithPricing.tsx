@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from '@/hooks/use-toast'
 import PromoCodeInput from './PromoCodeInput'
 import type { CartItem, Product } from '@b2b-plus/supabase'
 
@@ -35,15 +36,7 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => {
-    if (cartItems.length > 0) {
-      fetchAllPricing()
-    } else {
-      setPricingLoading(false)
-    }
-  }, [cartItems, promoCode])
-
-  const fetchAllPricing = async () => {
+  const fetchAllPricing = useCallback(async () => {
     setPricingLoading(true)
     
     try {
@@ -106,7 +99,15 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
     } finally {
       setPricingLoading(false)
     }
-  }
+  }, [cartItems, promoCode, supabase])
+
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      fetchAllPricing()
+    } else {
+      setPricingLoading(false)
+    }
+  }, [cartItems.length, fetchAllPricing])
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -125,7 +126,11 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
       ))
     } catch (error) {
       console.error('Error updating quantity:', error)
-      alert('Failed to update quantity')
+      toast({
+        title: 'Error',
+        description: 'Failed to update quantity',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(null)
     }
@@ -144,7 +149,11 @@ export default function CartViewWithPricing({ initialCartItems, organizationId, 
       setCartItems(cartItems.filter(item => item.id !== itemId))
     } catch (error) {
       console.error('Error removing item:', error)
-      alert('Failed to remove item')
+      toast({
+        title: 'Error',
+        description: 'Failed to remove item',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(null)
     }

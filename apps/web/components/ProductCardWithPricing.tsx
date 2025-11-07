@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -20,12 +20,15 @@ export default function ProductCardWithPricing({ product }: ProductCardProps) {
   const supabase = createClient()
 
   // Check authentication status
+  const checkAuth = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setIsAuthenticated(!!user)
+    setAuthChecked(true)
+  }, [supabase])
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAuthenticated(!!user)
-      setAuthChecked(true)
-    })
-  }, [supabase.auth])
+    checkAuth()
+  }, [checkAuth])
 
   // Use the pricing hook to get dynamic pricing (only for authenticated users)
   const { pricing, loading: pricingLoading, error: pricingError } = usePricing({

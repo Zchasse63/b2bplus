@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/b2b';
@@ -8,7 +8,9 @@ import { Card } from '@/components/b2b';
 import { Button } from '@/components/b2b';
 import { Input } from '@/components/b2b';
 import { Modal } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiUser, FiMail, FiPhone, FiBriefcase, FiSave, FiCheckCircle } from 'react-icons/fi';
+import { profileUpdateSchema } from '@/lib/validation/schemas';
 
 interface Profile {
   id: string;
@@ -38,11 +40,7 @@ export default function ProfilePage() {
   const supabase = createClient();
   const router = useRouter();
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -75,11 +73,19 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Error loading profile:', error);
-      alert('Failed to load profile');
+      toast({
+        title: 'Error',
+        description: 'Failed to load profile',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, supabase]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -87,21 +93,53 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
+      // Prepare data for validation
+      const profileData = {
+        fullName: fullName,
+        phone: phone || undefined,
+        avatarUrl: profile.avatar_url || undefined,
+      };
+
+      // Validate with Zod
+      const validation = profileUpdateSchema.safeParse(profileData);
+
+      if (!validation.success) {
+        const fieldErrors = validation.error.flatten().fieldErrors;
+        const errorMessages = Object.entries(fieldErrors)
+          .map(([field, errors]) => `${field}: ${errors?.[0]}`)
+          .join(', ');
+
+        toast({
+          title: 'Validation Error',
+          description: errorMessages,
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+
+      // Use validated data
+      const validatedData = validation.data;
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName,
-          phone: phone,
+          full_name: validatedData.fullName,
+          phone: validatedData.phone || null,
         })
         .eq('id', profile.id);
 
       if (error) throw error;
 
-      setProfile({ ...profile, full_name: fullName, phone: phone });
+      setProfile({ ...profile, full_name: validatedData.fullName, phone: validatedData.phone || null });
       setSuccessModal(true);
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save profile');
+      toast({
+        title: 'Error',
+        description: 'Failed to save profile',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }

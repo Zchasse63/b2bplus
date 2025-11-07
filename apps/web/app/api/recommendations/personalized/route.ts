@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch full product details for recommendations
     if (recommendations && recommendations.length > 0) {
-      const productIds = recommendations.map((r: any) => r.product_id);
+      const productIds = recommendations.map((r: { product_id: string; [key: string]: unknown }) => r.product_id);
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, base_price, image_url, category, description")
@@ -73,10 +73,10 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ recommendations: [], total: 0 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

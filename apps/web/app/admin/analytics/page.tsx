@@ -116,7 +116,17 @@ export default function AdminAnalyticsPage() {
 
       // Top products
       const productStats = new Map<string, { name: string; category: string; revenue: number; count: number }>();
-      (orderItems || []).forEach((item: any) => {
+      interface OrderItemWithProduct {
+        product_id: string;
+        quantity: number;
+        line_total: number;
+        products?: {
+          name: string;
+          category: string;
+        };
+      }
+
+      (orderItems || []).forEach((item: OrderItemWithProduct) => {
         const productId = item.product_id;
         const existing = productStats.get(productId) || { 
           name: item.products?.name || 'Unknown', 

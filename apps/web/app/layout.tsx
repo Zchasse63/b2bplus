@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
+import { SkipToContent } from "@/components/ui/AccessibleComponents";
 
 export const metadata: Metadata = {
   title: "B2B+ Platform",
@@ -18,8 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased flex flex-col min-h-screen">
+        <SkipToContent />
         <Header />
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           {children}
         </main>
         <Footer />

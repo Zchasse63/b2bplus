@@ -79,7 +79,7 @@ export const logger = {
    * Log table data
    * Only in development
    */
-  table: (data: any) => {
+  table: (data: unknown) => {
     if (isDevelopment) {
       console.table(data);
     }
@@ -139,7 +139,7 @@ export class PerformanceLogger {
     logger.time(label);
   }
 
-  end(additionalInfo?: any) {
+  end(additionalInfo?: Record<string, unknown>) {
     const duration = Date.now() - this.startTime;
     logger.timeEnd(this.label);
     logger.debug(`${this.label} completed in ${duration}ms`, additionalInfo);
@@ -150,7 +150,7 @@ export class PerformanceLogger {
  * Structured logging for production monitoring
  * Can be integrated with services like LogRocket, Sentry, etc.
  */
-export function logToMonitoring(level: LogLevel, message: string, metadata?: any) {
+export function logToMonitoring(level: LogLevel, message: string, metadata?: Record<string, unknown>) {
   // In production, send to monitoring service
   if (!isDevelopment) {
     // TODO: Integrate with monitoring service (LogRocket, Sentry, etc.)
@@ -169,8 +169,8 @@ export function logToMonitoring(level: LogLevel, message: string, metadata?: any
  */
 export function logAPIError(
   endpoint: string,
-  error: any,
-  context?: any
+  error: unknown,
+  context?: Record<string, unknown>
 ) {
   const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
@@ -194,7 +194,7 @@ export function logAPIError(
 export function logSecurityEvent(
   event: string,
   severity: 'low' | 'medium' | 'high' | 'critical',
-  details?: any
+  details?: Record<string, unknown>
 ) {
   const message = `SECURITY [${severity.toUpperCase()}]: ${event}`;
 

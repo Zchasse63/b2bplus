@@ -110,7 +110,7 @@ export async function PATCH(
     const { status, paymentMethod, paymentReference } = await request.json()
 
     // Update invoice
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (status) updateData.status = status
     if (paymentMethod) updateData.payment_method = paymentMethod
     if (paymentReference) updateData.payment_reference = paymentReference

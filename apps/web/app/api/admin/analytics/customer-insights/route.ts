@@ -10,8 +10,10 @@ import { checkAdminRole } from '@/lib/middleware/admin'
 export async function GET(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole()
-    if (authError) return authError
+    const authCheck = await checkAdminRole()
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status })
+    }
 
     const supabase = await createClient()
 
@@ -85,10 +87,10 @@ export async function GET(request: NextRequest) {
       insights
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Customer insights error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to generate insights' },
+      { error: error instanceof Error ? error.message : 'Failed to generate insights' },
       { status: 500 }
     )
   }
@@ -227,7 +229,7 @@ function getAtRiskProducts(analytics: any[]) {
 /**
  * Identify sales opportunities
  */
-async function identifyOpportunities(analytics: any[], supabase: any) {
+async function identifyOpportunities(analytics: any[], supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }) {
   const opportunities = []
 
   // Find products they stopped buying
@@ -261,7 +263,7 @@ async function identifyOpportunities(analytics: any[], supabase: any) {
 
     const purchasedProductIds = new Set(analytics.map(a => a.product_id))
 
-    categoryProducts?.forEach((product: any) => {
+    categoryProducts?.forEach((product: { [key: string]: unknown }) => {
       if (!purchasedProductIds.has(product.id)) {
         opportunities.push({
           type: 'cross_sell',

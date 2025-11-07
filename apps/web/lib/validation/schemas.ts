@@ -63,22 +63,51 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+// Strong password schema for registration and password changes
+export const passwordSchema = z
+  .string()
+  .min(12, 'Password must be at least 12 characters')
+  .max(100, 'Password must be less than 100 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
+
 export const registerSchema = z
   .object({
     email: emailSchema,
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(100, 'Password must be less than 100 characters')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number'),
+    password: passwordSchema,
     confirmPassword: z.string(),
     fullName: z
       .string()
       .min(1, 'Full name is required')
       .max(255, 'Full name must be less than 255 characters')
       .regex(/^[a-zA-Z\s'-]+$/, 'Full name can only contain letters, spaces, hyphens, and apostrophes'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const passwordResetRequestSchema = z.object({
+  email: emailSchema,
+});
+
+export const passwordResetSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

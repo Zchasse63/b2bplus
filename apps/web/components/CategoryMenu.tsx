@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -20,11 +20,7 @@ export default function CategoryMenu() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const supabase = createClient()
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       // Fetch all categories
       const { data, error } = await supabase
@@ -48,7 +44,11 @@ export default function CategoryMenu() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
 
   if (loading) {
     return (

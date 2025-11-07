@@ -8,8 +8,10 @@ import { logger } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -62,8 +64,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+    const { user } = authCheck;
 
     const supabase = await createClient();
 
@@ -160,8 +165,10 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -222,8 +229,10 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 

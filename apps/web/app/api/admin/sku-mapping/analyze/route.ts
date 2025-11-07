@@ -96,10 +96,10 @@ export async function POST(request: NextRequest) {
       matchRate: (matches.length / productsToMap.length * 100).toFixed(1) + '%'
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('SKU mapping error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to map SKUs' },
+      { error: error instanceof Error ? error.message : 'Failed to map SKUs' },
       { status: 500 }
     )
   }

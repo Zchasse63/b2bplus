@@ -8,6 +8,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
   loading?: boolean; // Loading state - disables button and shows loading indicator
+  'aria-label'?: string; // Accessibility label (required for icon-only buttons)
 }
 
 /**
@@ -35,13 +36,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100';
+    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 focus:outline-none focus:ring-2 focus:ring-offset-2';
 
     const variants = {
-      primary: 'bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm hover:shadow-b2b',
-      secondary: 'bg-b2b-green text-white hover:bg-b2b-green-600 shadow-b2b-sm hover:shadow-b2b',
-      outline: 'border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50',
-      ghost: 'text-b2b-text hover:bg-b2b-gray-50',
+      primary: 'bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm hover:shadow-b2b focus:ring-b2b-blue',
+      secondary: 'bg-b2b-green text-white hover:bg-b2b-green-600 shadow-b2b-sm hover:shadow-b2b focus:ring-b2b-green',
+      outline: 'border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50 focus:ring-b2b-blue',
+      ghost: 'text-b2b-text hover:bg-b2b-gray-50 focus:ring-b2b-gray-300',
     };
     
     const sizes = {
@@ -61,12 +62,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
+        aria-busy={loading}
         {...props}
       >
-        {loading && <span className="animate-spin">⏳</span>}
-        {!loading && icon && iconPosition === 'left' && <span className="flex-shrink-0">{icon}</span>}
+        {loading && <span className="animate-spin" aria-hidden="true">⏳</span>}
+        {!loading && icon && iconPosition === 'left' && <span className="flex-shrink-0" aria-hidden={!children}>{icon}</span>}
         {children}
-        {!loading && icon && iconPosition === 'right' && <span className="flex-shrink-0">{icon}</span>}
+        {!loading && icon && iconPosition === 'right' && <span className="flex-shrink-0" aria-hidden={!children}>{icon}</span>}
       </button>
     );
   }

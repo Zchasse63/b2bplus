@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/b2b';
@@ -9,6 +9,7 @@ import { Button } from '@/components/b2b';
 import { Input } from '@/components/b2b';
 import { Select } from '@/components/b2b';
 import { Modal } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import {
   FiMapPin,
   FiPlus,
@@ -17,6 +18,7 @@ import {
   FiCheckCircle,
   FiStar,
 } from 'react-icons/fi';
+import { shippingAddressSchema } from '@/lib/validation/schemas';
 
 interface ShippingAddress {
   id: string;
@@ -56,11 +58,7 @@ export default function SettingsPage() {
     is_default: false,
   });
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -93,11 +91,19 @@ export default function SettingsPage() {
       setAddresses(addressData || []);
     } catch (error) {
       console.error('Error loading settings:', error);
-      alert('Failed to load settings');
+      toast({
+        title: 'Error',
+        description: 'Failed to load settings',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [router, supabase]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const resetForm = () => {
     setFormData({
@@ -140,20 +146,63 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
+      // Prepare data for validation - map form field names to schema names
       const addressData = {
-        ...formData,
+        label: formData.header,
+        contactName: formData.contact_name,
+        phone: formData.phone,
+        streetAddress: formData.street_address,
+        streetAddress2: formData.street_address2 || undefined,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postal_code,
+        country: 'US',
+        isDefault: formData.is_default,
+      };
+
+      // Validate with Zod
+      const validation = shippingAddressSchema.safeParse(addressData);
+
+      if (!validation.success) {
+        const fieldErrors = validation.error.flatten().fieldErrors;
+        const errorMessages = Object.entries(fieldErrors)
+          .map(([field, errors]) => `${field}: ${errors?.[0]}`)
+          .join(', ');
+
+        toast({
+          title: 'Validation Error',
+          description: errorMessages,
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+
+      // Use validated data - convert back to database column names
+      const validatedData = validation.data;
+      const dbData = {
+        header: validatedData.label,
+        contact_name: validatedData.contactName,
+        phone: validatedData.phone,
+        street_address: validatedData.streetAddress,
+        street_address2: validatedData.streetAddress2 || null,
+        city: validatedData.city,
+        state: validatedData.state,
+        postal_code: validatedData.postalCode,
+        country: validatedData.country,
+        is_default: validatedData.isDefault,
         organization_id: organizationId,
       };
 
       if (editingAddress) {
         const { error } = await supabase
           .from('shipping_addresses')
-          .update(addressData)
+          .update(dbData)
           .eq('id', editingAddress.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('shipping_addresses').insert(addressData);
+        const { error } = await supabase.from('shipping_addresses').insert(dbData);
 
         if (error) throw error;
       }
@@ -161,9 +210,17 @@ export default function SettingsPage() {
       await loadSettings();
       setIsModalOpen(false);
       resetForm();
+      toast({
+        title: 'Success',
+        description: 'Address saved successfully',
+      });
     } catch (error) {
       console.error('Error saving address:', error);
-      alert('Failed to save address');
+      toast({
+        title: 'Error',
+        description: 'Failed to save address',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
@@ -185,9 +242,17 @@ export default function SettingsPage() {
       await loadSettings();
       setDeleteModal(false);
       setAddressToDelete(null);
+      toast({
+        title: 'Success',
+        description: 'Address deleted successfully',
+      });
     } catch (error) {
       console.error('Error deleting address:', error);
-      alert('Failed to delete address');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete address',
+        variant: 'destructive',
+      });
     } finally {
       setDeleting(false);
     }
@@ -208,9 +273,17 @@ export default function SettingsPage() {
         .eq('id', addressId);
 
       await loadSettings();
+      toast({
+        title: 'Success',
+        description: 'Default address updated',
+      });
     } catch (error) {
       console.error('Error setting default address:', error);
-      alert('Failed to set default address');
+      toast({
+        title: 'Error',
+        description: 'Failed to set default address',
+        variant: 'destructive',
+      });
     }
   };
 

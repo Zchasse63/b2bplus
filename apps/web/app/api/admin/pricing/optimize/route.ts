@@ -114,10 +114,10 @@ export async function POST(request: NextRequest) {
       recommendation: saved || recommendation
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Pricing optimization error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to optimize pricing' },
+      { error: error instanceof Error ? error.message : 'Failed to optimize pricing' },
       { status: 500 }
     )
   }
@@ -373,10 +373,10 @@ export async function GET(request: NextRequest) {
       suggestions: data
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get pricing suggestions error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch pricing suggestions' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch pricing suggestions' },
       { status: 500 }
     )
   }

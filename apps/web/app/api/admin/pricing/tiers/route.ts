@@ -7,8 +7,10 @@ import { logger } from '@/lib/logger';
 export async function GET(request: NextRequest) {
   try {
     // SECURITY: Use standard admin authorization check
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -33,8 +35,10 @@ export async function GET(request: NextRequest) {
 // POST create new pricing tier
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -79,8 +83,10 @@ export async function POST(request: NextRequest) {
 // PATCH update pricing tier
 export async function PATCH(request: NextRequest) {
   try {
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -121,8 +127,10 @@ export async function PATCH(request: NextRequest) {
 // DELETE pricing tier
 export async function DELETE(request: NextRequest) {
   try {
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 

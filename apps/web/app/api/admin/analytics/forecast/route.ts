@@ -9,8 +9,10 @@ import { checkAdminRole } from '@/lib/middleware/admin'
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole()
-    if (authError) return authError
+    const authCheck = await checkAdminRole()
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status })
+    }
 
     const supabase = await createClient()
 
@@ -87,10 +89,10 @@ export async function POST(request: NextRequest) {
       forecast: savedForecast || forecast
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Forecast error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to generate forecast' },
+      { error: error instanceof Error ? error.message : 'Failed to generate forecast' },
       { status: 500 }
     )
   }
@@ -188,25 +190,13 @@ function calculateStdDev(values: number[]): number {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authorization
+    const authCheck = await checkAdminRole()
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status })
+    }
+
     const supabase = await createClient()
-    
-    // Check authentication and admin role
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
     const { searchParams } = new URL(request.url)
     const customerId = searchParams.get('customerId')
 
@@ -240,10 +230,10 @@ export async function GET(request: NextRequest) {
       forecasts
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get forecasts error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch forecasts' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch forecasts' },
       { status: 500 }
     )
   }

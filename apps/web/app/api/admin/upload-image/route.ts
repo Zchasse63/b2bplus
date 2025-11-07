@@ -5,8 +5,10 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
       url: publicUrl,
       fileName,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Image upload error:', error);
     return NextResponse.json(
       { error: 'Internal server error: ' + error.message },

@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
       opportunities
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Opportunity detection error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to detect opportunities' },
+      { error: error instanceof Error ? error.message : 'Failed to detect opportunities' },
       { status: 500 }
     )
   }
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 /**
  * Detect products customer stopped buying
  */
-async function detectStoppedPurchases(supabase: any, customerId?: string) {
+async function detectStoppedPurchases(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, customerId?: string) {
   // Use the database function to identify stopped purchases
   const { data, error } = await supabase.rpc('identify_stopped_purchases')
 
@@ -135,7 +135,7 @@ async function detectStoppedPurchases(supabase: any, customerId?: string) {
 /**
  * Detect cross-sell opportunities
  */
-async function detectCrossSellOpportunities(supabase: any, customerId?: string) {
+async function detectCrossSellOpportunities(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, customerId?: string) {
   // Get all customers (or specific customer)
   let query = supabase
     .from('customer_purchase_analytics')
@@ -163,7 +163,7 @@ async function detectCrossSellOpportunities(supabase: any, customerId?: string) 
   const customerCategories = new Map<string, Set<string>>()
   const customerProducts = new Map<string, Set<string>>()
 
-  purchases?.forEach((p: any) => {
+  purchases?.forEach((p: { [key: string]: unknown }) => {
     const category = p.products?.category
     if (!category) return
 
@@ -190,7 +190,7 @@ async function detectCrossSellOpportunities(supabase: any, customerId?: string) 
         .eq('category', category)
         .limit(5)
 
-      categoryProducts?.forEach((product: any) => {
+      categoryProducts?.forEach((product: { [key: string]: unknown }) => {
         if (!purchasedProducts.has(product.id)) {
           opportunities.push({
             customer_id: custId,
@@ -216,7 +216,7 @@ async function detectCrossSellOpportunities(supabase: any, customerId?: string) 
 /**
  * Detect upsell opportunities (volume discounts, premium products)
  */
-async function detectUpsellOpportunities(supabase: any, customerId?: string) {
+async function detectUpsellOpportunities(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, customerId?: string) {
   // Find customers buying products with volume discounts available
   let query = supabase
     .from('customer_purchase_analytics')
@@ -311,7 +311,7 @@ function calculateStoppedBuyingScore(purchase: any): number {
 async function generateOpportunityReasoning(
   type: string,
   data: any,
-  supabase: any
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }
 ): Promise<string> {
   try {
     // Get product info
@@ -418,10 +418,10 @@ export async function GET(request: NextRequest) {
       opportunities: data
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get opportunities error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch opportunities' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch opportunities' },
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -80,15 +80,17 @@ export default function ProductDetail({ product, organizationId, relatedProducts
   ) as string[];
 
   // Fetch AI-powered recommendations
-  useEffect(() => {
-    const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
       try {
         const response = await fetch(`/api/recommendations?productId=${product.id}&type=also_bought&limit=4`);
         if (response.ok) {
           const data = await response.json();
           if (data.recommendations && data.recommendations.length > 0) {
             // Fetch full product details for recommendations
-            const productIds = data.recommendations.map((r: any) => r.recommended_product_id);
+            interface Recommendation {
+              recommended_product_id: string;
+            }
+            const productIds = data.recommendations.map((r: Recommendation) => r.recommended_product_id);
             const { data: products } = await supabase
               .from('products')
               .select('id, name, sku, base_price, image_url, category')
@@ -102,18 +104,19 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       } finally {
         setLoadingRecommendations(false);
       }
-    };
-
-    fetchRecommendations();
-  }, [product.id]);
+  }, [product.id, supabase]);
 
   useEffect(() => {
+    fetchRecommendations();
+  }, [fetchRecommendations]);
+
+  const fetchPrice = useCallback(async () => {
     if (!organizationId) {
       setPrice(product.base_price);
+      setLoading(false);
       return;
     }
 
-    const fetchPrice = async () => {
       setLoading(true);
 
       try {
@@ -153,10 +156,11 @@ export default function ProductDetail({ product, organizationId, relatedProducts
       } finally {
         setLoading(false);
       }
-    };
+  }, [quantity, organizationId, product.id, product.base_price, supabase]);
 
+  useEffect(() => {
     fetchPrice();
-  }, [quantity, organizationId, product.id, product.base_price]);
+  }, [fetchPrice]);
 
   const handleAddToCart = async () => {
     const {
@@ -171,18 +175,41 @@ export default function ProductDetail({ product, organizationId, relatedProducts
     setAdding(true);
 
     try {
-      const { error } = await supabase.from('cart_items').insert({
-        user_id: user.id,
-        product_id: product.id,
-        quantity: effectiveQuantity,
+      // Get user's organization
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      const organizationId = profile?.current_organization_id;
+
+      if (!organizationId) {
+        throw new Error('No organization found for user');
+      }
+
+      // ATOMIC: Use database function to handle race conditions
+      const { data, error } = await supabase.rpc('upsert_cart_item_atomic', {
+        p_user_id: user.id,
+        p_product_id: product.id,
+        p_quantity: effectiveQuantity,
+        p_organization_id: organizationId
       });
 
       if (error) throw error;
 
+      if (!data?.[0]?.success) {
+        throw new Error('Failed to add to cart');
+      }
+
       setSuccessModal(true);
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add to cart');
+      toast({
+        title: 'Error',
+        description: 'Failed to add to cart',
+        variant: 'destructive',
+      });
     } finally {
       setAdding(false);
     }

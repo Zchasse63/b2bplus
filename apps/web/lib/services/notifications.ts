@@ -63,11 +63,12 @@ export async function sendPushNotification(
       success: true,
       ticket,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Exception while sending push notification:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return {
       success: false,
-      error: error.message,
+      error: message,
     };
   }
 }
@@ -140,12 +141,13 @@ export async function sendBatchPushNotifications(
     }
 
     return results;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Exception while sending batch push notifications:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
     // Return error for all messages
     return messages.map(() => ({
       success: false,
-      error: error.message,
+      error: message,
     }));
   }
 }
@@ -160,7 +162,7 @@ export async function sendBatchPushNotifications(
 export async function sendOrganizationNotification(
   organizationId: string,
   notification: PushNotificationData,
-  supabase: any
+  supabase: { from: (table: string) => any }
 ): Promise<{ sent: number; failed: number }> {
   // Get all users in the organization with push tokens
   const { data: members, error } = await supabase
@@ -177,10 +179,17 @@ export async function sendOrganizationNotification(
     return { sent: 0, failed: 0 };
   }
 
+  interface MemberWithProfile {
+    user_id: string;
+    profiles?: {
+      expo_push_token: string;
+    };
+  }
+
   const messages = members
-    .filter((member: any) => member.profiles?.expo_push_token)
-    .map((member: any) => ({
-      pushToken: member.profiles.expo_push_token,
+    .filter((member: MemberWithProfile) => member.profiles?.expo_push_token)
+    .map((member: MemberWithProfile) => ({
+      pushToken: member.profiles!.expo_push_token,
       notification,
     }));
 

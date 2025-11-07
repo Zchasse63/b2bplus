@@ -8,7 +8,7 @@ export interface PricingResult {
   discount_amount: number;
   discount_percentage: number;
   pricing_source: 'base' | 'tier' | 'volume' | 'promotional' | 'contract' | 'customer' | 'price_lock';
-  pricing_details?: any;
+  pricing_details?: Record<string, unknown>;
 }
 
 interface UsePricingOptions {

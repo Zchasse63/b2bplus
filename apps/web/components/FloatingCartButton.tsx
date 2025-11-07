@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FiShoppingCart } from 'react-icons/fi';
 import { createClient } from '@/lib/supabase/client';
 import { MiniCart } from './MiniCart';
@@ -10,6 +10,28 @@ export const FloatingCartButton: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const supabase = createClient();
+
+  const loadCartCount = useCallback(async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
+
+      const { count } = await supabase
+        .from('cart_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      setCartCount(count || 0);
+    } catch (err) {
+      console.error('Error loading cart count:', err);
+    }
+  }, [supabase]);
 
   useEffect(() => {
     loadCartCount();
@@ -36,29 +58,7 @@ export const FloatingCartButton: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
-
-  async function loadCartCount() {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        setCartCount(0);
-        return;
-      }
-
-      const { count } = await supabase
-        .from('cart_items')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      setCartCount(count || 0);
-    } catch (err) {
-      console.error('Error loading cart count:', err);
-    }
-  }
+  }, [loadCartCount, supabase]);
 
   if (cartCount === 0) return null;
 

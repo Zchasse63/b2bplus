@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
@@ -24,15 +24,7 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
 
-  useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      router.push('/');
-    } else if (isAdmin) {
-      loadReportData();
-    }
-  }, [isAdmin, adminLoading, router, timeRange]);
-
-  const loadReportData = async () => {
+  const loadReportData = useCallback(async () => {
     try {
       const supabase = createClient();
       const days = parseInt(timeRange);
@@ -70,7 +62,14 @@ export default function AdminReportsPage() {
 
       // Process top categories
       const categoryRevenue = new Map<string, number>();
-      (orderItems || []).forEach((item: any) => {
+      interface OrderItemWithProduct {
+        line_total: number;
+        products?: {
+          category: string;
+        };
+      }
+
+      (orderItems || []).forEach((item: OrderItemWithProduct) => {
         const category = item.products?.category || 'Unknown';
         categoryRevenue.set(category, (categoryRevenue.get(category) || 0) + parseFloat(item.line_total || 0));
       });
@@ -105,7 +104,15 @@ export default function AdminReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
+
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      router.push('/');
+    } else if (isAdmin) {
+      loadReportData();
+    }
+  }, [isAdmin, adminLoading, router, loadReportData]);
 
   if (adminLoading || loading) {
     return (

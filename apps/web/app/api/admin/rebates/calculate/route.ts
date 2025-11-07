@@ -5,8 +5,10 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 export async function POST(request: NextRequest) {
   try {
     // SECURITY: Require admin authentication for rebate calculations
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const { userId, periodStart, periodEnd, rebateType } = await request.json();
 
@@ -83,8 +85,10 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // SECURITY: Require admin authentication to view all rebates
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');

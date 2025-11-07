@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { PageHeader, Card, Button, Input, Textarea, Modal, Badge } from '@/components/b2b'
+import { toast } from '@/hooks/use-toast'
 import { FiShoppingBag, FiMapPin, FiCreditCard, FiCheckCircle, FiShield, FiLock } from 'react-icons/fi'
 import Image from 'next/image'
+import { orderCreateSchema } from '@/lib/validation/schemas'
 
 interface CartItem {
   id: string
@@ -47,11 +49,7 @@ export default function CheckoutPage() {
   const supabase = createClient()
   const router = useRouter()
 
-  useEffect(() => {
-    loadCheckoutData()
-  }, [])
-
-  const loadCheckoutData = async () => {
+  const loadCheckoutData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -128,26 +126,57 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router, supabase])
+
+  useEffect(() => {
+    loadCheckoutData()
+  }, [loadCheckoutData])
 
   const handleSubmitOrder = async () => {
-    if (!selectedAddressId) {
-      alert('Please select a shipping address')
-      return
-    }
-
     setSubmitting(true)
 
     try {
+      // Prepare order data for validation
+      const orderData = {
+        items: cartItems.map(item => ({
+          productId: item.product_id,
+          quantity: item.quantity,
+        })),
+        shippingAddressId: selectedAddressId,
+        poNumber: poNumber || undefined,
+        notes: notes || undefined,
+      }
+
+      // Validate with Zod
+      const validation = orderCreateSchema.safeParse(orderData)
+
+      if (!validation.success) {
+        const fieldErrors = validation.error.flatten().fieldErrors
+        const errorMessages = Object.entries(fieldErrors)
+          .map(([field, errors]) => `${field}: ${errors?.[0]}`)
+          .join(', ')
+
+        toast({
+          title: 'Validation Error',
+          description: errorMessages,
+          variant: 'destructive',
+        })
+        setSubmitting(false)
+        return
+      }
+
+      // Use validated data
+      const validatedData = validation.data
+
       // SECURITY: Use server-side endpoint that validates all pricing
       // This prevents price manipulation attacks
       const response = await fetch('/api/checkout/submit-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          shippingAddressId: selectedAddressId,
-          poNumber: poNumber || null,
-          notes: notes || null,
+          shippingAddressId: validatedData.shippingAddressId,
+          poNumber: validatedData.poNumber || null,
+          notes: validatedData.notes || null,
         }),
       })
 
@@ -162,7 +191,11 @@ export default function CheckoutPage() {
 
     } catch (error) {
       console.error('Error submitting order:', error)
-      alert(error instanceof Error ? error.message : 'Failed to submit order. Please try again.')
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to submit order. Please try again.',
+        variant: 'destructive',
+      })
     } finally {
       setSubmitting(false)
     }

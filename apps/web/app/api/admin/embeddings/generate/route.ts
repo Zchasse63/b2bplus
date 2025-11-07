@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     let generated = 0;
     let skipped = 0;
     let failed = 0;
-    const errors: any[] = [];
+    const errors: Array<{ message: string; [key: string]: unknown }> = [];
 
     for (const product of products) {
       try {

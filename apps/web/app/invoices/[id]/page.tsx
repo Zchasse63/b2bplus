@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Card, Button, DataTable, PageHeader } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiArrowLeft, FiDownload, FiCheckCircle, FiFileText } from 'react-icons/fi';
 import { format } from 'date-fns';
 
@@ -61,11 +62,7 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
   const supabase = createClient();
   const router = useRouter();
 
-  useEffect(() => {
-    loadInvoice();
-  }, [params.id]);
-
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -82,12 +79,20 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
       setInvoice(data);
     } catch (error) {
       console.error('Error loading invoice:', error);
-      alert('Failed to load invoice');
+      toast({
+        title: 'Error',
+        description: 'Failed to load invoice',
+        variant: 'destructive',
+      });
       router.push('/invoices');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    loadInvoice();
+  }, [loadInvoice]);
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
@@ -107,7 +112,11 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF');
+      toast({
+        title: 'Error',
+        description: 'Failed to download PDF',
+        variant: 'destructive',
+      });
     } finally {
       setDownloading(false);
     }
@@ -131,23 +140,25 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
 
   const statusInfo = statusConfig[invoice.status] || statusConfig.unpaid;
 
+  type InvoiceLineItem = InvoiceDetails['orders']['order_items'][number];
+
   const columns = [
     { key: 'sku', header: 'SKU' },
     { key: 'name', header: 'Product' },
     {
       key: 'quantity',
       header: 'Quantity',
-      render: (item: any) => <span className="font-semibold">{item.quantity}</span>,
+      render: (item: InvoiceLineItem) => <span className="font-semibold">{item.quantity}</span>,
     },
     {
       key: 'unit_price',
       header: 'Unit Price',
-      render: (item: any) => `$${item.unit_price.toFixed(2)}`,
+      render: (item: InvoiceLineItem) => `$${item.unit_price.toFixed(2)}`,
     },
     {
       key: 'line_total',
       header: 'Total',
-      render: (item: any) => (
+      render: (item: InvoiceLineItem) => (
         <span className="font-bold text-brand-500">${item.line_total.toFixed(2)}</span>
       ),
     },

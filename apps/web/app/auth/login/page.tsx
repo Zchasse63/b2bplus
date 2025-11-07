@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, Button, Input } from '@/components/b2b';
 import { FiLogIn } from 'react-icons/fi';
+import { loginSchema } from '@/lib/validation/schemas';
+import { toast } from '@/hooks/use-toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,20 +19,27 @@ export default function Login() {
   const supabase = createClient();
 
   const validateForm = () => {
-    const newErrors: { email?: string; password?: string } = {};
+    // Validate with Zod
+    const validation = loginSchema.safeParse({ email, password });
 
-    if (!email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Invalid email address';
+    if (!validation.success) {
+      // Extract field-specific errors
+      const fieldErrors = validation.error.flatten().fieldErrors;
+      const newErrors: { email?: string; password?: string } = {};
+
+      if (fieldErrors.email) {
+        newErrors.email = fieldErrors.email[0];
+      }
+      if (fieldErrors.password) {
+        newErrors.password = fieldErrors.password[0];
+      }
+
+      setErrors(newErrors);
+      return false;
     }
 
-    if (!password) {
-      newErrors.password = 'Password is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -41,20 +50,30 @@ export default function Login() {
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      if (data.success) {
+        router.push('/');
+        router.refresh();
+      }
+    } catch (error) {
+      setErrorMessage('An unexpected error occurred');
       setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      router.push('/');
-      router.refresh();
     }
   };
 
@@ -63,22 +82,33 @@ export default function Login() {
     setPassword(demoPassword);
     setErrors({});
     setErrorMessage('');
-    
+
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: demoEmail,
-      password: demoPassword,
-    });
 
-    if (error) {
-      setErrorMessage(error.message);
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: demoEmail, password: demoPassword }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      if (data.success) {
+        router.push('/');
+        router.refresh();
+      }
+    } catch (error) {
+      setErrorMessage('An unexpected error occurred');
       setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      router.push('/');
-      router.refresh();
     }
   };
 
@@ -104,7 +134,7 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             {errorMessage && (
-              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+              <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600" role="alert" aria-live="polite">
                 {errorMessage}
               </div>
             )}
@@ -156,7 +186,7 @@ export default function Login() {
               variant="primary"
               fullWidth
               disabled={loading}
-              icon={<FiLogIn />}
+              icon={<FiLogIn aria-hidden="true" />}
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>

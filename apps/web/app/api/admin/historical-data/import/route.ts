@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       try {
         await importOrder(supabase, order)
         results.imported++
-      } catch (error: any) {
+      } catch (error: unknown) {
         results.skipped++
         results.errors.push(`Order ${order.orderNumber || 'unknown'}: ${error.message}`)
       }
@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
       ...results
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Import historical data error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to import historical data' },
+      { error: error instanceof Error ? error.message : 'Failed to import historical data' },
       { status: 500 }
     )
   }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 /**
  * Import a single historical order
  */
-async function importOrder(supabase: any, order: HistoricalOrder) {
+async function importOrder(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, order: HistoricalOrder) {
   // Find or create customer
   let customerId: string | null = null
   
@@ -171,7 +171,7 @@ async function importOrder(supabase: any, order: HistoricalOrder) {
  * Update customer purchase analytics with historical data
  */
 async function updateCustomerAnalytics(
-  supabase: any,
+  supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any },
   customerId: string,
   items: HistoricalOrderItem[],
   skuMap: Map<string, string>,
@@ -287,10 +287,10 @@ export async function GET(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get import statistics error:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to get statistics' },
+      { error: error instanceof Error ? error.message : 'Failed to get statistics' },
       { status: 500 }
     )
   }

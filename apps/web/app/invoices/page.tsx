@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Input, DataTable, PageHeader } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiFileText, FiSearch, FiEye, FiDownload } from 'react-icons/fi';
 import { format } from 'date-fns';
 
@@ -34,11 +35,7 @@ export default function InvoicesPage() {
   const supabase = createClient();
   const router = useRouter();
 
-  useEffect(() => {
-    loadInvoices();
-  }, []);
-
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -55,11 +52,19 @@ export default function InvoicesPage() {
       setInvoices(data);
     } catch (error) {
       console.error('Error loading invoices:', error);
-      alert('Failed to load invoices');
+      toast({
+        title: 'Error',
+        description: 'Failed to load invoices',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   const columns = [
     {

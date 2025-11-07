@@ -5,8 +5,11 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 export async function GET(request: NextRequest) {
   try {
     // Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+    const { user, profile } = authCheck;
 
     const supabase = await createClient();
 
@@ -26,12 +29,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       features: features || [],
-      is_super_admin: user.role === "super_admin",
+      is_super_admin: profile.role === "super_admin",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }
@@ -40,8 +43,10 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Check super admin authorization (only super admins can toggle features)
-    const { user, error: authError } = await checkAdminRole(true);
-    if (authError) return authError;
+    const authCheck = await checkAdminRole('super_admin');
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
 
@@ -74,10 +79,10 @@ export async function PATCH(request: NextRequest) {
       success: true,
       message: `Feature ${feature_name} ${enabled ? "enabled" : "disabled"}`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

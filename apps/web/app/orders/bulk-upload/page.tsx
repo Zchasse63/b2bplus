@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Button, DataTable, Modal, PageHeader } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import {
   FiUpload,
   FiUploadCloud,
@@ -68,8 +69,13 @@ export default function BulkOrderUploadPage() {
 
       const data = await response.json();
       setPreview(data.preview);
-    } catch (error: any) {
-      alert(error.message || 'Failed to process CSV file');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to process CSV file';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
     }
@@ -77,7 +83,11 @@ export default function BulkOrderUploadPage() {
 
   const handleSubmitOrder = async () => {
     if (!preview || preview.invalid_items > 0) {
-      alert('Please fix all errors before submitting the order');
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix all errors before submitting the order',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -97,8 +107,13 @@ export default function BulkOrderUploadPage() {
 
       const data = await response.json();
       setSuccessModal(true);
-    } catch (error: any) {
-      alert(error.message || 'Failed to submit order');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to submit order';
+      toast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(false);
     }

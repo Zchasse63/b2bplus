@@ -219,7 +219,7 @@ export function toAppError(error: unknown): AppError {
  */
 export function handleErrorResponse(error: unknown): {
   statusCode: number;
-  body: any;
+  body: { error: string; message: string; details?: unknown };
 } {
   if (isAppError(error)) {
     return {

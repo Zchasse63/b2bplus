@@ -247,10 +247,10 @@ export interface NotificationBatch {
 export interface ApiError {
   error: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
-export interface ApiSuccess<T = any> {
+export interface ApiSuccess<T = unknown> {
   data: T;
   message?: string;
 }
@@ -268,14 +268,19 @@ export interface PaginatedResponse<T> {
 // ============================================
 
 export interface SupabaseClient {
-  from: (table: string) => any;
-  auth: any;
-  rpc: (fn: string, params?: any) => any;
-  storage: any;
+  from: (table: string) => unknown;
+  auth: {
+    getUser: () => Promise<{ data: { user: Profile | null }; error: Error | null }>;
+    signOut: () => Promise<{ error: Error | null }>;
+  };
+  rpc: (fn: string, params?: Record<string, unknown>) => unknown;
+  storage: {
+    from: (bucket: string) => unknown;
+  };
 }
 
 export interface DatabaseRow {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface QueryResult<T = DatabaseRow> {
@@ -356,19 +361,23 @@ export type DeepPartial<T> = {
 // Type Guards
 // ============================================
 
-export function isApiError(response: any): response is ApiError {
-  return response && typeof response.error === 'string';
+export function isApiError(response: unknown): response is ApiError {
+  return response !== null && typeof response === 'object' && 'error' in response && typeof (response as ApiError).error === 'string';
 }
 
-export function isApiSuccess<T>(response: any): response is ApiSuccess<T> {
-  return response && 'data' in response;
+export function isApiSuccess<T>(response: unknown): response is ApiSuccess<T> {
+  return response !== null && typeof response === 'object' && 'data' in response;
 }
 
-export function isPaginatedResponse<T>(response: any): response is PaginatedResponse<T> {
+export function isPaginatedResponse<T>(response: unknown): response is PaginatedResponse<T> {
   return (
-    response &&
-    Array.isArray(response.data) &&
-    typeof response.total === 'number' &&
-    typeof response.page === 'number'
+    response !== null &&
+    typeof response === 'object' &&
+    'data' in response &&
+    'total' in response &&
+    'page' in response &&
+    Array.isArray((response as PaginatedResponse<T>).data) &&
+    typeof (response as PaginatedResponse<T>).total === 'number' &&
+    typeof (response as PaginatedResponse<T>).page === 'number'
   );
 }

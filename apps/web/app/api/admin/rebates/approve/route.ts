@@ -5,8 +5,11 @@ import { checkAdminRole } from '@/lib/middleware/admin';
 export async function POST(request: NextRequest) {
   try {
     // SECURITY: Require admin authentication for rebate approval/payment
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+    const { user } = authCheck;
 
     const { rebateId, action, paymentMethod, paymentReference, notes } = await request.json();
 
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       approved_by: user.id,
       approved_at: new Date().toISOString(),
     };

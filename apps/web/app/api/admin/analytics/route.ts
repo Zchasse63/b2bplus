@@ -7,8 +7,10 @@ export async function GET(request: Request) {
   try {
     // SECURITY FIX: Use standard admin authorization check
     // Previous code checked organization_members table which was wrong
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
@@ -30,16 +32,16 @@ export async function GET(request: Request) {
       default:
         return NextResponse.json({ error: "Invalid analytics type" }, { status: 400 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Analytics error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch analytics" },
+      { error: error instanceof Error ? error.message : "Failed to fetch analytics" },
       { status: 500 }
     );
   }
 }
 
-async function getOverviewAnalytics(supabase: any, days: number) {
+async function getOverviewAnalytics(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, days: number) {
   // Get revenue trends
   const { data: revenueTrends, error: trendsError } = await supabase.rpc(
     "get_revenue_trends",
@@ -89,7 +91,7 @@ async function getOverviewAnalytics(supabase: any, days: number) {
   });
 }
 
-async function getSalesAnalytics(supabase: any, days: number) {
+async function getSalesAnalytics(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }, days: number) {
   // Get revenue trends
   const { data: revenueTrends, error: trendsError } = await supabase.rpc(
     "get_revenue_trends",
@@ -111,7 +113,7 @@ async function getSalesAnalytics(supabase: any, days: number) {
   });
 }
 
-async function getCustomerAnalytics(supabase: any) {
+async function getCustomerAnalytics(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }) {
   const { data: topCustomers, error } = await supabase
     .from("top_customers")
     .select("*")
@@ -136,7 +138,7 @@ async function getCustomerAnalytics(supabase: any) {
   });
 }
 
-async function getProductAnalytics(supabase: any) {
+async function getProductAnalytics(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }) {
   const { data: topProducts, error } = await supabase
     .from("top_products")
     .select("*")
@@ -159,7 +161,7 @@ async function getProductAnalytics(supabase: any) {
   });
 }
 
-async function getCategoryAnalytics(supabase: any) {
+async function getCategoryAnalytics(supabase: { from: (table: string) => any; auth?: any; rpc?: (fn: string, params?: any) => any }) {
   const { data: categoryPerf, error } = await supabase
     .from("category_performance")
     .select("*");

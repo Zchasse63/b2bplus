@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PageHeader, Card, Button, Modal, ProductCard, Input, Badge } from '@/components/b2b';
@@ -38,53 +38,7 @@ export default function CartPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  // Fetch recommendations based on cart items
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      if (cartItems.length === 0) {
-        setLoadingRecommendations(false);
-        return;
-      }
-
-      try {
-        // Get recommendations for the first product in cart
-        const firstProductId = cartItems[0].product_id;
-        const response = await fetch(`/api/recommendations?productId=${firstProductId}&type=also_bought&limit=4`);
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.recommendations && data.recommendations.length > 0) {
-            // Fetch full product details
-            const productIds = data.recommendations.map((r: any) => r.recommended_product_id);
-
-            // SECURITY FIX: No SQL string concatenation - use parameterized query and filter client-side
-            const { data: products } = await supabase
-              .from('products')
-              .select('id, name, sku, base_price, image_url, category')
-              .in('id', productIds);
-
-            // Filter out cart items client-side (safer than SQL string concatenation)
-            const cartProductIds = new Set(cartItems.map(item => item.product_id));
-            const filtered = (products || []).filter(p => !cartProductIds.has(p.id));
-
-            setRecommendations(filtered);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching recommendations:', error);
-      } finally {
-        setLoadingRecommendations(false);
-      }
-    };
-
-    fetchRecommendations();
-  }, [cartItems]);
-
-  async function loadCart() {
+  const loadCart = useCallback(async () => {
     try {
       const {
         data: { user },
@@ -106,7 +60,56 @@ export default function CartPage() {
       console.error('Error loading cart:', err);
     }
     setLoading(false);
-  }
+  }, [router, supabase]);
+
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
+
+  // Fetch recommendations based on cart items
+  const fetchRecommendations = useCallback(async () => {
+      if (cartItems.length === 0) {
+        setLoadingRecommendations(false);
+        return;
+      }
+
+      try {
+        // Get recommendations for the first product in cart
+        const firstProductId = cartItems[0].product_id;
+        const response = await fetch(`/api/recommendations?productId=${firstProductId}&type=also_bought&limit=4`);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.recommendations && data.recommendations.length > 0) {
+            // Fetch full product details
+            interface Recommendation {
+              recommended_product_id: string;
+            }
+            const productIds = data.recommendations.map((r: Recommendation) => r.recommended_product_id);
+
+            // SECURITY FIX: No SQL string concatenation - use parameterized query and filter client-side
+            const { data: products } = await supabase
+              .from('products')
+              .select('id, name, sku, base_price, image_url, category')
+              .in('id', productIds);
+
+            // Filter out cart items client-side (safer than SQL string concatenation)
+            const cartProductIds = new Set(cartItems.map(item => item.product_id));
+            const filtered = (products || []).filter(p => !cartProductIds.has(p.id));
+
+            setRecommendations(filtered);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching recommendations:', error);
+      } finally {
+        setLoadingRecommendations(false);
+      }
+  }, [cartItems, supabase]);
+
+  useEffect(() => {
+    fetchRecommendations();
+  }, [fetchRecommendations]);
 
   async function updateQuantity(itemId: string, newQuantity: number) {
     if (newQuantity < 1) return;
@@ -228,10 +231,10 @@ export default function CartPage() {
     return (
       <div className="mt-3 animate-fadeIn">
         <Card padding="lg" className="text-center">
-          <FiShoppingCart className="mx-auto mb-4 h-24 w-24 text-gray-300 dark:text-b2b-gray-500" />
-          <h2 className="mb-2 text-2xl font-bold text-b2b-dark dark:text-white">
+          <FiShoppingCart className="mx-auto mb-4 h-24 w-24 text-gray-300 dark:text-b2b-gray-500" aria-hidden="true" />
+          <h1 className="mb-2 text-2xl font-bold text-b2b-dark dark:text-white">
             Your cart is empty
-          </h2>
+          </h1>
           <p className="mb-6 text-b2b-gray-500 dark:text-b2b-gray-500">
             Add some products to your cart to get started
           </p>
@@ -253,7 +256,7 @@ export default function CartPage() {
         actions={
           <Button
             variant="secondary"
-            icon={<FiArrowRight />}
+            icon={<FiArrowRight aria-hidden="true" />}
             onClick={() => router.push('/checkout')}
           >
             Proceed to Checkout
@@ -282,7 +285,7 @@ export default function CartPage() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-b2b-gray-500">
-                        <FiShoppingCart className="h-8 w-8" />
+                        <FiShoppingCart className="h-8 w-8" aria-hidden="true" />
                       </div>
                     )}
                   </div>
@@ -306,16 +309,19 @@ export default function CartPage() {
                       <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-white/10">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500"
+                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500 focus:outline-none focus:ring-2 focus:ring-b2b-yellow"
+                          aria-label={`Decrease quantity of ${item.products.name}`}
+                          disabled={item.quantity <= 1}
                         >
                           -
                         </button>
-                        <span className="min-w-[2rem] text-center font-semibold text-b2b-dark dark:text-white">
+                        <span className="min-w-[2rem] text-center font-semibold text-b2b-dark dark:text-white" aria-label={`Quantity: ${item.quantity}`}>
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500"
+                          className="px-3 py-1 text-b2b-gray-500 hover:text-b2b-yellow dark:text-b2b-gray-500 focus:outline-none focus:ring-2 focus:ring-b2b-yellow"
+                          aria-label={`Increase quantity of ${item.products.name}`}
                         >
                           +
                         </button>
@@ -323,7 +329,7 @@ export default function CartPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        icon={<FiTrash2 />}
+                        icon={<FiTrash2 aria-hidden="true" />}
                         onClick={() => setDeleteModal({ open: true, item })}
                       >
                         Remove
@@ -369,7 +375,7 @@ export default function CartPage() {
                       size="sm"
                       onClick={applyPromoCode}
                       loading={applyingPromo}
-                      icon={<FiTag />}
+                      icon={<FiTag aria-hidden="true" />}
                     >
                       Apply
                     </Button>
@@ -378,7 +384,7 @@ export default function CartPage() {
               ) : (
                 <div className="flex items-center justify-between bg-b2b-green-50 dark:bg-b2b-green-900/20 p-3 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <FiCheck className="h-5 w-5 text-b2b-green" />
+                    <FiCheck className="h-5 w-5 text-b2b-green" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-semibold text-b2b-green">
                         {appliedPromo.code}
@@ -390,9 +396,10 @@ export default function CartPage() {
                   </div>
                   <button
                     onClick={removePromoCode}
-                    className="text-b2b-gray-500 hover:text-b2b-error transition-colors"
+                    className="text-b2b-gray-500 hover:text-b2b-error transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-label="Remove promo code"
                   >
-                    <FiX className="h-5 w-5" />
+                    <FiX className="h-5 w-5" aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -420,7 +427,7 @@ export default function CartPage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-b2b-green">
-                  <FiCheck className="h-5 w-5" />
+                  <FiCheck className="h-5 w-5" aria-hidden="true" />
                   <span className="font-semibold">You qualify for free shipping!</span>
                 </div>
               )}
@@ -464,7 +471,7 @@ export default function CartPage() {
             <Button
               variant="primary"
               className="mt-6 w-full"
-              icon={<FiArrowRight />}
+              icon={<FiArrowRight aria-hidden="true" />}
               onClick={() => router.push('/checkout')}
             >
               Checkout

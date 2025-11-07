@@ -259,8 +259,9 @@ export default async function globalSetup() {
     }
 
     console.log('Global setup complete!')
-  } catch (error: any) {
-    console.error('Error in global setup:', error.message)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in global setup:', message)
     console.warn('Tests may fail due to missing test users.')
   }
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, DataTable, Button } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiToggleLeft, FiToggleRight, FiFlag, FiInfo } from 'react-icons/fi';
 
 interface FeatureFlag {
@@ -12,7 +13,7 @@ interface FeatureFlag {
   feature_name: string;
   enabled: boolean;
   description: string;
-  config: any;
+  config: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -66,7 +67,11 @@ export default function AdminFeaturesPage() {
 
   const toggleFeature = async (featureName: string, currentlyEnabled: boolean) => {
     if (!isSuperAdmin) {
-      alert('Only super admins can toggle feature flags');
+      toast({
+        title: 'Permission Denied',
+        description: 'Only super admins can toggle feature flags',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -81,14 +86,23 @@ export default function AdminFeaturesPage() {
       if (error) throw error;
 
       // Update local state
-      setFeatures(features.map(f => 
-        f.feature_name === featureName 
+      setFeatures(features.map(f =>
+        f.feature_name === featureName
           ? { ...f, enabled: !currentlyEnabled, updated_at: new Date().toISOString() }
           : f
       ));
+
+      toast({
+        title: 'Success',
+        description: `Feature ${!currentlyEnabled ? 'enabled' : 'disabled'} successfully`,
+      });
     } catch (error) {
       console.error('Error toggling feature:', error);
-      alert('Failed to toggle feature flag');
+      toast({
+        title: 'Error',
+        description: 'Failed to toggle feature flag',
+        variant: 'destructive',
+      });
     } finally {
       setToggling(null);
     }

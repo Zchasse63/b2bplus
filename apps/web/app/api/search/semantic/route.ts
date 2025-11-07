@@ -86,9 +86,14 @@ export async function POST(request: NextRequest) {
       return performKeywordSearch(supabase, query, limit);
     }
 
+    interface SemanticResult {
+      product_id: string;
+      similarity: number;
+    }
+
     // Get full product details
-    const productIds = semanticResults.map((r: any) => r.product_id);
-    
+    const productIds = semanticResults.map((r: SemanticResult) => r.product_id);
+
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('*')
@@ -101,7 +106,7 @@ export async function POST(request: NextRequest) {
 
     // Merge similarity scores with product data
     const results = products?.map(product => {
-      const match = semanticResults.find((r: any) => r.product_id === product.id);
+      const match = semanticResults.find((r: SemanticResult) => r.product_id === product.id);
       return {
         ...product,
         similarity: match?.similarity || 0,
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
         const keywordData = await keywordResults.json();
         const combinedResults = [
           ...results,
-          ...keywordData.products.filter((kp: any) => 
+          ...keywordData.products.filter((kp: { id: string }) => 
             !results.some(sr => sr.id === kp.id)
           )
         ];
@@ -166,7 +171,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Fallback keyword search
-async function performKeywordSearch(supabase: any, query: string, limit: number) {
+async function performKeywordSearch(supabase: { from: (table: string) => any }, query: string, limit: number) {
   // SECURITY FIX: Sanitize search terms to prevent SQL injection
   const searchTerms = query
     .toLowerCase()

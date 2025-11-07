@@ -17,7 +17,7 @@ import {
 } from 'react-icons/md';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export default function Header() {
   const pathname = usePathname();
@@ -27,8 +27,7 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const getUser = async () => {
+  const getUser = useCallback(async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -52,10 +51,11 @@ export default function Header() {
 
         setIsAdmin(membership?.role === 'admin' || membership?.role === 'super_admin');
       }
-    };
+  }, [pathname, supabase]);
 
+  useEffect(() => {
     getUser();
-  }, [pathname]);
+  }, [getUser]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -69,8 +69,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-b2b-gray-200 bg-white/95 backdrop-blur shadow-b2b-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <MdInventory className="h-6 w-6 text-b2b-blue" />
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold" aria-label="B2B+ Home">
+          <MdInventory className="h-6 w-6 text-b2b-blue" aria-hidden="true" />
           <span className="hidden text-b2b-blue sm:inline">
             B2B+
           </span>
@@ -204,6 +204,7 @@ export default function Header() {
                     size="sm"
                     icon={<MdPerson className="h-5 w-5" />}
                     iconPosition="left"
+                    aria-label="View your profile"
                   />
                 </Link>
               </Tooltip>
@@ -214,6 +215,7 @@ export default function Header() {
                   onClick={handleSignOut}
                   icon={<MdLogout className="h-5 w-5" />}
                   iconPosition="left"
+                  aria-label="Sign out"
                 />
               </Tooltip>
             </>

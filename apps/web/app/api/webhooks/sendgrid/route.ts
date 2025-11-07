@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       processed: events.length 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('SendGrid webhook error:', error);
     return NextResponse.json({
       error: 'Failed to process webhook',
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 /**
  * Process individual SendGrid event
  */
-async function processEvent(event: any) {
+async function processEvent(event: Record<string, unknown>) {
   const {
     event: eventType,
     email,
@@ -238,7 +238,7 @@ async function processEvent(event: any) {
 /**
  * Handle delivered event
  */
-async function handleDelivered(recipient: any, timestamp: string) {
+async function handleDelivered(recipient: { email?: string; [key: string]: unknown }, timestamp: string) {
   await supabase
     .from('email_campaign_recipients')
     .update({
@@ -373,7 +373,7 @@ async function handleClick(
 /**
  * Handle bounce event
  */
-async function handleBounce(recipient: any, timestamp: string, reason?: string) {
+async function handleBounce(recipient: { email?: string; [key: string]: unknown }, timestamp: string, reason?: string) {
   await supabase
     .from('email_campaign_recipients')
     .update({
@@ -415,7 +415,7 @@ async function handleBounce(recipient: any, timestamp: string, reason?: string) 
 /**
  * Handle dropped event
  */
-async function handleDropped(recipient: any, timestamp: string, reason?: string) {
+async function handleDropped(recipient: { email?: string; [key: string]: unknown }, timestamp: string, reason?: string) {
   await supabase
     .from('email_campaign_recipients')
     .update({
@@ -447,7 +447,7 @@ async function handleDropped(recipient: any, timestamp: string, reason?: string)
 /**
  * Handle spam report event
  */
-async function handleSpamReport(recipient: any, timestamp: string) {
+async function handleSpamReport(recipient: { email?: string; [key: string]: unknown }, timestamp: string) {
   await supabase
     .from('email_campaign_recipients')
     .update({
@@ -492,7 +492,7 @@ async function handleSpamReport(recipient: any, timestamp: string) {
 /**
  * Handle unsubscribe event
  */
-async function handleUnsubscribe(recipient: any, timestamp: string) {
+async function handleUnsubscribe(recipient: { email?: string; [key: string]: unknown }, timestamp: string) {
   // Mark lead as unsubscribed
   if (recipient.lead_id) {
     await supabase

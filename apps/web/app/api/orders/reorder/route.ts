@@ -75,61 +75,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process each item
-    let itemsAdded = 0;
+    // OPTIMIZED: Batch fetch all products in a single query
+    const productIds = orderItems.map(item => item.product_id);
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('id, name, is_active')
+      .in('id', productIds);
+
+    if (productsError) {
+      return NextResponse.json(
+        { error: 'Failed to fetch products' },
+        { status: 500 }
+      );
+    }
+
+    // Create a Set of valid product IDs for fast lookup
+    const validProductIds = new Set(
+      (products || []).filter(p => p.is_active).map(p => p.id)
+    );
+
+    // ATOMIC: Use database function to handle race conditions
+    // This ensures that concurrent requests don't cause duplicate inserts or lost updates
+    const itemsToUpsert: Array<{
+      user_id: string;
+      product_id: string;
+      quantity: number;
+      organization_id: string;
+    }> = [];
     let itemsSkipped = 0;
     const skippedProducts: string[] = [];
 
+    // Process each item - prepare upsert data
     for (const item of orderItems) {
-      // Check if product still exists
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .select('id, name')
-        .eq('id', item.product_id)
-        .single();
-
-      if (productError || !product) {
+      // Check if product is valid and active
+      if (!validProductIds.has(item.product_id)) {
         itemsSkipped++;
         skippedProducts.push(item.product_id);
         continue;
       }
 
-      // Check if item already in cart
-      const { data: existingCartItem } = await supabase
-        .from('cart_items')
-        .select('id, quantity')
-        .eq('user_id', user.id)
-        .eq('product_id', item.product_id)
-        .single();
+      itemsToUpsert.push({
+        user_id: user.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        organization_id: organizationId
+      });
+    }
 
-      if (existingCartItem) {
-        // Update existing cart item (add quantities)
-        const { error: updateError } = await supabase
-          .from('cart_items')
-          .update({
-            quantity: existingCartItem.quantity + item.quantity,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingCartItem.id);
+    // ATOMIC: Use database function to upsert items with proper concurrency control
+    // Each call is atomic and race-condition safe
+    let itemsAdded = 0;
+    if (itemsToUpsert.length > 0) {
+      // Use Promise.all to process items in parallel
+      const upsertPromises = itemsToUpsert.map(async (item) => {
+        const { data, error } = await supabase.rpc('upsert_cart_item_atomic', {
+          p_user_id: item.user_id,
+          p_product_id: item.product_id,
+          p_quantity: item.quantity,
+          p_organization_id: item.organization_id
+        });
 
-        if (!updateError) {
-          itemsAdded++;
+        if (error) {
+          console.error('Error upserting cart item:', error);
+          return false;
         }
-      } else {
-        // Add new cart item
-        const { error: insertError } = await supabase
-          .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: item.product_id,
-            quantity: item.quantity,
-            organization_id: organizationId
-          });
 
-        if (!insertError) {
-          itemsAdded++;
-        }
-      }
+        return data?.[0]?.success || false;
+      });
+
+      const results = await Promise.all(upsertPromises);
+      itemsAdded = results.filter(success => success).length;
     }
 
     // Build response message

@@ -15,22 +15,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Check rate limiting (max 3 requests per hour per email/phone)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    
-    const { data: recentTokens } = await supabase
-      .from('magic_link_tokens')
-      .select('id')
-      .eq(email ? 'email' : 'phone', email || phone)
-      .gte('created_at', oneHourAgo);
-
-    if (recentTokens && recentTokens.length >= 3) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
-    }
-
     // Check if user exists
     let userId: string | null = null;
     let leadId: string | null = null;
@@ -64,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique token
     const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-    
+
     // Set expiration (10 minutes from now)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -72,26 +56,44 @@ export async function POST(request: NextRequest) {
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
-    // Store magic link token
-    const { error: tokenError } = await supabase
-      .from('magic_link_tokens')
-      .insert({
-        user_id: userId,
-        lead_id: leadId,
-        token,
-        email: email || null,
-        phone: phone || null,
-        purpose,
-        redirect_url: redirectUrl,
-        expires_at: expiresAt,
-        ip_address: ipAddress,
-        user_agent: userAgent,
+    // Use atomic database function to check rate limit and insert token
+    // This prevents race conditions by doing both operations atomically
+    const { data: result, error: rpcError } = await supabase
+      .rpc('insert_magic_link_token_with_rate_limit', {
+        p_user_id: userId,
+        p_lead_id: leadId,
+        p_token: token,
+        p_email: email || null,
+        p_phone: phone || null,
+        p_purpose: purpose,
+        p_redirect_url: redirectUrl || null,
+        p_expires_at: expiresAt,
+        p_ip_address: ipAddress,
+        p_user_agent: userAgent,
       });
 
-    if (tokenError) {
-      console.error('Error creating magic link token:', tokenError);
+    if (rpcError) {
+      console.error('Error calling magic link function:', rpcError);
       return NextResponse.json(
         { error: 'Failed to generate magic link' },
+        { status: 500 }
+      );
+    }
+
+    // Check the result from the function
+    if (!result || result.length === 0 || !result[0].success) {
+      const errorMessage = result?.[0]?.error_message || 'Failed to generate magic link';
+
+      // Check if it's a rate limit error
+      if (errorMessage.includes('Rate limit')) {
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: errorMessage },
         { status: 500 }
       );
     }

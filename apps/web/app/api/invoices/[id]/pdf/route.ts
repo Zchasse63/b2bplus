@@ -72,7 +72,7 @@ export async function GET(
   }
 }
 
-function generateInvoicePDF(invoice: any): string {
+function generateInvoicePDF(invoice: Record<string, unknown>): string {
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',

@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Button, Input, Textarea, Select, Modal, PageHeader } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiArrowLeft, FiSave, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
+import { productSchema } from '@/lib/validation/schemas';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -47,7 +49,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       .single();
 
     if (error || !data) {
-      alert('Product not found');
+      toast({
+        title: 'Error',
+        description: 'Product not found',
+        variant: 'destructive',
+      });
       router.push('/admin/products');
       return;
     }
@@ -82,24 +88,64 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     try {
       const supabase = createClient();
 
+      // Prepare data for validation
       const productData = {
         name: formData.name,
         sku: formData.sku,
         category: formData.category,
-        subcategory: formData.subcategory || null,
-        brand: formData.brand || null,
-        description: formData.description || null,
-        base_price: parseFloat(formData.base_price),
-        unit_of_measure: formData.unit_of_measure,
-        units_per_case: formData.units_per_case ? parseInt(formData.units_per_case) : null,
-        weight_lbs: formData.weight_lbs ? parseFloat(formData.weight_lbs) : null,
-        in_stock: formData.in_stock === 'true',
-        image_url: formData.image_url || null,
+        subcategory: formData.subcategory || undefined,
+        brand: formData.brand || undefined,
+        description: formData.description,
+        basePrice: parseFloat(formData.base_price),
+        unitOfMeasure: formData.unit_of_measure as 'case' | 'each' | 'box' | 'pound' | 'kilogram' | 'liter' | 'gallon',
+        unitsPerCase: formData.units_per_case ? parseInt(formData.units_per_case) : undefined,
+        weightLbs: formData.weight_lbs ? parseFloat(formData.weight_lbs) : undefined,
+        inStock: formData.in_stock === 'true',
+        imageUrl: formData.image_url || undefined,
+        isActive: true,
+      };
+
+      // Validate with Zod
+      const validation = productSchema.safeParse(productData);
+
+      if (!validation.success) {
+        const fieldErrors = validation.error.flatten().fieldErrors;
+        const errorMessages = Object.entries(fieldErrors)
+          .map(([field, errors]) => `${field}: ${errors?.[0]}`)
+          .join(', ');
+
+        toast({
+          title: 'Validation Error',
+          description: errorMessages,
+          variant: 'destructive',
+        });
+        setSaving(false);
+        return;
+      }
+
+      // Use validated data
+      const validatedData = validation.data;
+
+      // Convert back to database column names
+      const dbData = {
+        name: validatedData.name,
+        sku: validatedData.sku,
+        category: validatedData.category,
+        subcategory: validatedData.subcategory || null,
+        brand: validatedData.brand || null,
+        description: validatedData.description,
+        base_price: validatedData.basePrice,
+        unit_of_measure: validatedData.unitOfMeasure,
+        units_per_case: validatedData.unitsPerCase || null,
+        weight_lbs: validatedData.weightLbs || null,
+        in_stock: validatedData.inStock,
+        is_active: validatedData.isActive,
+        image_url: validatedData.imageUrl || null,
       };
 
       const { error } = await supabase
         .from('products')
-        .update(productData)
+        .update(dbData)
         .eq('id', params.id);
 
       if (error) throw error;
@@ -107,7 +153,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       setSuccessModal(true);
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Failed to update product. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to update product. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
@@ -125,7 +175,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       router.push('/admin/products');
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('Failed to delete product. Please try again.');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete product. Please try again.',
+        variant: 'destructive',
+      });
       setDeleting(false);
     }
   };

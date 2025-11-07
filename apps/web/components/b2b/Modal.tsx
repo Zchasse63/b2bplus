@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from './Button';
 import { FiX } from 'react-icons/fi';
@@ -27,6 +27,47 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md',
   className,
 }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  // Focus trap and accessibility
+  useEffect(() => {
+    if (isOpen) {
+      // Store currently focused element
+      previousActiveElement.current = document.activeElement as HTMLElement;
+
+      // Focus modal
+      modalRef.current?.focus();
+
+      // Trap focus within modal
+      const handleTabKey = (e: KeyboardEvent) => {
+        if (!modalRef.current || e.key !== 'Tab') return;
+
+        const focusableElements = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      };
+
+      document.addEventListener('keydown', handleTabKey);
+
+      return () => {
+        document.removeEventListener('keydown', handleTabKey);
+        // Restore focus
+        previousActiveElement.current?.focus();
+      };
+    }
+  }, [isOpen]);
+
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -34,11 +75,11 @@ export const Modal: React.FC<ModalProps> = ({
         onClose();
       }
     };
-    
+
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-  
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
@@ -46,7 +87,7 @@ export const Modal: React.FC<ModalProps> = ({
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -62,17 +103,25 @@ export const Modal: React.FC<ModalProps> = ({
   };
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? "modal-title" : undefined}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black bg-opacity-50 animate-fade-in"
         onClick={onClose}
+        aria-hidden="true"
       />
-      
+
       {/* Modal */}
       <div
+        ref={modalRef}
+        tabIndex={-1}
         className={cn(
-          'relative bg-white rounded-lg shadow-b2b-lg w-full animate-slide-up',
+          'relative bg-white rounded-lg shadow-b2b-lg w-full animate-slide-up focus:outline-none',
           sizes[size],
           className
         )}
@@ -80,21 +129,22 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Header */}
         {title && (
           <div className="flex items-center justify-between p-6 border-b border-b2b-gray-100">
-            <h2 className="text-xl font-semibold text-b2b-dark">{title}</h2>
+            <h2 id="modal-title" className="text-xl font-semibold text-b2b-dark">{title}</h2>
             <button
               onClick={onClose}
-              className="text-b2b-gray-500 hover:text-b2b-dark transition-colors"
+              className="text-b2b-gray-500 hover:text-b2b-dark transition-colors focus:outline-none focus:ring-2 focus:ring-b2b-blue rounded"
+              aria-label="Close dialog"
             >
-              <FiX className="w-6 h-6" />
+              <FiX className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
         )}
-        
+
         {/* Content */}
         <div className="p-6">
           {children}
         </div>
-        
+
         {/* Footer */}
         {footer && (
           <div className="flex items-center justify-end gap-3 p-6 border-t border-b2b-gray-100">

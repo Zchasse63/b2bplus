@@ -33,6 +33,9 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -40,12 +43,12 @@ export default function AdminCustomersPage() {
     } else if (isAdmin) {
       loadCustomers();
     }
-  }, [isAdmin, adminLoading, router]);
+  }, [isAdmin, adminLoading, router, page]);
 
   const loadCustomers = async () => {
     try {
-      // Use optimized endpoint that avoids N+1 queries
-      const response = await fetch('/api/admin/customers/stats');
+      // Use optimized endpoint that avoids N+1 queries with pagination
+      const response = await fetch(`/api/admin/customers/stats?page=${page}&pageSize=${pageSize}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch customer stats');
@@ -55,6 +58,9 @@ export default function AdminCustomersPage() {
 
       if (data.success && data.customers) {
         setCustomers(data.customers);
+        if (data.pagination) {
+          setTotalCount(data.pagination.totalCount);
+        }
       } else {
         throw new Error('Invalid response format');
       }
@@ -258,7 +264,64 @@ export default function AdminCustomersPage() {
           </p>
         </Card>
       ) : (
-        <DataTable data={filteredCustomers} columns={columns} />
+        <>
+          <DataTable data={filteredCustomers} columns={columns} />
+
+          {/* Pagination Controls */}
+          {!searchQuery && totalCount > pageSize && (
+            <Card className="mt-5 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} customers
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.ceil(totalCount / pageSize) }, (_, i) => i + 1)
+                      .filter(p => {
+                        // Show first page, last page, current page, and pages around current
+                        return p === 1 ||
+                               p === Math.ceil(totalCount / pageSize) ||
+                               (p >= page - 1 && p <= page + 1);
+                      })
+                      .map((p, i, arr) => {
+                        // Add ellipsis if there's a gap
+                        const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                        return (
+                          <div key={p} className="flex items-center gap-1">
+                            {showEllipsis && <span className="px-2 text-gray-400">...</span>}
+                            <Button
+                              variant={p === page ? 'primary' : 'ghost'}
+                              size="sm"
+                              onClick={() => setPage(p)}
+                              className="min-w-[40px]"
+                            >
+                              {p}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={page >= Math.ceil(totalCount / pageSize)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

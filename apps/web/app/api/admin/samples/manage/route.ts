@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (action === 'approve') {
       updateData.status = 'approved';

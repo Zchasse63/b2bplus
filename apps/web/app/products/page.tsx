@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { PageHeader, Card, ProductCard, Input, Button, Select } from '@/components/b2b';
@@ -10,7 +10,6 @@ import type { Product } from '@b2b-plus/supabase';
 export default function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -19,16 +18,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    filterAndSortProducts();
-  }, [products, searchQuery, selectedCategory, sortBy]);
-
-  async function fetchProducts() {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('products')
@@ -39,16 +29,17 @@ export default function ProductsPage() {
       setProducts(data);
     }
     setLoading(false);
-  }
+  }, [supabase]);
 
-  async function fetchCategories() {
+  const fetchCategories = useCallback(async () => {
     const { data } = await supabase.from('categories').select('*');
     if (data) {
       setCategories(data);
     }
-  }
+  }, [supabase]);
 
-  function filterAndSortProducts() {
+  // Memoized filtered and sorted products
+  const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
     // Search filter
@@ -79,27 +70,53 @@ export default function ProductsPage() {
       }
     });
 
-    setFilteredProducts(filtered);
-  }
+    return filtered;
+  }, [products, searchQuery, selectedCategory, sortBy]);
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, [fetchProducts, fetchCategories]);
 
   async function handleAddToCart(productId: string) {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       router.push('/auth/login');
       return;
     }
 
-    // Add to cart logic
-    const { error } = await supabase.from('cart_items').insert({
-      user_id: user.id,
-      product_id: productId,
-      quantity: 1,
+    // Get user's organization
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('current_organization_id')
+      .eq('id', user.id)
+      .single();
+
+    const organizationId = profile?.current_organization_id;
+
+    if (!organizationId) {
+      console.error('No organization found for user');
+      return;
+    }
+
+    // ATOMIC: Use database function to handle race conditions
+    // This atomically inserts or updates the cart item with quantity increment
+    const { data, error } = await supabase.rpc('upsert_cart_item_atomic', {
+      p_user_id: user.id,
+      p_product_id: productId,
+      p_quantity: 1,
+      p_organization_id: organizationId
     });
 
-    if (!error) {
-      // Show success notification (you can add a toast here)
-      console.log('Added to cart');
+    if (error) {
+      console.error('Error adding to cart:', error);
+      return;
+    }
+
+    if (data?.[0]?.success) {
+      const wasInsert = data[0].was_insert;
+      console.log(wasInsert ? 'Added to cart' : 'Cart updated - quantity increased');
     }
   }
 
@@ -135,12 +152,14 @@ export default function ProductsPage() {
               size="sm"
               icon={<FiGrid />}
               onClick={() => setViewMode('grid')}
+              aria-label="Grid view"
             />
             <Button
               variant={viewMode === 'list' ? 'primary' : 'ghost'}
               size="sm"
               icon={<FiList />}
               onClick={() => setViewMode('list')}
+              aria-label="List view"
             />
           </div>
         }
@@ -176,8 +195,8 @@ export default function ProductsPage() {
       {filteredProducts.length === 0 ? (
         <Card padding="lg" className="text-center">
           <div className="text-b2b-gray-500">
-            <FiSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
-            <h3 className="mb-2 text-lg font-semibold">No products found</h3>
+            <FiSearch className="mx-auto mb-4 h-16 w-16 opacity-30" aria-hidden="true" />
+            <h2 className="mb-2 text-lg font-semibold">No products found</h2>
             <p className="text-sm">Try adjusting your search or filters</p>
           </div>
         </Card>

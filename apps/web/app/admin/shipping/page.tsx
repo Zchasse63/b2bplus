@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { DataTable, Button, Card, Badge, Input, Modal } from '@/components/b2b';
+import { toast } from '@/hooks/use-toast';
 import { FiTruck, FiMapPin, FiPhone, FiMail, FiEdit, FiTrash2, FiPlus, FiSearch } from 'react-icons/fi';
 
 interface ShippingAddress {
@@ -39,15 +40,7 @@ export default function AdminShippingPage() {
   });
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      router.push('/');
-    } else if (isAdmin) {
-      loadAddresses();
-    }
-  }, [isAdmin, adminLoading, router]);
-
-  const loadAddresses = async () => {
+  const loadAddresses = useCallback(async () => {
     try {
       const supabase = createClient();
       
@@ -67,7 +60,15 @@ export default function AdminShippingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!adminLoading && !isAdmin) {
+      router.push('/');
+    } else if (isAdmin) {
+      loadAddresses();
+    }
+  }, [isAdmin, adminLoading, router, loadAddresses]);
 
   const handleDelete = async () => {
     if (!deleteModal.address) return;
@@ -84,9 +85,17 @@ export default function AdminShippingPage() {
 
       setAddresses(addresses.filter((a) => a.id !== deleteModal.address!.id));
       setDeleteModal({ open: false });
+      toast({
+        title: 'Success',
+        description: 'Shipping address deleted successfully',
+      });
     } catch (error) {
       console.error('Error deleting address:', error);
-      alert('Failed to delete shipping address');
+      toast({
+        title: 'Error',
+        description: 'Failed to delete shipping address',
+        variant: 'destructive',
+      });
     } finally {
       setDeleting(false);
     }

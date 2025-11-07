@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({ availability: availabilityByLocation });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

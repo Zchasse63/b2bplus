@@ -52,7 +52,19 @@ export async function GET(
       return NextResponse.json({ churn_risks: [] });
     }
 
-    // Calculate churn risk for each product
+    // OPTIMIZED: Batch fetch all products in a single query (instead of N queries)
+    const productIds = analytics.map(item => item.product_id);
+    const { data: products } = await supabase
+      .from("products")
+      .select("id, name, sku")
+      .in("id", productIds);
+
+    // Create a Map for fast product lookup
+    const productMap = new Map(
+      (products || []).map(p => [p.id, p])
+    );
+
+    // Calculate churn risk for each product (RPC calls in parallel)
     const churnRisks = await Promise.all(
       analytics.map(async (item) => {
         const { data: riskScore } = await supabase.rpc("calculate_churn_risk", {
@@ -60,12 +72,7 @@ export async function GET(
           product_id_param: item.product_id,
         });
 
-        // Get product details
-        const { data: product } = await supabase
-          .from("products")
-          .select("name, sku")
-          .eq("id", item.product_id)
-          .single();
+        const product = productMap.get(item.product_id);
 
         return {
           product_id: item.product_id,
@@ -83,10 +90,10 @@ export async function GET(
     churnRisks.sort((a, b) => b.risk_score - a.risk_score);
 
     return NextResponse.json({ churn_risks: churnRisks });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     );
   }

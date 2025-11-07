@@ -16,8 +16,11 @@ export async function DELETE(
 ) {
   try {
     // SECURITY: Check admin authorization
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+    const { user } = authCheck;
 
     const productId = params.id;
 
@@ -250,8 +253,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
 
     const productId = params.id;
 
@@ -289,8 +294,11 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { user, error: authError } = await checkAdminRole();
-    if (authError) return authError;
+    const authCheck = await checkAdminRole();
+    if (!authCheck.authorized) {
+      return NextResponse.json({ error: authCheck.error }, { status: authCheck.status });
+    }
+    const { user } = authCheck;
 
     const productId = params.id;
     const body = await request.json();

@@ -90,14 +90,16 @@ export async function sendEmail(options: SendEmailOptions) {
       to,
       subject,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('SendGrid send error:', error);
-    
-    if (error.response) {
-      console.error('SendGrid error body:', error.response.body);
+
+    if (error && typeof error === 'object' && 'response' in error) {
+      const errorWithResponse = error as { response: { body: unknown } };
+      console.error('SendGrid error body:', errorWithResponse.response.body);
     }
-    
-    throw new Error(`Failed to send email: ${error.message}`);
+
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to send email: ${message}`);
   }
 }
 
@@ -133,10 +135,11 @@ export async function sendBulkEmails(
         replyTo: options?.replyTo,
       });
       results.push(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       errors.push({
         to: recipient.to,
-        error: error.message,
+        error: message,
       });
     }
   }

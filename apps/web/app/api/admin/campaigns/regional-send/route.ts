@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
           message_id: sendResult.messageId,
         });
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Failed to send to ${lead.email}:`, error);
         errors.push({
           lead_id: lead.id,
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Regional campaign error:', error);
     return NextResponse.json({ 
       error: 'Failed to send campaign', 

@@ -23,19 +23,31 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       error,
       options,
       disabled,
+      id,
+      required,
       ...props
     },
     ref
   ) => {
+    // Generate a unique ID for accessibility
+    const selectId = id || `select-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substr(2, 9)}`;
+    const errorId = `${selectId}-error`;
+
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-b2b-dark mb-1.5">
+          <label htmlFor={selectId} className="block text-sm font-medium text-b2b-dark mb-1.5">
             {label}
+            {required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
           </label>
         )}
         <select
           ref={ref}
+          id={selectId}
+          required={required}
+          aria-required={required}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
           className={cn(
             'w-full rounded-lg border border-b2b-gray-300 bg-white px-4 py-2.5 text-b2b-dark',
             'focus:outline-none focus:ring-2 focus:ring-b2b-yellow focus:border-transparent',
@@ -54,7 +66,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className="mt-1.5 text-sm text-red-500">{error}</p>
+          <p id={errorId} className="mt-1.5 text-sm text-red-500" role="alert">
+            {error}
+          </p>
         )}
       </div>
     );
