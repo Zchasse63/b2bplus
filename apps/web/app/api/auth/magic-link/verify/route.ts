@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
@@ -45,36 +46,53 @@ export async function GET(request: NextRequest) {
 
     // If user_id exists, sign them in
     if (magicLinkToken.user_id) {
-      // Get user email from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', magicLinkToken.user_id)
-        .single();
-
-      if (profile?.email) {
-        // Sign in user using Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: profile.email,
-          password: magicLinkToken.token, // Use token as temporary password
-        });
-
-        // If password auth fails, try to sign in with OTP
-        if (authError) {
-          const { error: otpError } = await supabase.auth.signInWithOtp({
-            email: profile.email,
-          });
-
-          if (otpError) {
-            console.error('Error signing in user:', otpError);
-            return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
+      // SECURITY FIX: Use service role to create a valid session
+      // We've already validated the token, so we can safely create a session
+      const supabaseAdmin = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
           }
         }
+      );
+
+      // Generate a secure session for the user
+      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.createSession({
+        user_id: magicLinkToken.user_id
+      });
+
+      if (sessionError || !sessionData.session) {
+        console.error('Error creating session:', sessionError);
+        return NextResponse.redirect(new URL('/login?error=session_failed', request.url));
       }
 
-      // Redirect to intended page or dashboard
-      const redirectUrl = magicLinkToken.redirect_url || '/dashboard';
-      return NextResponse.redirect(new URL(redirectUrl, request.url));
+      // Set the session cookies
+      const response = NextResponse.redirect(
+        new URL(magicLinkToken.redirect_url || '/dashboard', request.url)
+      );
+
+      response.cookies.set({
+        name: 'sb-access-token',
+        value: sessionData.session.access_token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: sessionData.session.expires_in || 3600
+      });
+
+      response.cookies.set({
+        name: 'sb-refresh-token',
+        value: sessionData.session.refresh_token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      });
+
+      return response;
     }
 
     // If lead_id exists, create account and sign them in
