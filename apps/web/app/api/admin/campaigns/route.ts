@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { sanitizeCampaignHTML } from '@/lib/security/html-sanitizer';
 
 // GET all campaigns
 export async function GET(request: NextRequest) {
@@ -83,6 +84,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SECURITY: Sanitize HTML content to prevent XSS
+    // Campaign HTML could be created by admins, but we still need to sanitize
+    // to prevent stored XSS attacks
+    const sanitizedHtmlContent = htmlContent ? sanitizeCampaignHTML(htmlContent) : null;
+
     // Create campaign
     const { data: campaign, error: campaignError } = await supabase
       .from('email_campaigns')
@@ -90,7 +96,7 @@ export async function POST(request: NextRequest) {
         name,
         subject,
         template_id: templateId || null,
-        html_content: htmlContent,
+        html_content: sanitizedHtmlContent,
         text_content: textContent,
         target_audience: targetAudience || {},
         scheduled_at: scheduledAt || null,
@@ -179,10 +185,19 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // SECURITY: Sanitize HTML content if it's being updated
+    const sanitizedUpdates = { ...updates };
+    if (sanitizedUpdates.html_content) {
+      sanitizedUpdates.html_content = sanitizeCampaignHTML(sanitizedUpdates.html_content);
+    }
+    if (sanitizedUpdates.body_template) {
+      sanitizedUpdates.body_template = sanitizeCampaignHTML(sanitizedUpdates.body_template);
+    }
+
     const { data: updatedCampaign, error } = await supabase
       .from('email_campaigns')
       .update({
-        ...updates,
+        ...sanitizedUpdates,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

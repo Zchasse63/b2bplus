@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/gemini';
 import { sanitizeForPrompt } from '@/lib/security/prompt-sanitizer';
+import { sanitizeEmailHTML } from '@/lib/security/html-sanitizer';
 
 export async function POST(request: NextRequest) {
   try {
@@ -119,13 +120,21 @@ Return ONLY the personalized email in this exact JSON format:
               temperature: 0.7,
               systemPrompt: 'You are a B2B sales expert specializing in personalized email campaigns.'
             });
-            
+
             personalizedSubject = aiContent.subject || campaign.subject;
-            personalizedBody = aiContent.body || campaign.body_template;
+            // SECURITY: Sanitize AI-generated HTML to prevent XSS attacks
+            // The AI could potentially generate malicious HTML/JavaScript
+            personalizedBody = sanitizeEmailHTML(aiContent.body || campaign.body_template);
           } catch (parseError) {
             console.error('Error generating AI personalization:', parseError);
             // Fall back to template-based personalization
           }
+        }
+
+        // SECURITY: Also sanitize the campaign template body
+        // This protects against XSS in manually created campaigns
+        if (!useAI || !personalizedBody) {
+          personalizedBody = sanitizeEmailHTML(campaign.body_template);
         }
 
         // Apply template variables (fallback or additional personalization)
