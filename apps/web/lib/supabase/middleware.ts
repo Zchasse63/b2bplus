@@ -54,7 +54,59 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  // SECURITY: Check authentication and authorization for protected routes
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+
+  // Admin routes require authentication and admin role
+  if (pathname.startsWith('/admin')) {
+    // Redirect to login if not authenticated
+    if (error || !user) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Check admin role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+      // Redirect to home if not an admin
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/'
+      redirectUrl.searchParams.set('error', 'unauthorized')
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
+  // API admin routes require authentication and admin role
+  if (pathname.startsWith('/api/admin')) {
+    if (error || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      )
+    }
+  }
 
   return response
 }
