@@ -169,7 +169,7 @@ export default function ContactsPage() {
   const columns = [
     {
       key: 'name',
-      label: 'Name',
+      header: 'Name',
       render: (contact: Contact) => (
         <div>
           <p className="font-semibold text-b2b-text">
@@ -186,14 +186,14 @@ export default function ContactsPage() {
     },
     {
       key: 'organization',
-      label: 'Organization',
+      header: 'Organization',
       render: (contact: Contact) => (
         <span className="text-b2b-text">{contact.organizations?.name}</span>
       ),
     },
     {
       key: 'email',
-      label: 'Email',
+      header: 'Email',
       render: (contact: Contact) => (
         <div className="flex items-center gap-2">
           <FiMail className="h-4 w-4 text-b2b-gray-400" />
@@ -205,7 +205,7 @@ export default function ContactsPage() {
     },
     {
       key: 'phone',
-      label: 'Phone',
+      header: 'Phone',
       render: (contact: Contact) =>
         contact.phone ? (
           <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function ContactsPage() {
     },
     {
       key: 'role',
-      label: 'Role',
+      header: 'Role',
       render: (contact: Contact) => (
         <Badge
           variant={
@@ -237,7 +237,7 @@ export default function ContactsPage() {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      header: 'Actions',
       render: (contact: Contact) => (
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" icon={<FiEdit />} onClick={() => openEditModal(contact)} />
@@ -265,8 +265,7 @@ export default function ContactsPage() {
       <PageHeader
         title="Contact Management"
         subtitle="Manage customer contacts and relationships"
-        icon={<FiUsers />}
-        action={
+        actions={
           <Button
             variant="primary"
             icon={<FiPlus />}

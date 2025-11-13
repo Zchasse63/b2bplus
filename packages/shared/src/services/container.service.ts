@@ -153,23 +153,12 @@ export function calculateContainerLoad(
   }
 
   // Generate recommendation
-  let recommendation = ''
-  
-  if (bestOrientation.totalUnits === 0) {
-    recommendation = '❌ Product does not fit in this container'
-  } else if (warnings.length > 0) {
-    recommendation = '⚠️ Issues detected - Review warnings'
-  } else if (floorUtilization >= 80 && weightUtilization < 90) {
-    recommendation = '✅ Excellent fit - High space utilization with safe weight'
-  } else if (floorUtilization >= 60 && weightUtilization < 90) {
-    recommendation = '👍 Good fit - Acceptable utilization'
-  } else if (floorUtilization < 60) {
-    recommendation = '💡 Consider mixing products or using smaller container'
-  } else if (weightUtilization >= 90) {
-    recommendation = '⚠️ High weight utilization - Verify safety limits'
-  } else {
-    recommendation = '✓ Valid configuration'
-  }
+  const recommendation = generateRecommendation(
+    bestOrientation.totalUnits,
+    warnings.length,
+    floorUtilization,
+    weightUtilization
+  )
 
   return {
     containerType: container.name,
@@ -209,4 +198,45 @@ export function recommendContainer(
     containerKey: largestKey,
     result: calculateContainerLoad(largestKey, product),
   }
+}
+
+/**
+ * Generate recommendation based on container utilization metrics
+ * Reduces cyclomatic complexity by extracting recommendation logic
+ */
+function generateRecommendation(
+  totalUnits: number,
+  warningCount: number,
+  floorUtilization: number,
+  weightUtilization: number
+): string {
+  // Early return for no-fit scenario
+  if (totalUnits === 0) {
+    return '❌ Product does not fit in this container'
+  }
+
+  // Early return for warnings
+  if (warningCount > 0) {
+    return '⚠️ Issues detected - Review warnings'
+  }
+
+  // Check weight utilization first (safety critical)
+  if (weightUtilization >= 90) {
+    return '⚠️ High weight utilization - Verify safety limits'
+  }
+
+  // Evaluate space utilization
+  if (floorUtilization >= 80) {
+    return '✅ Excellent fit - High space utilization with safe weight'
+  }
+
+  if (floorUtilization >= 60) {
+    return '👍 Good fit - Acceptable utilization'
+  }
+
+  if (floorUtilization < 60) {
+    return '💡 Consider mixing products or using smaller container'
+  }
+
+  return '✓ Valid configuration'
 }

@@ -18,7 +18,7 @@ interface SKUMappingToSave {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single()
 
-    if (!membership || membership.role !== 'admin') {
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -178,7 +178,7 @@ export async function PATCH(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -186,13 +186,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single()
 
-    if (!membership || membership.role !== 'admin') {
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

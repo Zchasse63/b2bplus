@@ -17,8 +17,15 @@ const ExpoSecureStoreAdapter = {
   },
 }
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://ksprdklquoskvjqsicvv.supabase.co'
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzcHJka2xxdW9za3ZqcXNpY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAxOTQ3MjIsImV4cCI6MjA3NTc3MDcyMn0.aKcoqcudBUuHe4zdbxjlldwTLrSH4HQeKEtSEVV8P6w'
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing required Supabase environment variables. ' +
+    'Please ensure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set in your .env file.'
+  );
+}
 
 export const supabase = createClient<Database>(
   supabaseUrl,

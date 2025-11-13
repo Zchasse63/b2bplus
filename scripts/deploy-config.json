@@ -1,0 +1,102 @@
+{
+  "environments": {
+    "staging": {
+      "name": "Staging",
+      "description": "Staging environment for testing",
+      "vercelProject": "b2b-plus-staging",
+      "supabaseProject": "b2b-plus-staging",
+      "region": "us-east-1",
+      "healthCheckUrl": "https://staging.b2bplus.com/api/health",
+      "smokeTestsEnabled": true,
+      "autoRollback": true,
+      "notificationChannels": ["slack"],
+      "requiredApprovals": 1,
+      "deploymentWindow": {
+        "enabled": false
+      }
+    },
+    "production": {
+      "name": "Production",
+      "description": "Production environment",
+      "vercelProject": "b2b-plus-prod",
+      "supabaseProject": "b2b-plus-prod",
+      "region": "us-east-1",
+      "healthCheckUrl": "https://b2bplus.com/api/health",
+      "smokeTestsEnabled": true,
+      "autoRollback": true,
+      "notificationChannels": ["slack", "email"],
+      "requiredApprovals": 2,
+      "deploymentWindow": {
+        "enabled": true,
+        "startTime": "14:00",
+        "endTime": "16:00",
+        "timezone": "America/New_York",
+        "allowedDays": ["Tuesday", "Wednesday", "Thursday"]
+      },
+      "preDeploymentChecks": [
+        "git-status",
+        "branch-check",
+        "test-coverage",
+        "security-scan",
+        "performance-baseline"
+      ]
+    }
+  },
+  "deployment": {
+    "strategy": "blue-green",
+    "maxConcurrentDeployments": 1,
+    "rollbackOnFailure": true,
+    "healthCheckRetries": 3,
+    "healthCheckTimeout": 300,
+    "smokeTestTimeout": 600,
+    "backupRetention": 30
+  },
+  "notifications": {
+    "slack": {
+      "enabled": true,
+      "webhookUrl": "${SLACK_WEBHOOK_URL}",
+      "channel": "#deployments",
+      "mentionOnFailure": ["@devops-team"]
+    },
+    "email": {
+      "enabled": true,
+      "recipients": ["devops@b2bplus.com"],
+      "sendOnSuccess": false,
+      "sendOnFailure": true
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "duration": 3600,
+    "metrics": [
+      "error_rate",
+      "response_time",
+      "cpu_usage",
+      "memory_usage",
+      "database_connections"
+    ],
+    "thresholds": {
+      "error_rate": 0.01,
+      "response_time": 1000,
+      "cpu_usage": 80,
+      "memory_usage": 85
+    }
+  },
+  "database": {
+    "backupBeforeMigration": true,
+    "backupRetention": 30,
+    "migrationTimeout": 1800,
+    "validateMigrations": true
+  },
+  "rollback": {
+    "enabled": true,
+    "autoRollbackOn": [
+      "health_check_failure",
+      "error_rate_spike",
+      "performance_degradation"
+    ],
+    "manualApprovalRequired": true,
+    "rollbackTimeout": 600
+  }
+}
+

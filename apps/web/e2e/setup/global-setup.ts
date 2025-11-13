@@ -42,11 +42,13 @@ export default async function globalSetup() {
         email: process.env.TEST_USER_EMAIL || 'test@testmail.app',
         password: process.env.TEST_USER_PASSWORD || 'TestPassword123!',
         name: 'Test User',
+        role: 'customer',
       },
       {
         email: process.env.TEST_ADMIN_EMAIL || 'admin@testmail.app',
         password: process.env.TEST_ADMIN_PASSWORD || 'AdminPassword123!',
         name: 'Admin User',
+        role: 'admin',
       },
     ]
 
@@ -95,6 +97,77 @@ export default async function globalSetup() {
           console.error(`Failed to update password for ${user.email}:`, error.message)
         } else {
           console.log(`✓ Password updated for: ${user.email}`)
+        }
+      }
+
+      // Ensure user profile exists with correct role
+      if (userId) {
+        console.log(`Setting up profile for ${user.email} with role: ${user.role}`)
+
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .single()
+
+        if (!existingProfile) {
+          // Create profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: user.email,
+              full_name: user.name,
+              role: user.role,
+            })
+
+          if (profileError) {
+            console.error(`Failed to create profile for ${user.email}:`, profileError.message)
+          } else {
+            console.log(`✓ Created profile for ${user.email} with role: ${user.role}`)
+          }
+        } else {
+          // Update profile role
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: user.role })
+            .eq('id', userId)
+
+          if (updateError) {
+            console.error(`Failed to update profile role for ${user.email}:`, updateError.message)
+          } else {
+            console.log(`✓ Updated profile role for ${user.email} to: ${user.role}`)
+          }
+        }
+      }
+
+      // Add admin user to organization_members if admin role
+      if (userId && user.role === 'admin') {
+        console.log(`Adding ${user.email} to organization_members as admin...`)
+
+        const { data: existingMember } = await supabase
+          .from('organization_members')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('organization_id', testOrgId)
+          .single()
+
+        if (!existingMember) {
+          const { error: memberError } = await supabase
+            .from('organization_members')
+            .insert({
+              user_id: userId,
+              organization_id: testOrgId,
+              role: 'admin',
+            })
+
+          if (memberError) {
+            console.error(`Failed to add ${user.email} to organization_members:`, memberError.message)
+          } else {
+            console.log(`✓ Added ${user.email} to organization_members as admin`)
+          }
+        } else {
+          console.log(`✓ ${user.email} already in organization_members`)
         }
       }
 
@@ -256,6 +329,27 @@ export default async function globalSetup() {
           console.log('  ✓ Test orders already exist')
         }
       }
+    }
+
+    // Generate product embeddings for semantic search tests
+    console.log('\n📊 Checking product embeddings...')
+    try {
+      const { count: embeddingCount } = await supabase
+        .from('product_embeddings')
+        .select('*', { count: 'exact', head: true })
+
+      const { count: productCount } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+
+      if (embeddingCount === 0 && productCount && productCount > 0) {
+        console.log(`  ⚠️  No embeddings found for ${productCount} products. Skipping generation in global setup.`)
+        console.log(`  ℹ️  Run: npx tsx scripts/generate-embeddings.ts to generate embeddings`)
+      } else {
+        console.log(`  ✓ Embeddings already exist (${embeddingCount}/${productCount})`)
+      }
+    } catch (error: any) {
+      console.warn('  ⚠️  Could not check embeddings:', error.message)
     }
 
     console.log('Global setup complete!')

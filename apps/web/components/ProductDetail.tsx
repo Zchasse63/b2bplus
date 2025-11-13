@@ -616,7 +616,7 @@ export default function ProductDetail({ product, organizationId, relatedProducts
                 Free Sample Request
               </p>
               <p className="text-xs text-b2b-gray-600 dark:text-b2b-gray-400">
-                We'll send you a free sample of <span className="font-semibold">{product.name}</span> so you can test the quality before placing a full order.
+                We&apos;ll send you a free sample of <span className="font-semibold">{product.name}</span> so you can test the quality before placing a full order.
               </p>
             </div>
           </div>

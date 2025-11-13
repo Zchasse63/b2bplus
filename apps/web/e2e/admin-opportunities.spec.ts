@@ -10,17 +10,15 @@
  * 6. Verify opportunity status updated
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 
 test.describe('Admin Opportunity Management', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     // Login as demo admin
-    await page.goto('/auth/login');
-    await page.click('text=Demo Admin');
-    await page.waitForURL('/admin');
+    // Already logged in via fixture
   });
 
-  test('admin can navigate to opportunities page', async ({ page }) => {
+  test('admin can navigate to opportunities page', async ({ adminPage: page }) => {
     // Look for opportunities link in navigation or admin menu
     const opportunitiesLink = page.locator('a').filter({ hasText: /opportunit/i }).first();
     
@@ -38,7 +36,7 @@ test.describe('Admin Opportunity Management', () => {
     await expect(page.locator('h1, h2').filter({ hasText: /opportunit/i })).toBeVisible();
   });
 
-  test('admin can view list of AI-detected opportunities', async ({ page }) => {
+  test('admin can view list of AI-detected opportunities', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     
     // Wait for opportunities to load
@@ -58,7 +56,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can see opportunity details', async ({ page }) => {
+  test('admin can see opportunity details', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -76,7 +74,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can filter opportunities by type', async ({ page }) => {
+  test('admin can filter opportunities by type', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -96,7 +94,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can filter opportunities by status', async ({ page }) => {
+  test('admin can filter opportunities by status', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -114,7 +112,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can sort opportunities by score', async ({ page }) => {
+  test('admin can sort opportunities by score', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -130,7 +128,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can pursue an opportunity', async ({ page }) => {
+  test('admin can pursue an opportunity', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -149,7 +147,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can create task from opportunity', async ({ page }) => {
+  test('admin can create task from opportunity', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -179,7 +177,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can dismiss an opportunity', async ({ page }) => {
+  test('admin can dismiss an opportunity', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -205,7 +203,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can view AI reasoning for opportunity', async ({ page }) => {
+  test('admin can view AI reasoning for opportunity', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -222,7 +220,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can see opportunity score and confidence', async ({ page }) => {
+  test('admin can see opportunity score and confidence', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -233,7 +231,7 @@ test.describe('Admin Opportunity Management', () => {
     expect(pageContent.toLowerCase()).toMatch(/score|confidence|%|priority|high|medium|low/);
   });
 
-  test('admin can detect new opportunities', async ({ page }) => {
+  test('admin can detect new opportunities', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -254,7 +252,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can view customer details from opportunity', async ({ page }) => {
+  test('admin can view customer details from opportunity', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -273,7 +271,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can export opportunities list', async ({ page }) => {
+  test('admin can export opportunities list', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -295,7 +293,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can search opportunities', async ({ page }) => {
+  test('admin can search opportunities', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     
@@ -311,7 +309,7 @@ test.describe('Admin Opportunity Management', () => {
     }
   });
 
-  test('admin can view opportunity history/timeline', async ({ page }) => {
+  test('admin can view opportunity history/timeline', async ({ adminPage: page }) => {
     await page.goto('/admin/opportunities');
     await page.waitForTimeout(2000);
     

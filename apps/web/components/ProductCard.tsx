@@ -8,6 +8,7 @@ import { Card } from '@/components/b2b'
 import { Button } from '@/components/b2b'
 import { Input } from '@/components/b2b'
 import { Badge } from '@/components/b2b'
+import { CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { MdShoppingCart, MdInventory } from 'react-icons/md'
 
@@ -121,7 +122,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       
       <CardHeader className="space-y-2">
         <div className="flex items-start justify-between gap-2">
-          <Badge variant="secondary" className="shrink-0">
+          <Badge variant="info" className="shrink-0">
             {product.category}
           </Badge>
           {product.units_per_case && (

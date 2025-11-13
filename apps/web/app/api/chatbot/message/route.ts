@@ -1,6 +1,6 @@
 /**
  * Phase 2: AI Backend Logic - Authenticated Chatbot API
- * 
+ *
  * POST /api/chatbot/message
  * Handles authenticated chatbot conversations with action execution
  */
@@ -13,6 +13,10 @@ import { getChatbotPrompt, getActionDetectionPrompt } from '@/lib/ai/chatbot-pro
 import { executeChatbotAction } from '@/lib/ai/chatbot-actions';
 import { validateAIRequest } from '@/lib/middleware/ai-security';
 import { logAIUsage } from '@/lib/ai/usage-tracking';
+import { createLogger } from '@/lib/logging/logger';
+import { sanitizeAIInput } from '@/lib/ai/input-sanitizer';
+
+const logger = createLogger('chatbot-message');
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -34,19 +38,18 @@ interface ActionDetection {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Validate AI request (authentication, rate limiting, organization approval)
     const validation = await validateAIRequest(request, {
-      name: 'CHATBOT',
       maxRequests: 50,
       windowMs: 60000, // 50 requests per minute
     });
 
-    if (!validation.valid) {
+    if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -63,6 +66,33 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Sanitize user input to prevent prompt injection attacks
+    const sanitizationResult = sanitizeAIInput(message, {
+      maxLength: 5000,
+      stripHtml: true,
+      checkSuspicious: true,
+    });
+
+    if (!sanitizationResult.isClean) {
+      logger.warn('Suspicious input detected in chatbot message', {
+        userId,
+        threats: sanitizationResult.threats,
+        warnings: sanitizationResult.warnings,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Invalid input detected',
+          message: 'Your message contains potentially harmful content. Please rephrase and try again.',
+          warnings: sanitizationResult.warnings,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use sanitized message for processing
+    const sanitizedMessage = sanitizationResult.sanitized;
 
     // Get customer context for personalized responses
     const context = await getCustomerContext(userId!);
@@ -110,10 +140,10 @@ export async function POST(request: NextRequest) {
       conversation = newConv;
     }
 
-    // Add user message to conversation
+    // Add user message to conversation (using sanitized input)
     const userMessage: ChatMessage = {
       role: 'user',
-      content: message,
+      content: sanitizedMessage,
       timestamp: new Date().toISOString(),
     };
     messages.push(userMessage);
@@ -124,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     try {
       actionDetection = await generateJSON<ActionDetection>(
-        getActionDetectionPrompt(message),
+        getActionDetectionPrompt(sanitizedMessage),
         {
           temperature: 0.3,
           maxTokens: 500,
@@ -132,8 +162,8 @@ export async function POST(request: NextRequest) {
       );
 
       // Execute action if required and confidence is high enough
-      if (actionDetection.requiresAction && 
-          actionDetection.action && 
+      if (actionDetection.requiresAction &&
+          actionDetection.action &&
           actionDetection.confidence > 0.7) {
         actionResult = await executeChatbotAction(
           actionDetection.action,
@@ -155,9 +185,9 @@ export async function POST(request: NextRequest) {
 
     // Generate AI response
     const systemPrompt = getChatbotPrompt(true, context);
-    
+
     let aiPrompt = `${conversationHistory}\n\nuser: ${message}`;
-    
+
     // Include action result in prompt if available
     if (actionResult) {
       aiPrompt += `\n\n[ACTION RESULT: ${actionResult.success ? 'SUCCESS' : 'FAILED'}]`;
@@ -202,17 +232,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Log AI usage
-    const duration = Date.now() - startTime;
     await logAIUsage({
       userId: userId!,
       organizationId: organizationId!,
       endpoint: '/api/chatbot/message',
-      model: 'gemini-2.5-flash',
-      promptTokens: message.length / 4, // Rough estimate
-      completionTokens: aiResponse.response.length / 4,
-      totalTokens: (message.length + aiResponse.response.length) / 4,
-      cost: 0.0001, // Rough estimate
-      duration,
+      operationType: 'chatbot-message',
+      tokensUsed: Math.ceil((message.length + aiResponse.response.length) / 4),
       success: true,
     });
 
@@ -225,29 +250,23 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Chatbot API error:', error);
-    
+    logger.error('Chatbot API error', { error });
+
     // Log failed usage
-    const duration = Date.now() - startTime;
     try {
       const validation = await validateAIRequest(request);
-      if (validation.valid) {
+      if (validation.authorized) {
         await logAIUsage({
           userId: validation.userId!,
           organizationId: validation.organizationId!,
           endpoint: '/api/chatbot/message',
-          model: 'gemini-2.5-flash',
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-          cost: 0,
-          duration,
+          operationType: 'chatbot-message',
           success: false,
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     } catch (logError) {
-      console.error('Failed to log error:', logError);
+      logger.error('Failed to log error', { logError });
     }
 
     return NextResponse.json(
@@ -264,7 +283,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -323,4 +342,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

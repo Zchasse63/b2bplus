@@ -19,8 +19,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
 export default defineConfig({
   testDir: './e2e',
 
-  // Run tests in files in parallel
+  // Run tests in files in parallel, but limit workers to avoid overwhelming Supabase auth
   fullyParallel: true,
+  workers: 2, // Limit to 2 concurrent workers instead of all
 
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
@@ -28,11 +29,11 @@ export default defineConfig({
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
-
   // Reporter to use
   reporter: 'html',
+
+  // Global setup to ensure test users exist
+  globalSetup: require.resolve('./e2e/setup/global-setup.ts'),
 
   // Shared settings for all the projects below
   use: {
@@ -49,6 +50,9 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
+  // Increase timeout for tests that call Gemini AI (can take 60+ seconds)
+  timeout: 300 * 1000, // 300 seconds (5 minutes) per test
+
   // Configure projects for major browsers
   projects: [
     {
@@ -63,10 +67,13 @@ export default defineConfig({
 
   // Run your local dev server before starting the tests
   webServer: {
-    command: 'pnpm dev',
+    command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      PLAYWRIGHT_TEST: 'true',
+    },
   },
 });
 

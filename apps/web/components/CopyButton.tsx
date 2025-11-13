@@ -8,8 +8,8 @@ import { useToast } from '@/hooks/use-toast'
 interface CopyButtonProps {
   text: string
   label?: string
-  variant?: 'default' | 'outline' | 'ghost'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
+  size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
@@ -54,7 +54,7 @@ export default function CopyButton({
       ) : (
         <MdContentCopy className="h-4 w-4" />
       )}
-      {size !== 'icon' && <span className="ml-2">{copied ? 'Copied!' : 'Copy'}</span>}
+      <span className="ml-2">{copied ? 'Copied!' : 'Copy'}</span>
     </Button>
   )
 }

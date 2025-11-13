@@ -190,8 +190,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Send email via email service provider
- * In production, integrate with SendGrid, Mailgun, etc.
+ * Send email via SendGrid email service provider
  */
 async function sendEmail(params: {
   to: string;
@@ -200,13 +199,33 @@ async function sendEmail(params: {
   in_reply_to?: string;
   thread_id?: string;
 }) {
-  // TODO: Integrate with email service provider
-  // For now, just log the email
-  console.log('[Email Service] Sending email:', {
-    to: params.to,
-    subject: params.subject,
-    body_preview: params.body.substring(0, 100) + '...',
-  });
+  try {
+    // Import SendGrid helper
+    const { sendEmail: sendViaGrid } = await import('@/lib/sendgrid');
+
+    // Send via SendGrid
+    await sendViaGrid({
+      to: params.to,
+      subject: params.subject,
+      html: params.body,
+      replyTo: params.in_reply_to,
+      customArgs: {
+        thread_id: params.thread_id || 'auto-response',
+      },
+    });
+
+    console.log('[Email Service] Email sent successfully:', {
+      to: params.to,
+      subject: params.subject,
+    });
+  } catch (error) {
+    console.error('[Email Service] Failed to send email:', {
+      to: params.to,
+      subject: params.subject,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 
   // Example SendGrid integration:
   /*

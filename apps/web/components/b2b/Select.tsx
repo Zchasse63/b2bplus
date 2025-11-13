@@ -41,7 +41,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {label}
           </label>
         )}
-        <motion.select
+        <select
           ref={ref}
           className={cn(
             'w-full rounded-lg border border-b2b-gray-300 bg-white px-4 py-2.5 text-b2b-dark',
@@ -53,10 +53,6 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           disabled={disabled}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          animate={{
-            scale: isFocused ? 1.01 : 1,
-          }}
-          transition={fast}
           {...props}
         >
           {options.map((option) => (
@@ -64,7 +60,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               {option.label}
             </option>
           ))}
-        </motion.select>
+        </select>
         <AnimatePresence>
           {error && (
             <motion.p

@@ -187,8 +187,9 @@ export async function findMatchingOrder(
 
     for (const invoiceItem of invoiceData.lineItems) {
       const matchingOrderItem = orderItems.find(oi => {
-        const productName = oi.products?.name?.toLowerCase() || '';
-        const productSku = oi.products?.sku?.toLowerCase() || '';
+        const products = (oi.products as any);
+        const productName = products?.name?.toLowerCase() || '';
+        const productSku = products?.sku?.toLowerCase() || '';
         const invoiceName = invoiceItem.productName.toLowerCase();
         const invoiceSku = invoiceItem.productSku?.toLowerCase() || '';
 
@@ -270,8 +271,9 @@ export async function reconcileInvoice(
   // Check each invoice item against order items
   for (const invoiceItem of invoiceData.lineItems) {
     const matchingOrderItem = orderItems.find(oi => {
-      const productName = oi.products?.name?.toLowerCase() || '';
-      const productSku = oi.products?.sku?.toLowerCase() || '';
+      const products = (oi.products as any);
+      const productName = products?.name?.toLowerCase() || '';
+      const productSku = products?.sku?.toLowerCase() || '';
       const invoiceName = invoiceItem.productName.toLowerCase();
       const invoiceSku = invoiceItem.productSku?.toLowerCase() || '';
 
@@ -283,11 +285,12 @@ export async function reconcileInvoice(
     });
 
     if (matchingOrderItem) {
+      const products = (matchingOrderItem.products as any);
       // Check quantity discrepancy
       if (invoiceItem.quantity !== matchingOrderItem.quantity) {
         quantityDiscrepancies.push({
           productId: matchingOrderItem.product_id,
-          productName: matchingOrderItem.products?.name || invoiceItem.productName,
+          productName: products?.name || invoiceItem.productName,
           invoiceQuantity: invoiceItem.quantity,
           orderQuantity: matchingOrderItem.quantity,
           difference: invoiceItem.quantity - matchingOrderItem.quantity,
@@ -300,7 +303,7 @@ export async function reconcileInvoice(
       if (priceDiffPercent > 1) {
         priceDiscrepancies.push({
           productId: matchingOrderItem.product_id,
-          productName: matchingOrderItem.products?.name || invoiceItem.productName,
+          productName: products?.name || invoiceItem.productName,
           invoicePrice: invoiceItem.unitPrice,
           orderPrice: matchingOrderItem.price,
           difference: invoiceItem.unitPrice - matchingOrderItem.price,
@@ -318,8 +321,9 @@ export async function reconcileInvoice(
   // Check for items on order but not on invoice
   for (const orderItem of orderItems) {
     const matchingInvoiceItem = invoiceData.lineItems.find(ii => {
-      const productName = orderItem.products?.name?.toLowerCase() || '';
-      const productSku = orderItem.products?.sku?.toLowerCase() || '';
+      const products = (orderItem.products as any);
+      const productName = products?.name?.toLowerCase() || '';
+      const productSku = products?.sku?.toLowerCase() || '';
       const invoiceName = ii.productName.toLowerCase();
       const invoiceSku = ii.productSku?.toLowerCase() || '';
 
@@ -331,8 +335,9 @@ export async function reconcileInvoice(
     });
 
     if (!matchingInvoiceItem) {
+      const products = (orderItem.products as any);
       missingItems.push({
-        productName: orderItem.products?.name || 'Unknown',
+        productName: products?.name || 'Unknown',
         quantity: orderItem.quantity,
       });
     }

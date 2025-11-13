@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -136,14 +136,11 @@ export async function POST(request: NextRequest) {
 
     // Log AI usage
     await logAIUsage({
-      user_id: validation.userId,
-      organization_id: null,
+      userId: validation.userId!,
+      organizationId: '',
       endpoint: '/api/admin/invoices/reconcile',
-      model: 'gemini-2.0-flash-exp',
-      input_tokens: invoiceText.length / 4, // Rough estimate
-      output_tokens: 500,
-      total_tokens: invoiceText.length / 4 + 500,
-      cost: 0.0003,
+      operationType: 'invoice-reconciliation',
+      tokensUsed: Math.ceil((invoiceText.length / 4) + 500),
       success: true,
     });
 
@@ -187,7 +184,7 @@ export async function GET(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -240,7 +237,7 @@ export async function PATCH(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -294,7 +291,7 @@ export async function DELETE(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 

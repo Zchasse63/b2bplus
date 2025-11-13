@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           success: true,
           ...result,
         });
-        successCount += result.count || 1;
+        successCount += (result as any).count || 1;
       } catch (error: any) {
         results.push({
           filename: file.name,

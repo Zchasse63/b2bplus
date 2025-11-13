@@ -174,7 +174,7 @@ export function ReorderNotificationCard({
           Reorder Recommendations
         </h3>
         <p className="text-sm text-b2b-gray-500">
-          Based on your purchase history, we predict you'll need these items soon
+          Based on your purchase history, we predict you&apos;ll need these items soon
         </p>
       </div>
 

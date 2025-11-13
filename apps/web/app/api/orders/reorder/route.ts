@@ -1,13 +1,29 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { validateRequestBody } from '@/lib/validation/middleware';
+import { ReorderSchema } from '@/lib/validation/schemas';
+import { csrfProtection, addCSRFTokenToCookie } from '@/lib/middleware/csrf';
+import { rateLimit } from '@/lib/middleware/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) {
+      return rateLimitResponse!;
+    }
+
+    // Apply CSRF protection
+    const { valid, response: csrfResponse } = await csrfProtection(request);
+    if (!valid) {
+      return csrfResponse!;
+    }
+
     const supabase = await createClient();
-    
+
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -15,31 +31,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get request body
-    const { orderId } = await request.json();
-
-    if (!orderId) {
-      return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 }
-      );
+    // Validate request body
+    const validation = await validateRequestBody(request, ReorderSchema);
+    if (!validation.valid) {
+      return validation.response!;
     }
 
+    const { orderId } = validation.data!;
+
     // Get user's organization
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('organization_id')
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('current_organization_id')
       .eq('id', user.id)
       .single();
 
-    if (userError || !userData) {
+    if (profileError || !profileData) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'User profile not found' },
         { status: 404 }
       );
     }
 
-    const organizationId = userData.organization_id;
+    const organizationId = profileData.current_organization_id;
 
     // Verify the order belongs to the user's organization
     const { data: order, error: orderError } = await supabase
@@ -140,12 +154,15 @@ export async function POST(request: NextRequest) {
       message = `${itemsAdded} of ${orderItems.length} items added to cart (${itemsSkipped} unavailable)`;
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       cartItemsAdded: itemsAdded,
       itemsSkipped: itemsSkipped,
       message: message
     });
+
+    // Add CSRF token to response for next request
+    return addCSRFTokenToCookie(response, '');
 
   } catch (error) {
     console.error('Reorder error:', error);

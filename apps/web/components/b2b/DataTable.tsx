@@ -101,6 +101,8 @@ export function DataTable<T extends Record<string, any>>({
   );
 
   // Desktop: Traditional table
+  // Note: Stagger animations disabled for DataTable to improve E2E test reliability
+  // Table rows need to be immediately visible for Playwright tests
   const DesktopView = () => (
     <Card padding="none" className={cn('overflow-hidden hidden md:block', className)}>
       <div className="overflow-x-auto">
@@ -120,12 +122,7 @@ export function DataTable<T extends Record<string, any>>({
               ))}
             </tr>
           </thead>
-          <motion.tbody
-            className="bg-white divide-y divide-b2b-gray-100"
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-          >
+          <tbody className="bg-white divide-y divide-b2b-gray-100">
             {data.map((item, index) => (
               <motion.tr
                 key={index}
@@ -133,7 +130,6 @@ export function DataTable<T extends Record<string, any>>({
                 className={cn(
                   onRowClick && 'cursor-pointer hover:bg-b2b-gray-50'
                 )}
-                variants={staggerItem}
                 whileHover={onRowClick ? { backgroundColor: 'rgba(0, 0, 0, 0.02)' } : undefined}
               >
                 {columns.map((column) => (
@@ -149,7 +145,7 @@ export function DataTable<T extends Record<string, any>>({
                 ))}
               </motion.tr>
             ))}
-          </motion.tbody>
+          </tbody>
         </table>
       </div>
     </Card>

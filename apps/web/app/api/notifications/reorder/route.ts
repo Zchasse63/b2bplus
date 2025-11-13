@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { validateAIRequest } from '@/lib/middleware/ai-security';
+import { validateAdminAIRequest } from '@/lib/middleware/ai-security';
 import { 
   generateOrganizationReorderPredictions,
   saveReorderPrediction,
@@ -30,11 +30,11 @@ interface ReorderNotificationRequest {
 export async function POST(request: NextRequest) {
   try {
     // Validate AI request (admin only)
-    const validation = await validateAIRequest(request, 'ADMIN');
+    const validation = await validateAdminAIRequest(request);
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -123,14 +123,11 @@ export async function POST(request: NextRequest) {
 
     // Log AI usage
     await logAIUsage({
-      user_id: validation.userId,
-      organization_id: organizationId || null,
+      userId: validation.userId!,
+      organizationId: organizationId || '',
       endpoint: '/api/notifications/reorder',
-      model: 'gemini-2.0-flash-exp',
-      input_tokens: results.totalPredictions * 200, // Estimate
-      output_tokens: results.totalPredictions * 100, // Estimate
-      total_tokens: results.totalPredictions * 300,
-      cost: results.totalPredictions * 0.0001, // Estimate
+      operationType: 'reorder-notifications',
+      tokensUsed: results.totalPredictions * 300,
       success: true,
     });
 
@@ -155,11 +152,11 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // Validate AI request
-    const validation = await validateAIRequest(request, 'STANDARD');
+    const validation = await validateAdminAIRequest(request);
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 

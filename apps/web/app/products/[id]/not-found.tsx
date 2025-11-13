@@ -1,9 +1,14 @@
-import Link from 'next/link'
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/b2b'
 import { Card } from '@/components/b2b'
+import { CardContent } from '@/components/ui/card'
 import { PackageX } from 'lucide-react'
 
 export default function ProductNotFound() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center py-16">
       <Card className="max-w-md mx-4">
@@ -13,10 +18,8 @@ export default function ProductNotFound() {
           <p className="text-muted-foreground mb-8">
             Sorry, we couldn&apos;t find the product you&apos;re looking for. It may have been removed or is no longer available.
           </p>
-          <Button asChild size="lg">
-            <Link href="/products">
-              Browse All Products
-            </Link>
+          <Button variant="primary" onClick={() => router.push('/products')}>
+            Browse All Products
           </Button>
         </CardContent>
       </Card>

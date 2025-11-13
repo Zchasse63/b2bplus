@@ -5,16 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
-import { Button } from '@/components/b2b';
-import { Input } from '@/components/b2b';
-import { Card } from '@/components/b2b';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/b2b';
+import { Button, Input, Card, Select } from '@/components/b2b';
 import { ArrowLeft, RefreshCw, Upload, Download, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -293,20 +284,12 @@ export default function ImportProductsPage() {
                   </label>
                   <Select
                     value={columnMapping[field] || ''}
-                    onValueChange={(value) => handleMappingChange(field, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select column..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">-- Not mapped --</SelectItem>
-                      {csvHeaders.map(header => (
-                        <SelectItem key={header} value={header}>
-                          {header}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => handleMappingChange(field, e.target.value)}
+                    options={[
+                      { value: '', label: '-- Not mapped --' },
+                      ...csvHeaders.map(header => ({ value: header, label: header }))
+                    ]}
+                  />
                 </div>
               ))}
             </div>

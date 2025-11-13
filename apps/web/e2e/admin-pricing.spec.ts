@@ -10,17 +10,15 @@
  * 6. Verify price updated in system
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 
 test.describe('Admin Pricing Approval Flow', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ adminPage: page }) => {
     // Login as demo admin
-    await page.goto('/auth/login');
-    await page.click('text=Demo Admin');
-    await page.waitForURL('/admin');
+    // Already logged in via fixture
   });
 
-  test('admin can navigate to pricing recommendations page', async ({ page }) => {
+  test('admin can navigate to pricing recommendations page', async ({ adminPage: page }) => {
     // Look for pricing link in navigation
     const pricingLink = page.locator('a').filter({ hasText: /pricing|price/i }).first();
 
@@ -36,7 +34,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     await expect(page.locator('h1, h2').filter({ hasText: /pricing|price/i })).toBeVisible({ timeout: 10000 });
   });
 
-  test('admin can view list of pricing recommendations', async ({ page }) => {
+  test('admin can view list of pricing recommendations', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -53,7 +51,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can see pricing recommendation details', async ({ page }) => {
+  test('admin can see pricing recommendation details', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -70,7 +68,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can view AI reasoning for pricing recommendation', async ({ page }) => {
+  test('admin can view AI reasoning for pricing recommendation', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -86,7 +84,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can see win probability and expected revenue', async ({ page }) => {
+  test('admin can see win probability and expected revenue', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -102,7 +100,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can approve pricing recommendation', async ({ page }) => {
+  test('admin can approve pricing recommendation', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -128,7 +126,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can reject pricing recommendation', async ({ page }) => {
+  test('admin can reject pricing recommendation', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -154,7 +152,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can filter recommendations by status', async ({ page }) => {
+  test('admin can filter recommendations by status', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -171,7 +169,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can filter recommendations by confidence level', async ({ page }) => {
+  test('admin can filter recommendations by confidence level', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -188,7 +186,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can sort recommendations by win probability', async ({ page }) => {
+  test('admin can sort recommendations by win probability', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -203,7 +201,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can generate new pricing recommendation', async ({ page }) => {
+  test('admin can generate new pricing recommendation', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -246,7 +244,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can view historical pricing data', async ({ page }) => {
+  test('admin can view historical pricing data', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -262,7 +260,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can see price sensitivity analysis', async ({ page }) => {
+  test('admin can see price sensitivity analysis', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -278,7 +276,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can view customer purchase history', async ({ page }) => {
+  test('admin can view customer purchase history', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -294,7 +292,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can export pricing recommendations', async ({ page }) => {
+  test('admin can export pricing recommendations', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -313,7 +311,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('admin can search pricing recommendations', async ({ page }) => {
+  test('admin can search pricing recommendations', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     
@@ -327,7 +325,7 @@ test.describe('Admin Pricing Approval Flow', () => {
     }
   });
 
-  test('pricing approval updates product price', async ({ page }) => {
+  test('pricing approval updates product price', async ({ adminPage: page }) => {
     await page.goto('/admin/pricing/recommendations');
     await page.waitForTimeout(2000);
     

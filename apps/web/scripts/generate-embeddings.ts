@@ -202,12 +202,13 @@ async function generateEmbeddings() {
           await new Promise(resolve => setTimeout(resolve, 50));
 
         } catch (error) {
-          console.error(`   ❌ Failed: ${product.name} (${product.sku}) - ${error}`);
+          const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
+          console.error(`   ❌ Failed: ${product.name} (${product.sku}) - ${errorMsg}`);
           failed++;
           errors.push({
             productId: product.id,
             productName: product.name,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: errorMsg
           });
         }
       }

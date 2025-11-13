@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         target_audience: targetAudience || {},
         scheduled_at: scheduledAt || null,
         status: scheduledAt ? 'scheduled' : 'draft',
-        created_by: user.id
+        created_by: user!.id
       })
       .select()
       .single();

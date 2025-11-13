@@ -29,6 +29,21 @@ if (!process.env.GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 /**
+ * Sanitize error messages to prevent API key exposure in logs
+ * Removes API keys and sensitive tokens from error messages
+ */
+function sanitizeError(error: any): string {
+  if (!error) return 'Unknown error';
+
+  const errorStr = String(error);
+  // Remove API key patterns
+  return errorStr
+    .replace(/AIzaSy[A-Za-z0-9_-]{35}/g, '[REDACTED_API_KEY]')
+    .replace(/sk-[A-Za-z0-9_-]{40,}/g, '[REDACTED_API_KEY]')
+    .replace(/Bearer [A-Za-z0-9_-]{40,}/g, '[REDACTED_TOKEN]');
+}
+
+/**
  * Get the Gemini 2.5 Flash model for text generation
  *
  * Use cases:
@@ -116,41 +131,46 @@ export async function generateText(prompt: string, options?: {
   maxTokens?: number;
   systemPrompt?: string;
 }): Promise<string> {
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash",
-    generationConfig: {
-      temperature: options?.temperature ?? 0.7,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: options?.maxTokens ?? 8192,
-    }
-  });
-
-  // If system prompt is provided, use chat with history
-  // This simulates OpenAI's system message behavior
-  if (options?.systemPrompt) {
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: options.systemPrompt }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Understood. I'll follow those instructions carefully." }],
-        }
-      ],
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        temperature: options?.temperature ?? 0.7,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: options?.maxTokens ?? 8192,
+      }
     });
 
-    const result = await chat.sendMessage(prompt);
+    // If system prompt is provided, use chat with history
+    // This simulates OpenAI's system message behavior
+    if (options?.systemPrompt) {
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: options.systemPrompt }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "Understood. I'll follow those instructions carefully." }],
+          }
+        ],
+      });
+
+      const result = await chat.sendMessage(prompt);
+      const response = await result.response;
+      return response.text();
+    }
+
+    // Simple generation without system prompt
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
+  } catch (error: any) {
+    console.error('Gemini API error:', sanitizeError(error));
+    throw error;
   }
-
-  // Simple generation without system prompt
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return response.text();
 }
 
 /**
@@ -202,7 +222,7 @@ export async function generateJSON<T = any>(prompt: string, options?: {
   try {
     return JSON.parse(cleanedResponse);
   } catch (error) {
-    console.error('Failed to parse JSON response:', cleanedResponse);
+    console.error('Failed to parse JSON response:', sanitizeError(error));
     throw new Error(`Invalid JSON response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -233,40 +253,45 @@ export async function generateTextPro(prompt: string, options?: {
   maxTokens?: number;
   systemPrompt?: string;
 }): Promise<string> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-pro",
-    generationConfig: {
-      temperature: options?.temperature ?? 0.3,  // Lower default for Pro
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: options?.maxTokens ?? 8192,
-    }
-  });
-
-  // If system prompt is provided, use chat with history
-  if (options?.systemPrompt) {
-    const chat = model.startChat({
-      history: [
-        {
-          role: "user",
-          parts: [{ text: options.systemPrompt }],
-        },
-        {
-          role: "model",
-          parts: [{ text: "Understood. I'll apply deep reasoning and analysis to provide accurate, well-considered responses." }],
-        }
-      ],
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-pro",
+      generationConfig: {
+        temperature: options?.temperature ?? 0.3,  // Lower default for Pro
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: options?.maxTokens ?? 8192,
+      }
     });
 
-    const result = await chat.sendMessage(prompt);
+    // If system prompt is provided, use chat with history
+    if (options?.systemPrompt) {
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: options.systemPrompt }],
+          },
+          {
+            role: "model",
+            parts: [{ text: "Understood. I'll apply deep reasoning and analysis to provide accurate, well-considered responses." }],
+          }
+        ],
+      });
+
+      const result = await chat.sendMessage(prompt);
+      const response = await result.response;
+      return response.text();
+    }
+
+    // Simple generation without system prompt
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     return response.text();
+  } catch (error: any) {
+    console.error('Gemini Pro API error:', sanitizeError(error));
+    throw error;
   }
-
-  // Simple generation without system prompt
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return response.text();
 }
 
 /**
@@ -319,7 +344,7 @@ export async function generateJSONPro<T = any>(prompt: string, options?: {
   try {
     return JSON.parse(cleanedResponse);
   } catch (error) {
-    console.error('Failed to parse JSON response from Pro model:', cleanedResponse);
+    console.error('Failed to parse JSON response from Pro model:', sanitizeError(error));
     throw new Error(`Invalid JSON response from Gemini Pro: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -542,6 +567,82 @@ export async function processDocumentJSON<T = any>(
     return JSON.parse(cleanedResponse);
   } catch (error) {
     console.error('Failed to parse JSON response from document processing:', cleanedResponse);
+    throw new Error(`Invalid JSON response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Analyze a base64-encoded image and return structured JSON
+ *
+ * @param base64Image - Base64 encoded image data (with or without data URI prefix)
+ * @param prompt - Instructions for what to extract from the image
+ * @param mimeType - MIME type of the image (default: 'image/jpeg')
+ * @param options - Generation options
+ * @returns Parsed JSON object
+ *
+ * @example
+ * ```typescript
+ * const analysis = await analyzeImageJSON<ProductAnalysis>(
+ *   base64ImageData,
+ *   'Analyze this product image and extract: product_type, material, color, features',
+ *   'image/jpeg'
+ * );
+ * ```
+ */
+export async function analyzeImageJSON<T = any>(
+  base64Image: string,
+  prompt: string,
+  mimeType: string = 'image/jpeg',
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+    systemPrompt?: string;
+  }
+): Promise<T> {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      temperature: options?.temperature ?? 0.3,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: options?.maxTokens ?? 8192,
+    }
+  });
+
+  // Build the parts array
+  const parts: any[] = [];
+
+  if (options?.systemPrompt) {
+    parts.push({ text: options.systemPrompt + '\n\n' + prompt });
+  } else {
+    parts.push({ text: prompt });
+  }
+
+  // Add the image as inline data
+  parts.push({
+    inlineData: {
+      mimeType,
+      data: base64Image
+    }
+  });
+
+  const result = await model.generateContent(parts);
+  const response = await result.response;
+  const text = response.text();
+
+  // Clean up response (remove markdown code blocks if present)
+  let cleanedResponse = text.trim();
+
+  if (cleanedResponse.startsWith('```json')) {
+    cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  } else if (cleanedResponse.startsWith('```')) {
+    cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+  }
+
+  try {
+    return JSON.parse(cleanedResponse);
+  } catch (error) {
+    console.error('Failed to parse JSON response from image analysis:', cleanedResponse);
     throw new Error(`Invalid JSON response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

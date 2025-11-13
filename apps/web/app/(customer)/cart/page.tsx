@@ -91,6 +91,80 @@ export default function CartPage() {
         return;
       }
 
+      // Get user's organization
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('current_organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.current_organization_id) {
+        toast({
+          title: 'Error',
+          description: 'No organization found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check organization approval status
+      const { data: orgMember, error: orgMemberError } = await supabase
+        .from('organization_members')
+        .select(`
+          organization:organizations!inner(
+            id,
+            name,
+            approval_status,
+            rejection_reason
+          )
+        `)
+        .eq('user_id', user.id)
+        .single();
+
+      if (orgMemberError || !orgMember) {
+        toast({
+          title: 'Error',
+          description: 'Organization membership not found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const org = orgMember.organization as any;
+
+      if (org.approval_status === 'pending') {
+        toast({
+          title: 'Organization Pending Approval',
+          description: 'Your organization is still pending approval. You cannot view or checkout your cart at this time.',
+          variant: 'destructive',
+        });
+        router.push('/profile');
+        return;
+      }
+
+      if (org.approval_status === 'rejected') {
+        const rejectionReason = org.rejection_reason
+          ? `. Reason: ${org.rejection_reason}`
+          : '';
+        toast({
+          title: 'Organization Rejected',
+          description: `Your organization registration was rejected${rejectionReason}. Please contact support.`,
+          variant: 'destructive',
+        });
+        router.push('/profile');
+        return;
+      }
+
+      if (org.approval_status !== 'approved') {
+        toast({
+          title: 'Error',
+          description: 'Your organization has not been approved. Please contact support.',
+          variant: 'destructive',
+        });
+        router.push('/profile');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('cart_items')
         .select('*, products (*)')
@@ -101,6 +175,11 @@ export default function CartPage() {
       }
     } catch (err) {
       console.error('Error loading cart:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load cart',
+        variant: 'destructive',
+      });
     }
     setLoading(false);
   }
@@ -224,7 +303,7 @@ export default function CartPage() {
       <PageHeader
         title="Shopping Cart"
         subtitle={`${cartItems.length} ${cartItems.length === 1 ? 'item' : 'items'} in your cart`}
-        
+
         actions={
           <Button
             variant="secondary"

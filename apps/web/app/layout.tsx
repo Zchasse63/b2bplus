@@ -3,6 +3,11 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
+import { validateStartup } from "@/lib/startup";
+import { AuthProvider } from "@/contexts/AuthContext";
+
+// Validate environment on startup
+validateStartup();
 
 export const metadata: Metadata = {
   title: "B2B+ Platform",
@@ -17,12 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
-        <FloatingCartButton />
+        <AuthProvider>
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+          <FloatingCartButton />
+        </AuthProvider>
       </body>
     </html>
   );

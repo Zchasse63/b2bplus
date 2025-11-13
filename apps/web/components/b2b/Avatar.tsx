@@ -38,11 +38,11 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
     // Generate initials from fallback text
     const getInitials = (text?: string) => {
       if (!text) return '?';
-      const words = text.trim().split(' ');
+      const words = text.trim().split(/\s+/).filter(w => w.length > 0);
       if (words.length >= 2) {
         return `${words[0][0]}${words[1][0]}`.toUpperCase();
       }
-      return text.substring(0, 2).toUpperCase();
+      return words[0]?.substring(0, 2).toUpperCase() || '?';
     };
     
     return (
@@ -56,7 +56,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         {...props}
       >
         {showFallback ? (
-          <span>{getInitials(fallback || alt)}</span>
+          <span>{getInitials(fallback || (alt !== 'Avatar' ? alt : undefined))}</span>
         ) : (
           <img
             src={src}

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-<parameter name="sendEmail } from '@/lib/sendgrid';
+import { sendEmail } from '@/lib/sendgrid';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { generateJSON } from '@/lib/gemini';
 
@@ -57,8 +57,7 @@ Return JSON with this exact structure:
 
     const result = await generateJSON(aiPrompt, {
       temperature: 0.7,
-      systemPrompt: 'You are a B2B email personalization expert. Generate engaging, professional email content.',
-      model: 'flash' // Use Gemini 2.5 Flash for cost-effective bulk generation
+      systemPrompt: 'You are a B2B email personalization expert. Generate engaging, professional email content.'
     });
 
     return {

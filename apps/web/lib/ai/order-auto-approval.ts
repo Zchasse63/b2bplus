@@ -149,7 +149,7 @@ export async function evaluateOrderForAutoApproval(
 
   // Check time-based criteria
   const now = new Date();
-  const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'lowercase' });
+  const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const hour = now.getHours();
   const isBusinessHours = hour >= 9 && hour < 17; // 9 AM to 5 PM
 

@@ -133,29 +133,74 @@ export async function POST(
         });
 
       case 'create_campaign':
-        // TODO: Implement campaign creation
-        // For now, just mark as contacted
-        const { error: campaignError } = await supabase
-          .from('customer_opportunities')
-          .update({
-            status: 'contacted',
-            contacted_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', params.id);
+        // Create email campaign for this opportunity
+        try {
+          // Get opportunity details
+          const { data: opportunity } = await supabase
+            .from('customer_opportunities')
+            .select('*, product:products(name, description)')
+            .eq('id', params.id)
+            .single();
 
-        if (campaignError) {
-          console.error('Error updating opportunity:', campaignError);
+          if (!opportunity) {
+            return NextResponse.json(
+              { error: 'Opportunity not found' },
+              { status: 404 }
+            );
+          }
+
+          // Create campaign
+          const { data: campaign, error: campaignError } = await supabase
+            .from('email_campaigns')
+            .insert({
+              organization_id: opportunity.organization_id,
+              name: `Campaign: ${opportunity.product?.name || 'Product'}`,
+              subject: `Special Offer: ${opportunity.product?.name || 'Product'}`,
+              body: `We noticed you might be interested in ${opportunity.product?.name}. Here's a special offer just for you!`,
+              status: 'draft',
+              created_by: user?.id,
+            })
+            .select('id')
+            .single();
+
+          if (campaignError || !campaign) {
+            console.error('Error creating campaign:', campaignError);
+            return NextResponse.json(
+              { error: 'Failed to create campaign' },
+              { status: 500 }
+            );
+          }
+
+          // Update opportunity status
+          const { error: updateError } = await supabase
+            .from('customer_opportunities')
+            .update({
+              status: 'contacted',
+              contacted_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', params.id);
+
+          if (updateError) {
+            console.error('Error updating opportunity:', updateError);
+            return NextResponse.json(
+              { error: 'Failed to update opportunity' },
+              { status: 500 }
+            );
+          }
+
+          return NextResponse.json({
+            success: true,
+            message: 'Campaign created successfully',
+            campaignId: campaign.id,
+          });
+        } catch (error) {
+          console.error('Error in create_campaign:', error);
           return NextResponse.json(
-            { error: 'Failed to update opportunity' },
+            { error: 'Failed to create campaign' },
             { status: 500 }
           );
         }
-
-        return NextResponse.json({
-          success: true,
-          message: 'Campaign creation feature coming soon',
-        });
 
       default:
         return NextResponse.json(

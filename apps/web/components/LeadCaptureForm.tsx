@@ -130,14 +130,14 @@ export function LeadCaptureForm() {
 
   if (isSuccess) {
     return (
-      <Card padding="xl" className="bg-white text-center">
+      <Card padding="lg" className="bg-white text-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-16 w-16 rounded-full bg-b2b-green bg-opacity-10 flex items-center justify-center">
             <FiCheck className="h-8 w-8 text-b2b-green" />
           </div>
           <h3 className="text-2xl font-bold text-b2b-dark">Thank You!</h3>
           <p className="text-b2b-gray-600 max-w-md">
-            We've received your information and one of our team members will be in touch with you shortly.
+            We&apos;ve received your information and one of our team members will be in touch with you shortly.
           </p>
           <Button
             variant="outline"
@@ -151,14 +151,14 @@ export function LeadCaptureForm() {
   }
 
   return (
-    <Card padding="xl" className="bg-white">
+    <Card padding="lg" className="bg-white">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="text-center mb-6">
           <h3 className="text-2xl font-bold text-b2b-dark mb-2">
             Get Started Today
           </h3>
           <p className="text-b2b-gray-600">
-            Fill out the form below and we'll reach out to schedule a personalized demo.
+            Fill out the form below and we&apos;ll reach out to schedule a personalized demo.
           </p>
         </div>
 

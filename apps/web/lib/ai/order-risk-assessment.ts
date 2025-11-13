@@ -1,9 +1,9 @@
 /**
  * Order Risk Assessment Module
- * 
+ *
  * AI-powered risk assessment for order auto-approval decisions.
  * Analyzes customer history, order patterns, and fraud indicators.
- * 
+ *
  * Phase 5: Operational AI - Week 21
  */
 
@@ -215,7 +215,7 @@ export async function assessOrderRisk(
   // Calculate customer trust score (inverse of risk)
   const trustScore = Math.max(
     0,
-    1.0 - (baseRiskScore * 0.5) + 
+    1.0 - (baseRiskScore * 0.5) +
     Math.min(customerHistory.total_orders / 20, 0.3) + // Loyalty bonus
     Math.min(customerHistory.account_age_days / 365, 0.2) // Account age bonus
   );
@@ -264,15 +264,15 @@ export async function assessOrderRisk(
 async function getCustomerHistory(customerId: string): Promise<CustomerHistory> {
   const supabase = await createClient();
 
-  // Get customer account age
-  const { data: customer } = await supabase
-    .from('customers')
+  // Get customer account age from profiles table
+  const { data: profile } = await supabase
+    .from('profiles')
     .select('created_at')
     .eq('id', customerId)
     .single();
 
-  const accountAgeDays = customer
-    ? Math.floor((Date.now() - new Date(customer.created_at).getTime()) / (1000 * 60 * 60 * 24))
+  const accountAgeDays = profile
+    ? Math.floor((Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
   // Get order history
@@ -287,20 +287,42 @@ async function getCustomerHistory(customerId: string): Promise<CustomerHistory> 
   const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
   const lastOrderDate = orders?.[0]?.created_at || null;
 
-  // Get payment failures (mock - would integrate with payment provider)
-  const paymentFailures = 0;
+  // Get actual payment failures from database
+  const { data: paymentFailuresData } = await supabase
+    .from('payment_failures')
+    .select('id')
+    .eq('customer_id', customerId);
 
-  // Get returns count (mock - would query returns table)
-  const returnsCount = 0;
+  const paymentFailures = paymentFailuresData?.length || 0;
 
-  // Get disputes count (mock - would query disputes table)
-  const disputesCount = 0;
+  // Get actual returns count from database
+  const { data: returnsData } = await supabase
+    .from('order_returns')
+    .select('id')
+    .eq('customer_id', customerId);
 
-  // Check for payment method (mock - would check payment provider)
-  const hasPaymentMethod = false;
+  const returnsCount = returnsData?.length || 0;
 
-  // Get outstanding balance (mock - would calculate from invoices)
-  const outstandingBalance = 0;
+  // Get actual disputes count from database
+  const { data: disputesData } = await supabase
+    .from('customer_disputes')
+    .select('id')
+    .eq('customer_id', customerId);
+
+  const disputesCount = disputesData?.length || 0;
+
+  // Check for payment method (would integrate with payment provider in future)
+  // For now, assume true if customer has completed orders
+  const hasPaymentMethod = totalOrders > 0;
+
+  // Get outstanding balance from invoices with pending status
+  const { data: pendingInvoices } = await supabase
+    .from('invoices')
+    .select('total_amount')
+    .eq('customer_id', customerId)
+    .eq('status', 'pending');
+
+  const outstandingBalance = pendingInvoices?.reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0) || 0;
 
   return {
     total_orders: totalOrders,
@@ -376,4 +398,3 @@ Provide:
 
   return result;
 }
-

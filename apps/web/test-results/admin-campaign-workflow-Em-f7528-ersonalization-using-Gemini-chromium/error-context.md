@@ -1,0 +1,862 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "B2B+" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img [ref=e5]
+        - generic [ref=e8]: B2B+
+      - navigation [ref=e9]:
+        - link "Home" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - button "Home" [ref=e11]:
+            - img [ref=e13]
+            - text: Home
+        - link "Products" [ref=e16] [cursor=pointer]:
+          - /url: /products
+          - button "Products" [ref=e17]:
+            - img [ref=e19]
+            - text: Products
+        - link "Orders" [ref=e23] [cursor=pointer]:
+          - /url: /orders
+          - button "Orders" [ref=e24]:
+            - img [ref=e26]
+            - text: Orders
+        - link "Invoices" [ref=e29] [cursor=pointer]:
+          - /url: /invoices
+          - button "Invoices" [ref=e30]:
+            - img [ref=e32]
+            - text: Invoices
+        - link "Calculator" [ref=e35] [cursor=pointer]:
+          - /url: /tools/container-calculator
+          - button "Calculator" [ref=e36]:
+            - img [ref=e38]
+            - text: Calculator
+        - link "AI Assistant" [ref=e41] [cursor=pointer]:
+          - /url: /chat
+          - button "AI Assistant" [ref=e42]:
+            - img [ref=e44]
+            - text: AI Assistant
+        - link "Analytics" [ref=e47] [cursor=pointer]:
+          - /url: /analytics
+          - button "Analytics" [ref=e48]:
+            - img [ref=e50]
+            - text: Analytics
+        - link "Notifications" [ref=e53] [cursor=pointer]:
+          - /url: /notifications
+          - button "Notifications" [ref=e54]:
+            - img [ref=e56]
+            - text: Notifications
+        - link "Admin" [ref=e59] [cursor=pointer]:
+          - /url: /admin/products
+          - button "Admin" [ref=e60]:
+            - img [ref=e62]
+            - text: Admin
+        - link "Cart" [ref=e66] [cursor=pointer]:
+          - /url: /cart
+          - button "Cart" [ref=e68]:
+            - img [ref=e70]
+            - text: Cart
+      - generic [ref=e73]:
+        - link [ref=e74] [cursor=pointer]:
+          - /url: /profile
+          - button [ref=e75]:
+            - img [ref=e77]
+        - button [ref=e80] [cursor=pointer]:
+          - img [ref=e82]
+  - main [ref=e85]:
+    - generic [ref=e86]:
+      - complementary [ref=e87]:
+        - generic [ref=e88]:
+          - heading "B2B+ Admin" [level=1] [ref=e90]
+          - navigation [ref=e91]:
+            - link "Dashboard" [ref=e92] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e93]
+              - text: Dashboard
+            - link "Products" [ref=e96] [cursor=pointer]:
+              - /url: /admin/products
+              - img [ref=e97]
+              - text: Products
+            - link "Orders" [ref=e101] [cursor=pointer]:
+              - /url: /admin/orders
+              - img [ref=e102]
+              - text: Orders
+            - link "Customers" [ref=e106] [cursor=pointer]:
+              - /url: /admin/customers
+              - img [ref=e107]
+              - text: Customers
+            - link "Analytics" [ref=e112] [cursor=pointer]:
+              - /url: /admin/analytics
+              - img [ref=e113]
+              - text: Analytics
+            - link "Opportunities" [ref=e116] [cursor=pointer]:
+              - /url: /admin/opportunities
+              - img [ref=e117]
+              - text: Opportunities
+            - link "Forecasts" [ref=e121] [cursor=pointer]:
+              - /url: /admin/forecasts
+              - img [ref=e122]
+              - text: Forecasts
+            - link "Pricing" [ref=e123] [cursor=pointer]:
+              - /url: /admin/pricing/recommendations
+              - img [ref=e124]
+              - text: Pricing
+            - link "Registrations" [ref=e126] [cursor=pointer]:
+              - /url: /admin/registrations
+              - img [ref=e127]
+              - text: Registrations
+            - link "Invoices" [ref=e131] [cursor=pointer]:
+              - /url: /admin/invoices
+              - img [ref=e132]
+              - text: Invoices
+            - link "Shipping" [ref=e135] [cursor=pointer]:
+              - /url: /admin/shipping
+              - img [ref=e136]
+              - text: Shipping
+            - link "Monitoring" [ref=e141] [cursor=pointer]:
+              - /url: /admin/monitoring
+              - img [ref=e142]
+              - text: Monitoring
+            - link "Settings" [ref=e144] [cursor=pointer]:
+              - /url: /admin/settings
+              - img [ref=e145]
+              - text: Settings
+      - generic [ref=e148]:
+        - link "View Site" [ref=e151] [cursor=pointer]:
+          - /url: /
+        - main [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - heading "Email Campaigns" [level=1] [ref=e157]
+                - paragraph [ref=e158]: Create and manage email marketing campaigns
+              - generic [ref=e159]:
+                - button "Create Campaign" [ref=e160] [cursor=pointer]
+                - img [ref=e161]
+            - generic [ref=e164]:
+              - generic [ref=e166]:
+                - generic [ref=e167]:
+                  - paragraph [ref=e168]: Total Campaigns
+                  - paragraph [ref=e169]: "38"
+                - img [ref=e171]
+              - generic [ref=e175]:
+                - generic [ref=e176]:
+                  - paragraph [ref=e177]: Emails Sent
+                  - paragraph [ref=e178]: "27"
+                - img [ref=e180]
+              - generic [ref=e184]:
+                - generic [ref=e185]:
+                  - paragraph [ref=e186]: Avg Open Rate
+                  - paragraph [ref=e187]: 3.7%
+                - img [ref=e189]
+              - generic [ref=e195]:
+                - generic [ref=e196]:
+                  - paragraph [ref=e197]: Total Clicks
+                  - paragraph [ref=e198]: "1"
+                - img [ref=e200]
+            - table [ref=e205]:
+              - rowgroup [ref=e206]:
+                - row "Campaign Status Sent Opened Clicked Date" [ref=e207]:
+                  - cell "Campaign" [ref=e208]
+                  - cell "Status" [ref=e209]
+                  - cell "Sent" [ref=e210]
+                  - cell "Opened" [ref=e211]
+                  - cell "Clicked" [ref=e212]
+                  - cell "Date" [ref=e213]
+              - rowgroup [ref=e214]:
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Quality for Test Restaurant Inc. with Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e215] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Quality for Test Restaurant Inc. with Metro Bag" [ref=e216]:
+                    - generic [ref=e217]:
+                      - generic [ref=e218]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e219]: Unlock Savings & Quality for Test Restaurant Inc. with Metro Bag
+                  - cell "Sending" [ref=e220]:
+                    - generic [ref=e221]: Sending
+                  - cell "1" [ref=e222]
+                  - cell "0 0.0%" [ref=e223]:
+                    - generic [ref=e224]:
+                      - generic [ref=e225]: "0"
+                      - generic [ref=e226]: 0.0%
+                  - cell "0 0.0%" [ref=e227]:
+                    - generic [ref=e228]:
+                      - generic [ref=e229]: "0"
+                      - generic [ref=e230]: 0.0%
+                  - cell "Not sent" [ref=e231]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e232] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e233]:
+                    - generic [ref=e234]:
+                      - generic [ref=e235]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e236]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e237]:
+                    - generic [ref=e238]: Sending
+                  - cell "1" [ref=e239]
+                  - cell "0 0.0%" [ref=e240]:
+                    - generic [ref=e241]:
+                      - generic [ref=e242]: "0"
+                      - generic [ref=e243]: 0.0%
+                  - cell "0 0.0%" [ref=e244]:
+                    - generic [ref=e245]:
+                      - generic [ref=e246]: "0"
+                      - generic [ref=e247]: 0.0%
+                  - cell "Not sent" [ref=e248]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco Benefits Sending 1 0 0.0% 0 0.0% Not sent" [ref=e249] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco Benefits" [ref=e250]:
+                    - generic [ref=e251]:
+                      - generic [ref=e252]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e253]: Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco Benefits
+                  - cell "Sending" [ref=e254]:
+                    - generic [ref=e255]: Sending
+                  - cell "1" [ref=e256]
+                  - cell "0 0.0%" [ref=e257]:
+                    - generic [ref=e258]:
+                      - generic [ref=e259]: "0"
+                      - generic [ref=e260]: 0.0%
+                  - cell "0 0.0%" [ref=e261]:
+                    - generic [ref=e262]:
+                      - generic [ref=e263]: "0"
+                      - generic [ref=e264]: 0.0%
+                  - cell "Not sent" [ref=e265]
+                - row "Reorder Reminder Campaign Time to Restock - AI Prediction Scheduled 0 0 0.0% 0 0.0% Not sent" [ref=e266] [cursor=pointer]:
+                  - cell "Reorder Reminder Campaign Time to Restock - AI Prediction" [ref=e267]:
+                    - generic [ref=e268]:
+                      - generic [ref=e269]: Reorder Reminder Campaign
+                      - generic [ref=e270]: Time to Restock - AI Prediction
+                  - cell "Scheduled" [ref=e271]:
+                    - generic [ref=e272]: Scheduled
+                  - cell "0" [ref=e273]
+                  - cell "0 0.0%" [ref=e274]:
+                    - generic [ref=e275]:
+                      - generic [ref=e276]: "0"
+                      - generic [ref=e277]: 0.0%
+                  - cell "0 0.0%" [ref=e278]:
+                    - generic [ref=e279]:
+                      - generic [ref=e280]: "0"
+                      - generic [ref=e281]: 0.0%
+                  - cell "Not sent" [ref=e282]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e283] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e284]:
+                    - generic [ref=e285]:
+                      - generic [ref=e286]: Summer Product Launch - Draft
+                      - generic [ref=e287]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e288]:
+                    - generic [ref=e289]: Draft
+                  - cell "0" [ref=e290]
+                  - cell "0 0.0%" [ref=e291]:
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: "0"
+                      - generic [ref=e294]: 0.0%
+                  - cell "0 0.0%" [ref=e295]:
+                    - generic [ref=e296]:
+                      - generic [ref=e297]: "0"
+                      - generic [ref=e298]: 0.0%
+                  - cell "Not sent" [ref=e299]
+                - row "Spring Promotion 2025 Spring Sale - 15% Off Eco-Friendly Products! Sent 1 1 100.0% 1 100.0% Nov 1, 2025" [ref=e300] [cursor=pointer]:
+                  - cell "Spring Promotion 2025 Spring Sale - 15% Off Eco-Friendly Products!" [ref=e301]:
+                    - generic [ref=e302]:
+                      - generic [ref=e303]: Spring Promotion 2025
+                      - generic [ref=e304]: Spring Sale - 15% Off Eco-Friendly Products!
+                  - cell "Sent" [ref=e305]:
+                    - generic [ref=e306]: Sent
+                  - cell "1" [ref=e307]
+                  - cell "1 100.0%" [ref=e308]:
+                    - generic [ref=e309]:
+                      - generic [ref=e310]: "1"
+                      - generic [ref=e311]: 100.0%
+                  - cell "1 100.0%" [ref=e312]:
+                    - generic [ref=e313]:
+                      - generic [ref=e314]: "1"
+                      - generic [ref=e315]: 100.0%
+                  - cell "Nov 1, 2025" [ref=e316]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Our Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e317] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Our Catalog for Test Restaurant Inc." [ref=e318]:
+                    - generic [ref=e319]:
+                      - generic [ref=e320]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e321]: Unlock Savings & Explore Our Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e322]:
+                    - generic [ref=e323]: Sending
+                  - cell "1" [ref=e324]
+                  - cell "0 0.0%" [ref=e325]:
+                    - generic [ref=e326]:
+                      - generic [ref=e327]: "0"
+                      - generic [ref=e328]: 0.0%
+                  - cell "0 0.0%" [ref=e329]:
+                    - generic [ref=e330]:
+                      - generic [ref=e331]: "0"
+                      - generic [ref=e332]: 0.0%
+                  - cell "Not sent" [ref=e333]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e334] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag" [ref=e335]:
+                    - generic [ref=e336]:
+                      - generic [ref=e337]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e338]: Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag
+                  - cell "Sending" [ref=e339]:
+                    - generic [ref=e340]: Sending
+                  - cell "1" [ref=e341]
+                  - cell "0 0.0%" [ref=e342]:
+                    - generic [ref=e343]:
+                      - generic [ref=e344]: "0"
+                      - generic [ref=e345]: 0.0%
+                  - cell "0 0.0%" [ref=e346]:
+                    - generic [ref=e347]:
+                      - generic [ref=e348]: "0"
+                      - generic [ref=e349]: 0.0%
+                  - cell "Not sent" [ref=e350]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings for Test Restaurant Inc. - Your Metro Bag Catalog Sending 1 0 0.0% 0 0.0% Not sent" [ref=e351] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings for Test Restaurant Inc. - Your Metro Bag Catalog" [ref=e352]:
+                    - generic [ref=e353]:
+                      - generic [ref=e354]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e355]: Exclusive Savings for Test Restaurant Inc. - Your Metro Bag Catalog
+                  - cell "Sending" [ref=e356]:
+                    - generic [ref=e357]: Sending
+                  - cell "1" [ref=e358]
+                  - cell "0 0.0%" [ref=e359]:
+                    - generic [ref=e360]:
+                      - generic [ref=e361]: "0"
+                      - generic [ref=e362]: 0.0%
+                  - cell "0 0.0%" [ref=e363]:
+                    - generic [ref=e364]:
+                      - generic [ref=e365]: "0"
+                      - generic [ref=e366]: 0.0%
+                  - cell "Not sent" [ref=e367]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco Sending 1 0 0.0% 0 0.0% Not sent" [ref=e368] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco" [ref=e369]:
+                    - generic [ref=e370]:
+                      - generic [ref=e371]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e372]: Unlock Savings for Test Restaurant Inc. with Metro Bag & Sysco
+                  - cell "Sending" [ref=e373]:
+                    - generic [ref=e374]: Sending
+                  - cell "1" [ref=e375]
+                  - cell "0 0.0%" [ref=e376]:
+                    - generic [ref=e377]:
+                      - generic [ref=e378]: "0"
+                      - generic [ref=e379]: 0.0%
+                  - cell "0 0.0%" [ref=e380]:
+                    - generic [ref=e381]:
+                      - generic [ref=e382]: "0"
+                      - generic [ref=e383]: 0.0%
+                  - cell "Not sent" [ref=e384]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e385] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc." [ref=e386]:
+                    - generic [ref=e387]:
+                      - generic [ref=e388]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e389]: Unlock Savings & Explore Disposables for Test Restaurant Inc.
+                  - cell "Sending" [ref=e390]:
+                    - generic [ref=e391]: Sending
+                  - cell "1" [ref=e392]
+                  - cell "0 0.0%" [ref=e393]:
+                    - generic [ref=e394]:
+                      - generic [ref=e395]: "0"
+                      - generic [ref=e396]: 0.0%
+                  - cell "0 0.0%" [ref=e397]:
+                    - generic [ref=e398]:
+                      - generic [ref=e399]: "0"
+                      - generic [ref=e400]: 0.0%
+                  - cell "Not sent" [ref=e401]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e402] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Catalog for Test Restaurant Inc." [ref=e403]:
+                    - generic [ref=e404]:
+                      - generic [ref=e405]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e406]: Unlock Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e407]:
+                    - generic [ref=e408]: Sending
+                  - cell "1" [ref=e409]
+                  - cell "0 0.0%" [ref=e410]:
+                    - generic [ref=e411]:
+                      - generic [ref=e412]: "0"
+                      - generic [ref=e413]: 0.0%
+                  - cell "0 0.0%" [ref=e414]:
+                    - generic [ref=e415]:
+                      - generic [ref=e416]: "0"
+                      - generic [ref=e417]: 0.0%
+                  - cell "Not sent" [ref=e418]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing Sending 1 0 0.0% 0 0.0% Not sent" [ref=e419] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing" [ref=e420]:
+                    - generic [ref=e421]:
+                      - generic [ref=e422]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e423]: Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing
+                  - cell "Sending" [ref=e424]:
+                    - generic [ref=e425]: Sending
+                  - cell "1" [ref=e426]
+                  - cell "0 0.0%" [ref=e427]:
+                    - generic [ref=e428]:
+                      - generic [ref=e429]: "0"
+                      - generic [ref=e430]: 0.0%
+                  - cell "0 0.0%" [ref=e431]:
+                    - generic [ref=e432]:
+                      - generic [ref=e433]: "0"
+                      - generic [ref=e434]: 0.0%
+                  - cell "Not sent" [ref=e435]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e436] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc." [ref=e437]:
+                    - generic [ref=e438]:
+                      - generic [ref=e439]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e440]: Unlock Savings & Explore Disposables for Test Restaurant Inc.
+                  - cell "Sending" [ref=e441]:
+                    - generic [ref=e442]: Sending
+                  - cell "1" [ref=e443]
+                  - cell "0 0.0%" [ref=e444]:
+                    - generic [ref=e445]:
+                      - generic [ref=e446]: "0"
+                      - generic [ref=e447]: 0.0%
+                  - cell "0 0.0%" [ref=e448]:
+                    - generic [ref=e449]:
+                      - generic [ref=e450]: "0"
+                      - generic [ref=e451]: 0.0%
+                  - cell "Not sent" [ref=e452]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e453] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e454]:
+                    - generic [ref=e455]:
+                      - generic [ref=e456]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e457]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e458]:
+                    - generic [ref=e459]: Sending
+                  - cell "1" [ref=e460]
+                  - cell "0 0.0%" [ref=e461]:
+                    - generic [ref=e462]:
+                      - generic [ref=e463]: "0"
+                      - generic [ref=e464]: 0.0%
+                  - cell "0 0.0%" [ref=e465]:
+                    - generic [ref=e466]:
+                      - generic [ref=e467]: "0"
+                      - generic [ref=e468]: 0.0%
+                  - cell "Not sent" [ref=e469]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e470] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag" [ref=e471]:
+                    - generic [ref=e472]:
+                      - generic [ref=e473]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e474]: Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag
+                  - cell "Sending" [ref=e475]:
+                    - generic [ref=e476]: Sending
+                  - cell "1" [ref=e477]
+                  - cell "0 0.0%" [ref=e478]:
+                    - generic [ref=e479]:
+                      - generic [ref=e480]: "0"
+                      - generic [ref=e481]: 0.0%
+                  - cell "0 0.0%" [ref=e482]:
+                    - generic [ref=e483]:
+                      - generic [ref=e484]: "0"
+                      - generic [ref=e485]: 0.0%
+                  - cell "Not sent" [ref=e486]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e487] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag" [ref=e488]:
+                    - generic [ref=e489]:
+                      - generic [ref=e490]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e491]: Unlock Savings for Test Restaurant Inc. with Metro Bag
+                  - cell "Sending" [ref=e492]:
+                    - generic [ref=e493]: Sending
+                  - cell "1" [ref=e494]
+                  - cell "0 0.0%" [ref=e495]:
+                    - generic [ref=e496]:
+                      - generic [ref=e497]: "0"
+                      - generic [ref=e498]: 0.0%
+                  - cell "0 0.0%" [ref=e499]:
+                    - generic [ref=e500]:
+                      - generic [ref=e501]: "0"
+                      - generic [ref=e502]: 0.0%
+                  - cell "Not sent" [ref=e503]
+                - 'row "Quick Send - Test Restaurant Inc. Unlock Savings: Metro Bag''s Catalog & Exclusive Rates for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e504] [cursor=pointer]':
+                  - 'cell "Quick Send - Test Restaurant Inc. Unlock Savings: Metro Bag''s Catalog & Exclusive Rates for Test Restaurant Inc." [ref=e505]':
+                    - generic [ref=e506]:
+                      - generic [ref=e507]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e508]: "Unlock Savings: Metro Bag's Catalog & Exclusive Rates for Test Restaurant Inc."
+                  - cell "Sending" [ref=e509]:
+                    - generic [ref=e510]: Sending
+                  - cell "1" [ref=e511]
+                  - cell "0 0.0%" [ref=e512]:
+                    - generic [ref=e513]:
+                      - generic [ref=e514]: "0"
+                      - generic [ref=e515]: 0.0%
+                  - cell "0 0.0%" [ref=e516]:
+                    - generic [ref=e517]:
+                      - generic [ref=e518]: "0"
+                      - generic [ref=e519]: 0.0%
+                  - cell "Not sent" [ref=e520]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e521] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e522]:
+                    - generic [ref=e523]:
+                      - generic [ref=e524]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e525]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e526]:
+                    - generic [ref=e527]: Sending
+                  - cell "1" [ref=e528]
+                  - cell "0 0.0%" [ref=e529]:
+                    - generic [ref=e530]:
+                      - generic [ref=e531]: "0"
+                      - generic [ref=e532]: 0.0%
+                  - cell "0 0.0%" [ref=e533]:
+                    - generic [ref=e534]:
+                      - generic [ref=e535]: "0"
+                      - generic [ref=e536]: 0.0%
+                  - cell "Not sent" [ref=e537]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e538] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e539]:
+                    - generic [ref=e540]:
+                      - generic [ref=e541]: Summer Product Launch - Draft
+                      - generic [ref=e542]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e543]:
+                    - generic [ref=e544]: Draft
+                  - cell "0" [ref=e545]
+                  - cell "0 0.0%" [ref=e546]:
+                    - generic [ref=e547]:
+                      - generic [ref=e548]: "0"
+                      - generic [ref=e549]: 0.0%
+                  - cell "0 0.0%" [ref=e550]:
+                    - generic [ref=e551]:
+                      - generic [ref=e552]: "0"
+                      - generic [ref=e553]: 0.0%
+                  - cell "Not sent" [ref=e554]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e555] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag" [ref=e556]:
+                    - generic [ref=e557]:
+                      - generic [ref=e558]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e559]: Unlock Savings & Explore Products for Test Restaurant Inc. with Metro Bag
+                  - cell "Sending" [ref=e560]:
+                    - generic [ref=e561]: Sending
+                  - cell "1" [ref=e562]
+                  - cell "0 0.0%" [ref=e563]:
+                    - generic [ref=e564]:
+                      - generic [ref=e565]: "0"
+                      - generic [ref=e566]: 0.0%
+                  - cell "0 0.0%" [ref=e567]:
+                    - generic [ref=e568]:
+                      - generic [ref=e569]: "0"
+                      - generic [ref=e570]: 0.0%
+                  - cell "Not sent" [ref=e571]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e572] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e573]:
+                    - generic [ref=e574]:
+                      - generic [ref=e575]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e576]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e577]:
+                    - generic [ref=e578]: Sending
+                  - cell "1" [ref=e579]
+                  - cell "0 0.0%" [ref=e580]:
+                    - generic [ref=e581]:
+                      - generic [ref=e582]: "0"
+                      - generic [ref=e583]: 0.0%
+                  - cell "0 0.0%" [ref=e584]:
+                    - generic [ref=e585]:
+                      - generic [ref=e586]: "0"
+                      - generic [ref=e587]: 0.0%
+                  - cell "Not sent" [ref=e588]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e589] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Disposables for Test Restaurant Inc." [ref=e590]:
+                    - generic [ref=e591]:
+                      - generic [ref=e592]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e593]: Unlock Savings & Explore Disposables for Test Restaurant Inc.
+                  - cell "Sending" [ref=e594]:
+                    - generic [ref=e595]: Sending
+                  - cell "1" [ref=e596]
+                  - cell "0 0.0%" [ref=e597]:
+                    - generic [ref=e598]:
+                      - generic [ref=e599]: "0"
+                      - generic [ref=e600]: 0.0%
+                  - cell "0 0.0%" [ref=e601]:
+                    - generic [ref=e602]:
+                      - generic [ref=e603]: "0"
+                      - generic [ref=e604]: 0.0%
+                  - cell "Not sent" [ref=e605]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e606] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e607]:
+                    - generic [ref=e608]:
+                      - generic [ref=e609]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e610]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e611]:
+                    - generic [ref=e612]: Sending
+                  - cell "1" [ref=e613]
+                  - cell "0 0.0%" [ref=e614]:
+                    - generic [ref=e615]:
+                      - generic [ref=e616]: "0"
+                      - generic [ref=e617]: 0.0%
+                  - cell "0 0.0%" [ref=e618]:
+                    - generic [ref=e619]:
+                      - generic [ref=e620]: "0"
+                      - generic [ref=e621]: 0.0%
+                  - cell "Not sent" [ref=e622]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e623] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag" [ref=e624]:
+                    - generic [ref=e625]:
+                      - generic [ref=e626]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e627]: Exclusive Savings & Catalog for Test Restaurant Inc. from Metro Bag
+                  - cell "Sending" [ref=e628]:
+                    - generic [ref=e629]: Sending
+                  - cell "1" [ref=e630]
+                  - cell "0 0.0%" [ref=e631]:
+                    - generic [ref=e632]:
+                      - generic [ref=e633]: "0"
+                      - generic [ref=e634]: 0.0%
+                  - cell "0 0.0%" [ref=e635]:
+                    - generic [ref=e636]:
+                      - generic [ref=e637]: "0"
+                      - generic [ref=e638]: 0.0%
+                  - cell "Not sent" [ref=e639]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e640] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e641]:
+                    - generic [ref=e642]:
+                      - generic [ref=e643]: Summer Product Launch - Draft
+                      - generic [ref=e644]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e645]:
+                    - generic [ref=e646]: Draft
+                  - cell "0" [ref=e647]
+                  - cell "0 0.0%" [ref=e648]:
+                    - generic [ref=e649]:
+                      - generic [ref=e650]: "0"
+                      - generic [ref=e651]: 0.0%
+                  - cell "0 0.0%" [ref=e652]:
+                    - generic [ref=e653]:
+                      - generic [ref=e654]: "0"
+                      - generic [ref=e655]: 0.0%
+                  - cell "Not sent" [ref=e656]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing Sending 1 0 0.0% 0 0.0% Not sent" [ref=e657] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing" [ref=e658]:
+                    - generic [ref=e659]:
+                      - generic [ref=e660]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e661]: Unlock Savings for Test Restaurant Inc. with Metro Bag's Catalog & Georgia Pricing
+                  - cell "Sending" [ref=e662]:
+                    - generic [ref=e663]: Sending
+                  - cell "1" [ref=e664]
+                  - cell "0 0.0%" [ref=e665]:
+                    - generic [ref=e666]:
+                      - generic [ref=e667]: "0"
+                      - generic [ref=e668]: 0.0%
+                  - cell "0 0.0%" [ref=e669]:
+                    - generic [ref=e670]:
+                      - generic [ref=e671]: "0"
+                      - generic [ref=e672]: 0.0%
+                  - cell "Not sent" [ref=e673]
+                - row "Quick Send - Hotel Chain Corp Streamline Your Food Service with Metro Bag for Hotel Chain Corp Sending 1 0 0.0% 0 0.0% Not sent" [ref=e674] [cursor=pointer]:
+                  - cell "Quick Send - Hotel Chain Corp Streamline Your Food Service with Metro Bag for Hotel Chain Corp" [ref=e675]:
+                    - generic [ref=e676]:
+                      - generic [ref=e677]: Quick Send - Hotel Chain Corp
+                      - generic [ref=e678]: Streamline Your Food Service with Metro Bag for Hotel Chain Corp
+                  - cell "Sending" [ref=e679]:
+                    - generic [ref=e680]: Sending
+                  - cell "1" [ref=e681]
+                  - cell "0 0.0%" [ref=e682]:
+                    - generic [ref=e683]:
+                      - generic [ref=e684]: "0"
+                      - generic [ref=e685]: 0.0%
+                  - cell "0 0.0%" [ref=e686]:
+                    - generic [ref=e687]:
+                      - generic [ref=e688]: "0"
+                      - generic [ref=e689]: 0.0%
+                  - cell "Not sent" [ref=e690]
+                - 'row "Quick Send - Hotel Chain Corp Elevate Hotel Chain Corp''s Service: Metro Bag''s Catalog & Savings Sending 1 0 0.0% 0 0.0% Not sent" [ref=e691] [cursor=pointer]':
+                  - 'cell "Quick Send - Hotel Chain Corp Elevate Hotel Chain Corp''s Service: Metro Bag''s Catalog & Savings" [ref=e692]':
+                    - generic [ref=e693]:
+                      - generic [ref=e694]: Quick Send - Hotel Chain Corp
+                      - generic [ref=e695]: "Elevate Hotel Chain Corp's Service: Metro Bag's Catalog & Savings"
+                  - cell "Sending" [ref=e696]:
+                    - generic [ref=e697]: Sending
+                  - cell "1" [ref=e698]
+                  - cell "0 0.0%" [ref=e699]:
+                    - generic [ref=e700]:
+                      - generic [ref=e701]: "0"
+                      - generic [ref=e702]: 0.0%
+                  - cell "0 0.0%" [ref=e703]:
+                    - generic [ref=e704]:
+                      - generic [ref=e705]: "0"
+                      - generic [ref=e706]: 0.0%
+                  - cell "Not sent" [ref=e707]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e708] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e709]:
+                    - generic [ref=e710]:
+                      - generic [ref=e711]: Summer Product Launch - Draft
+                      - generic [ref=e712]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e713]:
+                    - generic [ref=e714]: Draft
+                  - cell "0" [ref=e715]
+                  - cell "0 0.0%" [ref=e716]:
+                    - generic [ref=e717]:
+                      - generic [ref=e718]: "0"
+                      - generic [ref=e719]: 0.0%
+                  - cell "0 0.0%" [ref=e720]:
+                    - generic [ref=e721]:
+                      - generic [ref=e722]: "0"
+                      - generic [ref=e723]: 0.0%
+                  - cell "Not sent" [ref=e724]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e725] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e726]:
+                    - generic [ref=e727]:
+                      - generic [ref=e728]: Summer Product Launch - Draft
+                      - generic [ref=e729]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e730]:
+                    - generic [ref=e731]: Draft
+                  - cell "0" [ref=e732]
+                  - cell "0 0.0%" [ref=e733]:
+                    - generic [ref=e734]:
+                      - generic [ref=e735]: "0"
+                      - generic [ref=e736]: 0.0%
+                  - cell "0 0.0%" [ref=e737]:
+                    - generic [ref=e738]:
+                      - generic [ref=e739]: "0"
+                      - generic [ref=e740]: 0.0%
+                  - cell "Not sent" [ref=e741]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e742] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e743]:
+                    - generic [ref=e744]:
+                      - generic [ref=e745]: Summer Product Launch - Draft
+                      - generic [ref=e746]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e747]:
+                    - generic [ref=e748]: Draft
+                  - cell "0" [ref=e749]
+                  - cell "0 0.0%" [ref=e750]:
+                    - generic [ref=e751]:
+                      - generic [ref=e752]: "0"
+                      - generic [ref=e753]: 0.0%
+                  - cell "0 0.0%" [ref=e754]:
+                    - generic [ref=e755]:
+                      - generic [ref=e756]: "0"
+                      - generic [ref=e757]: 0.0%
+                  - cell "Not sent" [ref=e758]
+                - row "Summer Product Launch - Draft Introducing Our New Summer Collection Draft 0 0 0.0% 0 0.0% Not sent" [ref=e759] [cursor=pointer]:
+                  - cell "Summer Product Launch - Draft Introducing Our New Summer Collection" [ref=e760]:
+                    - generic [ref=e761]:
+                      - generic [ref=e762]: Summer Product Launch - Draft
+                      - generic [ref=e763]: Introducing Our New Summer Collection
+                  - cell "Draft" [ref=e764]:
+                    - generic [ref=e765]: Draft
+                  - cell "0" [ref=e766]
+                  - cell "0 0.0%" [ref=e767]:
+                    - generic [ref=e768]:
+                      - generic [ref=e769]: "0"
+                      - generic [ref=e770]: 0.0%
+                  - cell "0 0.0%" [ref=e771]:
+                    - generic [ref=e772]:
+                      - generic [ref=e773]: "0"
+                      - generic [ref=e774]: 0.0%
+                  - cell "Not sent" [ref=e775]
+                - row "Quick Send - New Restaurant Downtown Streamline Operations & Save at New Restaurant Downtown with Metro Bag Sending 1 0 0.0% 0 0.0% Not sent" [ref=e776] [cursor=pointer]:
+                  - cell "Quick Send - New Restaurant Downtown Streamline Operations & Save at New Restaurant Downtown with Metro Bag" [ref=e777]:
+                    - generic [ref=e778]:
+                      - generic [ref=e779]: Quick Send - New Restaurant Downtown
+                      - generic [ref=e780]: Streamline Operations & Save at New Restaurant Downtown with Metro Bag
+                  - cell "Sending" [ref=e781]:
+                    - generic [ref=e782]: Sending
+                  - cell "1" [ref=e783]
+                  - cell "0 0.0%" [ref=e784]:
+                    - generic [ref=e785]:
+                      - generic [ref=e786]: "0"
+                      - generic [ref=e787]: 0.0%
+                  - cell "0 0.0%" [ref=e788]:
+                    - generic [ref=e789]:
+                      - generic [ref=e790]: "0"
+                      - generic [ref=e791]: 0.0%
+                  - cell "Not sent" [ref=e792]
+                - row "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Metro Bag's Catalog for Test Restaurant Inc. Sending 1 0 0.0% 0 0.0% Not sent" [ref=e793] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Unlock Savings & Explore Metro Bag's Catalog for Test Restaurant Inc." [ref=e794]:
+                    - generic [ref=e795]:
+                      - generic [ref=e796]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e797]: Unlock Savings & Explore Metro Bag's Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e798]:
+                    - generic [ref=e799]: Sending
+                  - cell "1" [ref=e800]
+                  - cell "0 0.0%" [ref=e801]:
+                    - generic [ref=e802]:
+                      - generic [ref=e803]: "0"
+                      - generic [ref=e804]: 0.0%
+                  - cell "0 0.0%" [ref=e805]:
+                    - generic [ref=e806]:
+                      - generic [ref=e807]: "0"
+                      - generic [ref=e808]: 0.0%
+                  - cell "Not sent" [ref=e809]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 0 0 0.0% 0 0.0% Not sent" [ref=e810] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e811]:
+                    - generic [ref=e812]:
+                      - generic [ref=e813]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e814]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e815]:
+                    - generic [ref=e816]: Sending
+                  - cell "0" [ref=e817]
+                  - cell "0 0.0%" [ref=e818]:
+                    - generic [ref=e819]:
+                      - generic [ref=e820]: "0"
+                      - generic [ref=e821]: 0.0%
+                  - cell "0 0.0%" [ref=e822]:
+                    - generic [ref=e823]:
+                      - generic [ref=e824]: "0"
+                      - generic [ref=e825]: 0.0%
+                  - cell "Not sent" [ref=e826]
+                - row "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc. Sending 0 0 0.0% 0 0.0% Not sent" [ref=e827] [cursor=pointer]:
+                  - cell "Quick Send - Test Restaurant Inc. Exclusive Savings & Catalog for Test Restaurant Inc." [ref=e828]:
+                    - generic [ref=e829]:
+                      - generic [ref=e830]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e831]: Exclusive Savings & Catalog for Test Restaurant Inc.
+                  - cell "Sending" [ref=e832]:
+                    - generic [ref=e833]: Sending
+                  - cell "0" [ref=e834]
+                  - cell "0 0.0%" [ref=e835]:
+                    - generic [ref=e836]:
+                      - generic [ref=e837]: "0"
+                      - generic [ref=e838]: 0.0%
+                  - cell "0 0.0%" [ref=e839]:
+                    - generic [ref=e840]:
+                      - generic [ref=e841]: "0"
+                      - generic [ref=e842]: 0.0%
+                  - cell "Not sent" [ref=e843]
+                - 'row "Quick Send - Test Restaurant Inc. Unlock Savings: Metro Bag Solutions for Test Restaurant Inc. Sending 0 0 0.0% 0 0.0% Not sent" [ref=e844] [cursor=pointer]':
+                  - 'cell "Quick Send - Test Restaurant Inc. Unlock Savings: Metro Bag Solutions for Test Restaurant Inc." [ref=e845]':
+                    - generic [ref=e846]:
+                      - generic [ref=e847]: Quick Send - Test Restaurant Inc.
+                      - generic [ref=e848]: "Unlock Savings: Metro Bag Solutions for Test Restaurant Inc."
+                  - cell "Sending" [ref=e849]:
+                    - generic [ref=e850]: Sending
+                  - cell "0" [ref=e851]
+                  - cell "0 0.0%" [ref=e852]:
+                    - generic [ref=e853]:
+                      - generic [ref=e854]: "0"
+                      - generic [ref=e855]: 0.0%
+                  - cell "0 0.0%" [ref=e856]:
+                    - generic [ref=e857]:
+                      - generic [ref=e858]: "0"
+                      - generic [ref=e859]: 0.0%
+                  - cell "Not sent" [ref=e860]
+  - contentinfo [ref=e861]:
+    - generic [ref=e862]:
+      - generic [ref=e863]:
+        - generic [ref=e864]:
+          - generic [ref=e865]:
+            - img [ref=e866]
+            - generic [ref=e870]: B2B+
+          - paragraph [ref=e871]: Food service disposables ordering platform with container optimization
+        - generic [ref=e872]:
+          - heading "Products" [level=3] [ref=e873]
+          - list [ref=e874]:
+            - listitem [ref=e875]:
+              - link "Browse Catalog" [ref=e876] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e877]:
+              - link "Categories" [ref=e878] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e879]:
+              - link "New Arrivals" [ref=e880] [cursor=pointer]:
+                - /url: /products
+        - generic [ref=e881]:
+          - heading "Company" [level=3] [ref=e882]
+          - list [ref=e883]:
+            - listitem [ref=e884]:
+              - link "About Us" [ref=e885] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e886]:
+              - link "Contact" [ref=e887] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e888]:
+              - link "Support" [ref=e889] [cursor=pointer]:
+                - /url: /
+        - generic [ref=e890]:
+          - heading "Legal" [level=3] [ref=e891]
+          - list [ref=e892]:
+            - listitem [ref=e893]:
+              - link "Privacy Policy" [ref=e894] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e895]:
+              - link "Terms of Service" [ref=e896] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e897]:
+              - link "Cookie Policy" [ref=e898] [cursor=pointer]:
+                - /url: /
+      - paragraph [ref=e900]: © 2025 B2B+ Platform. All rights reserved.
+  - alert [ref=e901]
+```

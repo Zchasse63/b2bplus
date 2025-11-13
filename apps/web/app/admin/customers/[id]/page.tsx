@@ -178,7 +178,7 @@ export default function CustomerProfilePage() {
   const getChurnRiskBadge = (risk: string) => {
     if (risk === 'low') return <Badge variant="success">Low Risk</Badge>;
     if (risk === 'medium') return <Badge variant="warning">Medium Risk</Badge>;
-    return <Badge variant="danger">High Risk</Badge>;
+    return <Badge variant="error">High Risk</Badge>;
   };
 
   return (

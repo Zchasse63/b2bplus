@@ -101,13 +101,17 @@ export async function analyzeProductSales(
 
   // Calculate last month sales
   const lastMonthSales = allSales
-    .filter(item => new Date(item.orders.created_at) >= lastMonthStart)
+    .filter(item => {
+      const orders = (item.orders as any);
+      return new Date(orders.created_at) >= lastMonthStart;
+    })
     .reduce((sum, item) => sum + item.quantity, 0);
 
   // Calculate previous month sales
   const previousMonthSales = allSales
     .filter(item => {
-      const date = new Date(item.orders.created_at);
+      const orders = (item.orders as any);
+      const date = new Date(orders.created_at);
       return date >= previousMonthStart && date < previousMonthEnd;
     })
     .reduce((sum, item) => sum + item.quantity, 0);

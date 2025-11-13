@@ -5,6 +5,7 @@ export interface AdminUser {
   id: string;
   email: string;
   role: 'customer' | 'admin' | 'super_admin';
+  organizationId?: string;
 }
 
 export interface AdminCheckResult {
@@ -14,13 +15,15 @@ export interface AdminCheckResult {
 
 /**
  * Standard admin role checking middleware
- * Use this in all admin API endpoints for consistent authorization
+ * Validates both platform-level and organization-level admin permissions
  *
  * @param requireSuperAdmin - If true, only super_admin role is allowed
+ * @param organizationId - Optional organization ID to validate membership in
  * @returns Object with user info or error response
  */
 export async function checkAdminRole(
-  requireSuperAdmin: boolean = false
+  requireSuperAdmin: boolean = false,
+  organizationId?: string
 ): Promise<AdminCheckResult> {
   const supabase = await createClient();
 
@@ -34,7 +37,7 @@ export async function checkAdminRole(
     };
   }
 
-  // Check role from profiles table (platform-level roles)
+  // Check platform-level role from profiles table
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, email, full_name')
@@ -48,39 +51,111 @@ export async function checkAdminRole(
     };
   }
 
-  const role = profile.role || 'customer';
+  const platformRole = profile.role || 'customer';
 
-  // Check if user has required admin privileges
+  // Super admin has access to everything
+  if (platformRole === 'super_admin') {
+    return {
+      user: {
+        id: user.id,
+        email: profile.email || user.email || '',
+        role: 'super_admin'
+      },
+      error: null
+    };
+  }
+
+  // For super_admin requirement, fail if not super_admin
   if (requireSuperAdmin) {
-    if (role !== 'super_admin') {
+    return {
+      user: null,
+      error: NextResponse.json(
+        { error: 'Super admin access required' },
+        { status: 403 }
+      )
+    };
+  }
+
+  // Platform admin
+  if (platformRole === 'admin') {
+    return {
+      user: {
+        id: user.id,
+        email: profile.email || user.email || '',
+        role: 'admin'
+      },
+      error: null
+    };
+  }
+
+  // Not a platform admin, check for organization admin role
+  if (organizationId) {
+    const { data: orgMember, error: orgError } = await supabase
+      .from('organization_members')
+      .select('role, organization_id')
+      .eq('user_id', user.id)
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (!orgError && orgMember && ['admin', 'owner'].includes(orgMember.role)) {
       return {
-        user: null,
-        error: NextResponse.json(
-          { error: 'Super admin access required' },
-          { status: 403 }
-        )
-      };
-    }
-  } else {
-    if (!['admin', 'super_admin'].includes(role)) {
-      return {
-        user: null,
-        error: NextResponse.json(
-          { error: 'Admin access required' },
-          { status: 403 }
-        )
+        user: {
+          id: user.id,
+          email: profile.email || user.email || '',
+          role: 'admin',
+          organizationId: orgMember.organization_id
+        },
+        error: null
       };
     }
   }
 
+  // No admin privileges
   return {
-    user: {
-      id: user.id,
-      email: profile.email || user.email || '',
-      role: role as 'customer' | 'admin' | 'super_admin'
-    },
-    error: null
+    user: null,
+    error: NextResponse.json(
+      { error: 'Admin access required' },
+      { status: 403 }
+    )
   };
+}
+
+/**
+ * Check if user is member of an organization and has specific role
+ *
+ * @param userId - User ID to check
+ * @param organizationId - Organization ID
+ * @param requiredRole - Required role ('member', 'admin', 'owner')
+ * @returns true if user has the required role in the organization
+ */
+export async function checkOrganizationRole(
+  userId: string,
+  organizationId: string,
+  requiredRole: 'member' | 'admin' | 'owner' = 'member'
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  const { data: member, error } = await supabase
+    .from('organization_members')
+    .select('role')
+    .eq('user_id', userId)
+    .eq('organization_id', organizationId)
+    .single();
+
+  if (error || !member) {
+    return false;
+  }
+
+  const roleHierarchy: Record<string, number> = {
+    member: 0,
+    admin: 1,
+    owner: 2
+  };
+
+  const userRoleLevel = roleHierarchy[member.role] || -1;
+  const requiredLevel = roleHierarchy[requiredRole] || 0;
+
+  return userRoleLevel >= requiredLevel;
 }
 
 /**
@@ -160,4 +235,51 @@ export async function isOrganizationApproved(userId: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Get user's organization ID with validation
+ *
+ * @param userId - User ID
+ * @returns Organization ID or null if not found
+ */
+export async function getUserOrganizationId(userId: string): Promise<string | null> {
+  const supabase = await createClient();
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('current_organization_id')
+    .eq('id', userId)
+    .single();
+
+  return profile?.current_organization_id || null;
+}
+
+/**
+ * Validate admin access to a specific organization
+ * Ensures user is admin of the organization they're trying to manage
+ *
+ * @param userId - User ID to check
+ * @param organizationId - Organization ID to validate access to
+ * @returns true if user is admin of the organization
+ */
+export async function isOrganizationAdmin(
+  userId: string,
+  organizationId: string
+): Promise<boolean> {
+  const supabase = await createClient();
+
+  // Check if user is platform admin (they have access to everything)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+
+  if (profile?.role === 'super_admin' || profile?.role === 'admin') {
+    return true;
+  }
+
+  // Check if user is organization admin
+  return checkOrganizationRole(userId, organizationId, 'admin');
 }

@@ -302,7 +302,7 @@ export default function AdminShippingPage() {
       >
         <div className="space-y-4">
           <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to delete the shipping address "{deleteModal.address?.label}"?
+            Are you sure you want to delete the shipping address &quot;{deleteModal.address?.label}&quot;?
             This action cannot be undone.
           </p>
           <div className="flex justify-end gap-3">

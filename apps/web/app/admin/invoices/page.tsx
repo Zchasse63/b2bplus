@@ -30,6 +30,9 @@ export default function InvoicesPage() {
   const [uploading, setUploading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<VendorInvoice | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -103,10 +106,12 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      console.log('Invoice approved successfully');
+      setSuccessMessage('Invoice approved');
+      setTimeout(() => setSuccessMessage(null), 3000);
 
       fetchInvoices();
       setSelectedInvoice(null);
+      setShowApproveConfirm(false);
     } catch (error: any) {
       console.error('Error approving invoice:', error.message);
     }
@@ -124,10 +129,12 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      console.log('Invoice rejected');
+      setSuccessMessage('Invoice rejected');
+      setTimeout(() => setSuccessMessage(null), 3000);
 
       fetchInvoices();
       setSelectedInvoice(null);
+      setShowRejectConfirm(false);
     } catch (error: any) {
       console.error('Error rejecting invoice:', error.message);
     }
@@ -230,7 +237,12 @@ export default function InvoicesPage() {
                   <div className="mb-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-xl font-bold text-navy-700 dark:text-white">{invoice.invoice_number}</h3>
+                        <h3
+                          className="text-xl font-bold text-navy-700 dark:text-white cursor-pointer hover:text-b2b-blue"
+                          onClick={() => setSelectedInvoice(invoice)}
+                        >
+                          {invoice.invoice_number}
+                        </h3>
                         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                           {invoice.vendor_name} • {new Date(invoice.invoice_date).toLocaleDateString()}
                         </p>
@@ -282,17 +294,23 @@ export default function InvoicesPage() {
                       {invoice.approval_status === 'pending' && (
                         <>
                           <Button
-                            variant="default"
+                            variant="secondary"
                             size="sm"
-                            onClick={() => handleApprove(invoice.id)}
+                            onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setShowApproveConfirm(true);
+                            }}
                           >
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Approve
                           </Button>
                           <Button
-                            variant="destructive"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleReject(invoice.id)}
+                            onClick={() => {
+                              setSelectedInvoice(invoice);
+                              setShowRejectConfirm(true);
+                            }}
                           >
                             <XCircle className="w-4 h-4 mr-2" />
                             Reject
@@ -307,8 +325,8 @@ export default function InvoicesPage() {
           )}
       </div>
 
-      {/* Invoice Details Modal - simplified for now */}
-      {selectedInvoice && (
+      {/* Invoice Details Modal */}
+      {selectedInvoice && !showApproveConfirm && !showRejectConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
             <div className="mb-4">
@@ -349,8 +367,91 @@ export default function InvoicesPage() {
                   </div>
                 </div>
               </div>
+              {selectedInvoice.approval_status === 'pending' && (
+                <div className="flex gap-2 mt-6">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowApproveConfirm(true)}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowRejectConfirm(true)}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Approve Confirmation Modal */}
+      {showApproveConfirm && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Confirm Approval</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to approve invoice {selectedInvoice.invoice_number} for ${selectedInvoice.total_amount.toFixed(2)}?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowApproveConfirm(false);
+                  setSelectedInvoice(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleApprove(selectedInvoice.id)}
+              >
+                Confirm
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Reject Confirmation Modal */}
+      {showRejectConfirm && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Confirm Rejection</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to reject invoice {selectedInvoice.invoice_number}?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowRejectConfirm(false);
+                  setSelectedInvoice(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleReject(selectedInvoice.id)}
+              >
+                Confirm
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {successMessage}
         </div>
       )}
     </div>

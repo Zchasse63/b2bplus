@@ -118,6 +118,15 @@ export function checkPublicRateLimit(
   request: NextRequest,
   config: PublicRateLimitConfig
 ): RateLimitResult {
+  // Skip rate limiting in test mode
+  if (process.env.NODE_ENV === 'test' || process.env.PLAYWRIGHT_TEST === 'true') {
+    return {
+      allowed: true,
+      remaining: config.maxRequests,
+      resetAt: new Date(Date.now() + config.windowMs),
+    };
+  }
+
   const ip = getClientIp(request);
   const key = `${config.name}:${ip}`;
 

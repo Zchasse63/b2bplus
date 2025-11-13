@@ -5,13 +5,14 @@ import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { rotate } from '@/lib/animations';
 
-export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref'> {
+export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref' | 'children'> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
   loading?: boolean;
+  children?: React.ReactNode;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * E2E Test: Customer Insights with AI
- * 
+ *
  * Tests AI-powered customer analytics with REAL Gemini API calls:
  * - Generate customer behavioral insights
  * - Churn risk analysis
@@ -9,7 +9,7 @@
  * - Lifetime value prediction
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -30,13 +30,8 @@ test.describe('Customer Insights with AI', () => {
     }
   });
 
-  test('should generate comprehensive customer insights with AI', async ({ page }) => {
-    // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+  test('should generate comprehensive customer insights with AI', async ({ adminPage: page }) => {
+    // Already logged in via fixture
     
     // Get a customer with purchase history
     const { data: customer } = await supabase
@@ -81,19 +76,19 @@ test.describe('Customer Insights with AI', () => {
     console.log('✓ Customer insights displayed in UI');
   });
 
-  test('should identify behavioral patterns with AI analysis', async ({ page }) => {
+  test('should identify behavioral patterns with AI analysis', async ({ adminPage: page }) => {
     // Get customer analytics
     const { data: analytics } = await supabase
       .from('customer_purchase_analytics')
       .select('*')
       .limit(1)
       .single();
-    
+
     if (!analytics) {
       test.skip();
       return;
     }
-    
+
     // Call behavioral analysis API
     const response = await page.request.post('/api/admin/analytics/behavioral-patterns', {
       data: {
@@ -127,7 +122,7 @@ test.describe('Customer Insights with AI', () => {
     });
   });
 
-  test('should calculate churn risk score with AI', async ({ page }) => {
+  test('should calculate churn risk score with AI', async ({ adminPage: page }) => {
     // Get customer analytics
     const { data: analytics } = await supabase
       .from('customer_purchase_analytics')
@@ -165,7 +160,7 @@ test.describe('Customer Insights with AI', () => {
     }
   });
 
-  test('should generate retention recommendations with AI', async ({ page }) => {
+  test('should generate retention recommendations with AI', async ({ adminPage: page }) => {
     // Get a customer with medium/high churn risk
     const { data: analytics } = await supabase
       .from('customer_purchase_analytics')
@@ -212,7 +207,7 @@ test.describe('Customer Insights with AI', () => {
     });
   });
 
-  test('should predict customer lifetime value with AI', async ({ page }) => {
+  test('should predict customer lifetime value with AI', async ({ adminPage: page }) => {
     // Get customer analytics
     const { data: analytics } = await supabase
       .from('customer_purchase_analytics')
@@ -250,7 +245,7 @@ test.describe('Customer Insights with AI', () => {
     }
   });
 
-  test('should segment customers based on AI analysis', async ({ page }) => {
+  test('should segment customers based on AI analysis', async ({ adminPage: page }) => {
     // Call customer segmentation API
     const response = await page.request.post('/api/admin/analytics/segment-customers', {
       data: {
@@ -283,7 +278,7 @@ test.describe('Customer Insights with AI', () => {
     });
   });
 
-  test('should track insight accuracy over time', async ({ page }) => {
+  test('should track insight accuracy over time', async ({ adminPage: page }) => {
     // Get historical insights
     const { data: insights } = await supabase
       .from('customer_insights')

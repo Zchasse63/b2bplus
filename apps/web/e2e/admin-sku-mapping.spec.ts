@@ -9,7 +9,7 @@
  * - Manual override capability
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -30,13 +30,9 @@ test.describe('SKU Mapping with AI', () => {
     }
   });
 
-  test('should analyze and map old SKUs to new products with AI', async ({ page }) => {
+  test('should analyze and map old SKUs to new products with AI', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Navigate to SKU mapping
     await page.goto('/admin/sku-mapping');
@@ -89,7 +85,7 @@ test.describe('SKU Mapping with AI', () => {
     });
   });
 
-  test('should use embedding similarity for fuzzy matching', async ({ page }) => {
+  test('should use embedding similarity for fuzzy matching', async ({ adminPage: page }) => {
     // Test fuzzy matching with slightly different descriptions
     const testCases = [
       { oldSKU: 'OLD-001', description: 'Disposable paper plate 9 inches white' },
@@ -120,7 +116,7 @@ test.describe('SKU Mapping with AI', () => {
     });
   });
 
-  test('should save SKU mappings to database', async ({ page }) => {
+  test('should save SKU mappings to database', async ({ adminPage: page }) => {
     const oldSKU = `TEST-SKU-${Date.now()}`;
     
     // Get a product to map to
@@ -162,13 +158,9 @@ test.describe('SKU Mapping with AI', () => {
     console.log(`  - Confidence: ${(mapping.confidence_score * 100).toFixed(1)}%`);
   });
 
-  test('should allow manual override of AI suggestions', async ({ page }) => {
+  test('should allow manual override of AI suggestions', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Get a SKU mapping
     const { data: mapping } = await supabase
@@ -191,10 +183,10 @@ test.describe('SKU Mapping with AI', () => {
     
     // Click override button
     await page.click('button:has-text("Override")');
-    
+
     // Select different product
     await page.click('[data-testid="product-selector"]');
-    await page.click('[data-testid="product-option"]').first();
+    await page.locator('[data-testid="product-option"]').first().click();
     
     // Save override
     await page.click('button:has-text("Save Override")');
@@ -217,13 +209,9 @@ test.describe('SKU Mapping with AI', () => {
     console.log(`  - New mapping: ${updatedMapping.new_product_id}`);
   });
 
-  test('should handle bulk SKU import from CSV', async ({ page }) => {
+  test('should handle bulk SKU import from CSV', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Navigate to SKU mapping
     await page.goto('/admin/sku-mapping');
@@ -262,7 +250,7 @@ BAI-CUP-16-COLD,Cold Cups 16oz Clear`;
     console.log(`  - Mapped: ${result.mappings.filter((m: any) => m.confidence_score > 0.7).length} with high confidence`);
   });
 
-  test('should track mapping accuracy over time', async ({ page }) => {
+  test('should track mapping accuracy over time', async ({ adminPage: page }) => {
     // Get confirmed mappings
     const { data: mappings } = await supabase
       .from('sku_mappings')

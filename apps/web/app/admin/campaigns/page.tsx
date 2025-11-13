@@ -14,9 +14,9 @@ interface Campaign {
   name: string;
   subject: string;
   status: string;
-  sent_count: number;
-  opened_count: number;
-  clicked_count: number;
+  sent_count?: number;
+  opened_count?: number;
+  clicked_count?: number;
   created_at: string;
   sent_at: string | null;
 }
@@ -39,7 +39,7 @@ export default function AdminCampaignsPage() {
   const checkFeatureAndLoadData = async () => {
     try {
       const supabase = createClient();
-      
+
       // Check if email campaigns feature is enabled
       const { data: featureFlag } = await supabase
         .from('feature_flags')
@@ -65,7 +65,27 @@ export default function AdminCampaignsPage() {
         console.error('Error loading campaigns:', error);
         setCampaigns([]);
       } else {
-        setCampaigns(campaignsData || []);
+        // Calculate stats for each campaign
+        const campaignsWithStats = await Promise.all(
+          (campaignsData || []).map(async (campaign) => {
+            const { data: recipients } = await supabase
+              .from('email_campaign_recipients')
+              .select('status')
+              .eq('campaign_id', campaign.id);
+
+            const sent_count = recipients?.filter(r => r.status !== 'pending').length || 0;
+            const opened_count = recipients?.filter(r => r.status === 'opened' || r.status === 'clicked').length || 0;
+            const clicked_count = recipients?.filter(r => r.status === 'clicked').length || 0;
+
+            return {
+              ...campaign,
+              sent_count,
+              opened_count,
+              clicked_count,
+            };
+          })
+        );
+        setCampaigns(campaignsWithStats);
       }
     } catch (error) {
       console.error('Error loading campaigns:', error);
@@ -106,19 +126,21 @@ export default function AdminCampaignsPage() {
       key: 'sent',
       header: 'Sent',
       render: (campaign: Campaign) => (
-        <span className="text-sm text-gray-700 dark:text-gray-300">{campaign.sent_count}</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300">{campaign.sent_count || 0}</span>
       ),
     },
     {
       key: 'opened',
       header: 'Opened',
       render: (campaign: Campaign) => {
-        const rate = campaign.sent_count > 0 
-          ? ((campaign.opened_count / campaign.sent_count) * 100).toFixed(1)
+        const sent = campaign.sent_count || 0;
+        const opened = campaign.opened_count || 0;
+        const rate = sent > 0
+          ? ((opened / sent) * 100).toFixed(1)
           : '0.0';
         return (
           <div>
-            <div className="font-semibold text-navy-700 dark:text-white">{campaign.opened_count}</div>
+            <div className="font-semibold text-navy-700 dark:text-white">{opened}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">{rate}%</div>
           </div>
         );
@@ -128,12 +150,14 @@ export default function AdminCampaignsPage() {
       key: 'clicked',
       header: 'Clicked',
       render: (campaign: Campaign) => {
-        const rate = campaign.sent_count > 0 
-          ? ((campaign.clicked_count / campaign.sent_count) * 100).toFixed(1)
+        const sent = campaign.sent_count || 0;
+        const clicked = campaign.clicked_count || 0;
+        const rate = sent > 0
+          ? ((clicked / sent) * 100).toFixed(1)
           : '0.0';
         return (
           <div>
-            <div className="font-semibold text-navy-700 dark:text-white">{campaign.clicked_count}</div>
+            <div className="font-semibold text-navy-700 dark:text-white">{clicked}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">{rate}%</div>
           </div>
         );
@@ -195,9 +219,9 @@ export default function AdminCampaignsPage() {
     );
   }
 
-  const totalSent = campaigns.reduce((sum, c) => sum + c.sent_count, 0);
-  const totalOpened = campaigns.reduce((sum, c) => sum + c.opened_count, 0);
-  const totalClicked = campaigns.reduce((sum, c) => sum + c.clicked_count, 0);
+  const totalSent = campaigns.reduce((sum, c) => sum + (c.sent_count || 0), 0);
+  const totalOpened = campaigns.reduce((sum, c) => sum + (c.opened_count || 0), 0);
+  const totalClicked = campaigns.reduce((sum, c) => sum + (c.clicked_count || 0), 0);
   const avgOpenRate = totalSent > 0 ? ((totalOpened / totalSent) * 100).toFixed(1) : '0.0';
 
   return (

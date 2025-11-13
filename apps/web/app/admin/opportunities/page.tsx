@@ -56,18 +56,13 @@ export default async function OpportunitiesPage({
     .select(
       `
       *,
-      customer:profiles!customer_id(
-        id,
-        email,
-        organization:organizations!inner(name)
-      ),
-      product:products!product_id(
+      product:products!customer_opportunities_product_id_fkey(
         id,
         name
       )
     `
     )
-    .order('potential_revenue', { ascending: false });
+    .order('opportunity_score', { ascending: false });
 
   // Apply filters
   if (searchParams.type && searchParams.type !== 'all') {
@@ -90,15 +85,15 @@ export default async function OpportunitiesPage({
     const searchLower = searchParams.search.toLowerCase();
     filteredOpportunities = filteredOpportunities.filter(
       (opp) =>
-        opp.customer?.organization?.name?.toLowerCase().includes(searchLower) ||
-        opp.product?.name?.toLowerCase().includes(searchLower)
+        opp.product?.name?.toLowerCase().includes(searchLower) ||
+        opp.reason?.toLowerCase().includes(searchLower)
     );
   }
 
   // Calculate summary stats
   const totalOpportunities = filteredOpportunities.length;
   const totalPotentialRevenue = filteredOpportunities.reduce(
-    (sum, opp) => sum + (opp.potential_revenue || 0),
+    (sum, opp) => sum + (opp.predicted_revenue || 0),
     0
   );
   const newOpportunities = filteredOpportunities.filter(
@@ -107,7 +102,7 @@ export default async function OpportunitiesPage({
   const avgConfidence =
     filteredOpportunities.length > 0
       ? filteredOpportunities.reduce(
-          (sum, opp) => sum + (opp.confidence_score || 0),
+          (sum, opp) => sum + (opp.opportunity_score || 0),
           0
         ) / filteredOpportunities.length
       : 0;

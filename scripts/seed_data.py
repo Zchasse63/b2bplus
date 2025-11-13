@@ -12,13 +12,14 @@ import json
 from datetime import datetime, timedelta
 import requests
 
-# Supabase configuration
-SUPABASE_URL = "https://ksprdklquoskvjqsicvv.supabase.co"
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+# Supabase configuration - Load from environment variables
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
 
-if not SUPABASE_KEY:
-    print("Error: SUPABASE_KEY environment variable is required")
-    print("Usage: SUPABASE_KEY=your_key python3 scripts/seed_data.py")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    print("Error: Required environment variables are missing")
+    print("Please set: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY")
+    print("Usage: NEXT_PUBLIC_SUPABASE_URL=your_url SUPABASE_SERVICE_ROLE_KEY=your_key python3 scripts/seed_data.py")
     sys.exit(1)
 
 # Supabase REST API headers

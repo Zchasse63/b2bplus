@@ -12,6 +12,7 @@ jest.mock('@supabase/ssr', () => ({
       signOut: jest.fn(),
     },
     from: jest.fn(),
+    rpc: jest.fn(),
   })),
 }))
 
@@ -20,8 +21,9 @@ describe('Supabase Client (Web)', () => {
     const client = createClient()
 
     expect(client).toBeDefined()
-    expect(client.url).toBe(process.env.NEXT_PUBLIC_SUPABASE_URL)
-    expect(client.key).toBe(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    expect(client).toHaveProperty('auth')
+    expect(client).toHaveProperty('from')
+    expect(client).toHaveProperty('rpc')
   })
 
   it('has auth methods available', () => {

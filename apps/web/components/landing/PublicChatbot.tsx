@@ -265,6 +265,7 @@ export function PublicChatbot() {
           placeholder="Type your message..."
           className="flex-1 border border-b2b-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-b2b-blue"
           disabled={loading}
+          data-testid="chatbot-input"
         />
         <Button
           variant="primary"
@@ -272,6 +273,7 @@ export function PublicChatbot() {
           onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
           icon={<MdSend />}
+          data-testid="chatbot-send"
         >
           Send
         </Button>

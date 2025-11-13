@@ -18,47 +18,17 @@ import {
   MdShowChart,
   MdNotifications,
 } from 'react-icons/md';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-  const [cartCount, setCartCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-
-      if (user) {
-        // Get cart count
-        const { count } = await supabase
-          .from('cart_items')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        setCartCount(count || 0);
-
-        // Check if user is admin
-        const { data: membership } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-
-        setIsAdmin(membership?.role === 'admin' || membership?.role === 'super_admin');
-      }
-    };
-
-    getUser();
-  }, [pathname]);
+  // Use AuthContext instead of fetching data manually
+  const { user, cartCount, isAdmin, loading } = useAuth();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -107,7 +77,7 @@ export default function Header() {
             </Link>
           </Tooltip>
 
-          {user && (
+          {user && !loading && (
             <>
               {/* Visual Separator */}
               <div className="h-6 w-px bg-b2b-gray-300 mx-1" />
@@ -234,7 +204,7 @@ export default function Header() {
 
         {/* User Menu */}
         <div className="flex items-center gap-2" data-testid="user-menu">
-          {user ? (
+          {user && !loading ? (
             <>
               <Tooltip content="View your profile">
                 <Link href="/profile">

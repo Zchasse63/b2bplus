@@ -2,18 +2,29 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import ProductCard from './ProductCard'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 // Mock the Supabase client
 jest.mock('@/lib/supabase/client', () => ({
   createClient: jest.fn(),
 }))
 
+// Mock the useToast hook
+const mockToast = jest.fn()
+jest.mock('@/hooks/use-toast', () => ({
+  useToast: jest.fn(() => ({
+    toast: mockToast,
+  })),
+}))
+
 // Mock Next.js Image component
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
+    // Remove Next.js-specific props that aren't valid HTML attributes
+    const { fill, priority, quality, ...imgProps } = props;
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />
+    return <img {...imgProps} />
   },
 }))
 
@@ -59,6 +70,7 @@ describe('ProductCard', () => {
       update: jest.fn(),
     }
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
+    mockToast.mockClear()
   })
 
   afterEach(() => {
@@ -73,9 +85,9 @@ describe('ProductCard', () => {
     expect(screen.getByText('Test Category')).toBeInTheDocument()
     expect(screen.getByText('$99.99')).toBeInTheDocument()
     expect(screen.getByText('/ case')).toBeInTheDocument()
-    expect(screen.getByText('100 units')).toBeInTheDocument()
+    expect(screen.getByText('100 units/case')).toBeInTheDocument()
     expect(screen.getByText(/SKU: TEST-SKU/)).toBeInTheDocument()
-    expect(screen.getByText(/Test Brand/)).toBeInTheDocument()
+    expect(screen.getByText(/Brand: Test Brand/)).toBeInTheDocument()
   })
 
   it('displays product image when available', () => {
@@ -85,10 +97,11 @@ describe('ProductCard', () => {
     expect(image).toHaveAttribute('src', 'https://example.com/image.jpg')
   })
 
-  it('displays "No image" when image_url is null', () => {
+  it('displays icon when image_url is null', () => {
     const productWithoutImage = { ...mockProduct, image_url: null }
-    render(<ProductCard product={productWithoutImage} />)
-    expect(screen.getByText('No image')).toBeInTheDocument()
+    const { container } = render(<ProductCard product={productWithoutImage} />)
+    // Component shows an icon (MdInventory) instead of "No image" text
+    expect(container.querySelector('svg')).toBeInTheDocument()
   })
 
   it('allows quantity input change', () => {
@@ -125,7 +138,10 @@ describe('ProductCard', () => {
     fireEvent.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Added to cart!')).toBeInTheDocument()
+      expect(mockToast).toHaveBeenCalledWith({
+        title: "Added to Cart",
+        description: expect.stringContaining('Test Product'),
+      })
     })
 
     expect(mockSupabase.insert).toHaveBeenCalledWith({
@@ -176,7 +192,11 @@ describe('ProductCard', () => {
     fireEvent.click(addButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to add to cart')).toBeInTheDocument()
+      expect(mockToast).toHaveBeenCalledWith({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add to cart",
+      })
     })
   })
 

@@ -1,6 +1,6 @@
 /**
  * Phase 2: AI Backend Logic - Public Chatbot API
- * 
+ *
  * POST /api/chatbot/public
  * Handles public (unauthenticated) chatbot conversations with lead capture
  */
@@ -9,18 +9,22 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSON } from '@/lib/gemini';
 import { getChatbotPrompt } from '@/lib/ai/chatbot-prompts';
-import { 
-  qualifyLead, 
-  createOrUpdateLead, 
+import { sanitizeAIInput } from '@/lib/ai/input-sanitizer';
+import {
+  qualifyLead,
+  createOrUpdateLead,
   extractContactInfo,
-  shouldQualifyLead 
+  shouldQualifyLead
 } from '@/lib/ai/lead-qualification';
-import { 
-  validatePublicRequest, 
+import {
+  validatePublicRequest,
   PUBLIC_RATE_LIMITS,
-  getRateLimitHeaders 
+  getRateLimitHeaders
 } from '@/lib/middleware/public-rate-limit';
 import { sendLeadNotification } from '@/lib/sendgrid';
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('public-chatbot');
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -53,6 +57,33 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Sanitize user input to prevent prompt injection attacks
+    const sanitizationResult = sanitizeAIInput(message, {
+      maxLength: 5000,
+      stripHtml: true,
+      checkSuspicious: true,
+    });
+
+    if (!sanitizationResult.isClean) {
+      logger.warn('Suspicious input detected in public chatbot message', {
+        conversationId,
+        threats: sanitizationResult.threats,
+        warnings: sanitizationResult.warnings,
+      });
+
+      return NextResponse.json(
+        {
+          error: 'Invalid input detected',
+          message: 'Your message contains potentially harmful content. Please rephrase and try again.',
+          warnings: sanitizationResult.warnings,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Use sanitized message for processing
+    const sanitizedMessage = sanitizationResult.sanitized;
 
     // Get or create conversation
     let conversation: any;
@@ -96,10 +127,10 @@ export async function POST(request: NextRequest) {
       conversation = newConv;
     }
 
-    // Add user message to conversation
+    // Add user message to conversation (using sanitized input)
     const userMessage: ChatMessage = {
       role: 'user',
-      content: message,
+      content: sanitizedMessage,
       timestamp: new Date().toISOString(),
     };
     messages.push(userMessage);
@@ -112,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     // Generate AI response using public chatbot prompt
     const systemPrompt = getChatbotPrompt(false); // false = public/unauthenticated
-    
+
     const aiPrompt = `${conversationHistory}\n\nuser: ${message}\n\nassistant:`;
 
     const aiResponse = await generateJSON<{ response: string }>(
@@ -220,7 +251,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error('Public chatbot API error:', error);
+    logger.error('Public chatbot API error', { error });
 
     // Check if it's a rate limit error
     if (error instanceof Error && error.message.includes('Rate limit exceeded')) {
@@ -244,7 +275,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get('conversationId');
 
@@ -282,4 +313,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

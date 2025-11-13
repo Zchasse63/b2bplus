@@ -12,7 +12,7 @@
  * - CRM integration (lead activities, status changes)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -33,15 +33,8 @@ test.describe('Email Campaign Workflow', () => {
     }
   });
 
-  test('should create new campaign with AI personalization', async ({ page }) => {
-    // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-
-    // Wait for redirect to admin dashboard
-    await page.waitForURL('/admin', { timeout: 10000 });
+  test('should create new campaign with AI personalization', async ({ adminPage: page }) => {
+    // Already logged in via fixture
 
     // Navigate to campaigns
     await page.goto('/admin/campaigns');
@@ -65,13 +58,9 @@ test.describe('Email Campaign Workflow', () => {
     console.log('✓ Campaign management page loaded successfully');
   });
 
-  test('should send campaign with AI personalization using Gemini', async ({ page }) => {
+  test('should send campaign with AI personalization using Gemini', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Get a draft campaign from database
     const { data: campaign } = await supabase
@@ -126,17 +115,17 @@ test.describe('Email Campaign Workflow', () => {
       .from('email_campaign_recipients')
       .select('*')
       .eq('campaign_id', campaign.id);
-    
+
     expect(recipients).toBeTruthy();
-    expect(recipients.length).toBeGreaterThan(0);
-    
+    expect(recipients?.length).toBeGreaterThan(0);
+
     // Verify SendGrid message IDs were recorded
-    const recipientsWithMessageIds = recipients.filter(r => r.sendgrid_message_id);
+    const recipientsWithMessageIds = recipients?.filter(r => r.sendgrid_message_id) || [];
     expect(recipientsWithMessageIds.length).toBeGreaterThan(0);
     console.log(`✓ ${recipientsWithMessageIds.length} emails sent via SendGrid`);
   });
 
-  test('should track email opens and clicks via SendGrid webhooks', async ({ page }) => {
+  test('should track email opens and clicks via SendGrid webhooks', async ({ adminPage: page }) => {
     // Get a sent campaign with recipients
     const { data: campaign } = await supabase
       .from('email_campaigns')
@@ -220,18 +209,14 @@ test.describe('Email Campaign Workflow', () => {
       .eq('recipient_id', recipient.id);
     
     expect(clicks).toBeTruthy();
-    expect(clicks.length).toBeGreaterThan(0);
-    expect(clicks[0].url).toBe('https://example.com/products');
+    expect(clicks?.length).toBeGreaterThan(0);
+    expect(clicks?.[0]?.url).toBe('https://example.com/products');
     console.log('✓ Click details recorded in database');
   });
 
-  test('should generate and verify magic links for campaign recipients', async ({ page }) => {
+  test('should generate and verify magic links for campaign recipients', async ({ adminPage: page }) => {
     // Login as admin first
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
 
     // Get a lead from database
     const { data: lead } = await supabase

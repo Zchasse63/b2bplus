@@ -154,7 +154,7 @@ export function ProductRecommendations({
                     {rec.product.name}
                   </Link>
                   {rec.score > 0.8 && (
-                    <Badge variant="secondary" className="text-xs shrink-0">
+                    <Badge variant="info" className="text-xs shrink-0">
                       Top Pick
                     </Badge>
                   )}
@@ -163,7 +163,7 @@ export function ProductRecommendations({
                 <p className="text-xs text-muted-foreground">{rec.product.sku}</p>
 
                 {rec.product.category && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="info" className="text-xs">
                     {rec.product.category}
                   </Badge>
                 )}

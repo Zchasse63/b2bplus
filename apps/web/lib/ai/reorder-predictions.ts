@@ -72,10 +72,13 @@ export async function analyzePurchasePattern(
   }
 
   // Extract order dates and quantities
-  const orders = orderItems.map(item => ({
-    date: new Date(item.orders.created_at),
-    quantity: item.quantity,
-  }));
+  const orders = orderItems.map(item => {
+    const orders = (item.orders as any);
+    return {
+      date: new Date(orders.created_at),
+      quantity: item.quantity,
+    };
+  });
 
   // Calculate days between consecutive orders
   const daysBetweenOrders: number[] = [];

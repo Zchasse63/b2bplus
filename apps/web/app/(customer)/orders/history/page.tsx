@@ -205,14 +205,14 @@ export default function HistoricalOrdersPage() {
   const columns = [
     {
       key: 'order_number',
-      label: 'Order Number',
+      header: 'Order Number',
       render: (order: HistoricalOrder) => (
         <span className="font-semibold text-b2b-blue">{order.order_number}</span>
       ),
     },
     {
       key: 'order_date',
-      label: 'Order Date',
+      header: 'Order Date',
       render: (order: HistoricalOrder) => (
         <div className="flex items-center gap-2">
           <FiCalendar className="h-4 w-4 text-b2b-gray-400" />
@@ -222,14 +222,14 @@ export default function HistoricalOrdersPage() {
     },
     {
       key: 'total_amount',
-      label: 'Total',
+      header: 'Total',
       render: (order: HistoricalOrder) => (
         <span className="font-semibold">${order.total_amount.toFixed(2)}</span>
       ),
     },
     {
       key: 'status',
-      label: 'Status',
+      header: 'Status',
       render: (order: HistoricalOrder) => (
         <Badge
           variant={
@@ -246,7 +246,7 @@ export default function HistoricalOrdersPage() {
     },
     {
       key: 'items_count',
-      label: 'Items',
+      header: 'Items',
       render: (order: HistoricalOrder) => (
         <div className="flex items-center gap-2">
           <FiPackage className="h-4 w-4 text-b2b-gray-400" />
@@ -256,7 +256,7 @@ export default function HistoricalOrdersPage() {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      header: 'Actions',
       render: (order: HistoricalOrder) => (
         <div className="flex gap-2">
           <Button
@@ -292,7 +292,6 @@ export default function HistoricalOrdersPage() {
       <PageHeader
         title="Order History"
         subtitle="View your past orders from previous systems"
-        icon={<FiCalendar />}
       />
 
       <Card className="p-6 mt-5">

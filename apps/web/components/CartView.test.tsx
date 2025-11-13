@@ -3,6 +3,7 @@ import '@testing-library/jest-dom'
 import CartView from './CartView'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
 
 // Mock dependencies
 jest.mock('@/lib/supabase/client', () => ({
@@ -11,6 +12,13 @@ jest.mock('@/lib/supabase/client', () => ({
 
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+}))
+
+const mockToast = jest.fn()
+jest.mock('@/hooks/use-toast', () => ({
+  useToast: jest.fn(() => ({
+    toast: mockToast,
+  })),
 }))
 
 jest.mock('next/link', () => {
@@ -22,8 +30,10 @@ jest.mock('next/link', () => {
 jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
+    // Remove Next.js-specific props that aren't valid HTML attributes
+    const { fill, priority, quality, ...imgProps } = props;
     // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-    return <img {...props} />
+    return <img {...imgProps} />
   },
 }))
 
@@ -107,7 +117,7 @@ describe('CartView', () => {
       from: jest.fn(() => mockSupabase),
       update: jest.fn(() => mockSupabase),
       delete: jest.fn(() => mockSupabase),
-      eq: jest.fn(() => mockSupabase),
+      eq: jest.fn(() => Promise.resolve({ error: null })),
     }
     ;(createClient as jest.Mock).mockReturnValue(mockSupabase)
 
@@ -115,6 +125,7 @@ describe('CartView', () => {
       push: jest.fn(),
     }
     ;(useRouter as jest.Mock).mockReturnValue(mockRouter)
+    mockToast.mockClear()
   })
 
   afterEach(() => {
@@ -155,7 +166,7 @@ describe('CartView', () => {
   })
 
   it('increases quantity when + button clicked', async () => {
-    mockSupabase.update.mockResolvedValue({ error: null })
+    mockSupabase.eq.mockResolvedValue({ error: null })
 
     render(<CartView initialCartItems={mockCartItems} />)
     const increaseButtons = screen.getAllByText('+')
@@ -163,13 +174,14 @@ describe('CartView', () => {
     fireEvent.click(increaseButtons[0])
 
     await waitFor(() => {
+      expect(mockSupabase.from).toHaveBeenCalledWith('cart_items')
       expect(mockSupabase.update).toHaveBeenCalledWith({ quantity: 3 })
       expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'cart-1')
     })
   })
 
   it('decreases quantity when - button clicked', async () => {
-    mockSupabase.update.mockResolvedValue({ error: null })
+    mockSupabase.eq.mockResolvedValue({ error: null })
 
     render(<CartView initialCartItems={mockCartItems} />)
     const decreaseButtons = screen.getAllByText('−')
@@ -177,6 +189,7 @@ describe('CartView', () => {
     fireEvent.click(decreaseButtons[0])
 
     await waitFor(() => {
+      expect(mockSupabase.from).toHaveBeenCalledWith('cart_items')
       expect(mockSupabase.update).toHaveBeenCalledWith({ quantity: 1 })
       expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'cart-1')
     })
@@ -195,7 +208,7 @@ describe('CartView', () => {
   })
 
   it('removes item when Remove button clicked', async () => {
-    mockSupabase.delete.mockResolvedValue({ error: null })
+    mockSupabase.eq.mockResolvedValue({ error: null })
 
     render(<CartView initialCartItems={mockCartItems} />)
     const removeButtons = screen.getAllByText('Remove')
@@ -203,6 +216,7 @@ describe('CartView', () => {
     fireEvent.click(removeButtons[0])
 
     await waitFor(() => {
+      expect(mockSupabase.from).toHaveBeenCalledWith('cart_items')
       expect(mockSupabase.delete).toHaveBeenCalled()
       expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'cart-1')
     })
@@ -215,7 +229,7 @@ describe('CartView', () => {
 
   it('shows alert on update error', async () => {
     const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {})
-    mockSupabase.update.mockResolvedValue({ error: { message: 'Update failed' } })
+    mockSupabase.eq.mockResolvedValue({ error: { message: 'Update failed' } })
 
     render(<CartView initialCartItems={mockCartItems} />)
     const increaseButtons = screen.getAllByText('+')
@@ -231,7 +245,7 @@ describe('CartView', () => {
 
   it('shows alert on remove error', async () => {
     const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {})
-    mockSupabase.delete.mockResolvedValue({ error: { message: 'Delete failed' } })
+    mockSupabase.eq.mockResolvedValue({ error: { message: 'Delete failed' } })
 
     render(<CartView initialCartItems={mockCartItems} />)
     const removeButtons = screen.getAllByText('Remove')
@@ -255,18 +269,28 @@ describe('CartView', () => {
   })
 
   it('disables buttons while loading', async () => {
-    mockSupabase.update.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({ error: null }), 100))
+    let resolveUpdate: any
+    mockSupabase.eq.mockImplementation(
+      () => new Promise((resolve) => { resolveUpdate = resolve })
     )
 
     render(<CartView initialCartItems={mockCartItems} />)
     const increaseButtons = screen.getAllByText('+')
 
+    // Click the button to start loading
     fireEvent.click(increaseButtons[0])
 
-    // Buttons should be disabled while loading
+    // Button should be disabled while loading
     await waitFor(() => {
       expect(increaseButtons[0]).toBeDisabled()
+    })
+
+    // Resolve the promise to finish loading
+    resolveUpdate({ error: null })
+
+    // Button should be enabled again after loading
+    await waitFor(() => {
+      expect(increaseButtons[0]).not.toBeDisabled()
     })
   })
 })

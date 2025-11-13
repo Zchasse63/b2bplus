@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
+import { validateRequestBody } from '@/lib/validation/middleware';
+import { MagicLinkRequestSchema } from '@/lib/validation/schemas';
+import { rateLimit } from '@/lib/middleware/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, phone, purpose = 'login', redirectUrl } = await request.json();
-
-    if (!email && !phone) {
-      return NextResponse.json(
-        { error: 'Email or phone number is required' },
-        { status: 400 }
-      );
+    // Apply rate limiting (sensitive operation)
+    const { allowed, response } = await rateLimit(request, 'sensitive');
+    if (!allowed) {
+      return response!;
     }
+
+    // Validate request body
+    const validation = await validateRequestBody(request, MagicLinkRequestSchema);
+    if (!validation.valid) {
+      return validation.response!;
+    }
+
+    const { email, phone, purpose = 'login', redirectUrl } = validation.data!;
 
     const supabase = await createClient();
 
     // Check rate limiting (max 3 requests per hour per email/phone)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    
+
     const { data: recentTokens } = await supabase
       .from('magic_link_tokens')
       .select('id')
@@ -62,9 +70,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate that we have either a user_id or lead_id to work with
+    if (!userId && !leadId) {
+      return NextResponse.json(
+        { error: 'Invalid request: user not found and lead not identified' },
+        { status: 400 }
+      );
+    }
+
     // Generate unique token
     const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-    
+
     // Set expiration (10 minutes from now)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -99,9 +115,9 @@ export async function POST(request: NextRequest) {
     // Send magic link via email
     if (email) {
       const magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/magic-link/verify?token=${token}`;
-      
-      const emailSubject = purpose === 'offer_access' 
-        ? 'Your exclusive offer from B2B+' 
+
+      const emailSubject = purpose === 'offer_access'
+        ? 'Your exclusive offer from B2B+'
         : 'Your login link for B2B+';
 
       const emailBody = `
@@ -116,36 +132,36 @@ export async function POST(request: NextRequest) {
               <h2 style="color: #2563eb; margin-top: 0;">
                 ${purpose === 'offer_access' ? 'Your Exclusive Offer' : 'Login to B2B+'}
               </h2>
-              
+
               <p>Hi ${userName || 'there'},</p>
-              
+
               <p>
-                ${purpose === 'offer_access' 
-                  ? 'We have a special offer just for you! Click the button below to view your personalized pricing and exclusive deals.' 
+                ${purpose === 'offer_access'
+                  ? 'We have a special offer just for you! Click the button below to view your personalized pricing and exclusive deals.'
                   : 'Click the button below to securely log in to your B2B+ account:'}
               </p>
-              
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${magicLink}" 
+                <a href="${magicLink}"
                    style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
                   ${purpose === 'offer_access' ? 'View Your Offer' : 'Log In to B2B+'}
                 </a>
               </div>
-              
+
               <p style="font-size: 14px; color: #666;">
                 This link expires in 10 minutes and can only be used once.
               </p>
-              
+
               <p style="font-size: 14px; color: #666;">
                 If you didn't request this, please ignore this email.
               </p>
-              
+
               <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-              
+
               <p style="font-size: 12px; color: #999;">
                 Need help? Contact us at support@b2bplus.com
               </p>
-              
+
               <p style="font-size: 12px; color: #999;">
                 B2B+ - Your trusted B2B partner
               </p>
@@ -171,15 +187,18 @@ export async function POST(request: NextRequest) {
 
     // Send magic link via SMS (if phone number provided)
     if (phone) {
-      // TODO: Implement SMS sending via Twilio or similar service
-      // For now, just return success
-      console.log(`Magic link code for ${phone}: ${token.substring(0, 6)}`);
+      // SMS sending is optional - email is the primary method
+      // SMS integration can be added later via Twilio or similar service
+      // For now, we log the code for debugging purposes only in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[DEV] Magic link code for ${phone}: ${token.substring(0, 6)}`);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: email 
-        ? 'Magic link sent to your email' 
+      message: email
+        ? 'Magic link sent to your email'
         : 'Magic link code sent to your phone',
     });
 

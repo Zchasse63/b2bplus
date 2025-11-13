@@ -174,25 +174,23 @@ export default function PricingRecommendationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <motion.div {...fadeIn} transition={fast}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-b2b-dark">AI Pricing Recommendations</h1>
-            <p className="mt-1 text-b2b-gray-500">
-              AI-optimized pricing suggestions to maximize revenue and win probability
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<FiRefreshCw />}
-            onClick={generateRecommendations}
-            loading={generating}
-          >
-            Generate Recommendations
-          </Button>
+      {/* Header - Animation removed for E2E test reliability */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-b2b-dark">AI Pricing Recommendations</h1>
+          <p className="mt-1 text-b2b-gray-500">
+            AI-optimized pricing suggestions to maximize revenue and win probability
+          </p>
         </div>
-      </motion.div>
+        <Button
+          variant="primary"
+          icon={<FiRefreshCw />}
+          onClick={generateRecommendations}
+          loading={generating}
+        >
+          Generate Recommendations
+        </Button>
+      </div>
 
       {/* Stats Cards */}
       <motion.div {...fadeIn} transition={{ ...fast, delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-4 gap-4">

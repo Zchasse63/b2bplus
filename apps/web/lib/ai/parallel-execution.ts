@@ -7,7 +7,7 @@
  * - Reduce total execution time by running independent operations concurrently
  */
 
-import { generateTextPro, generateTextFlash, generateJSON } from '@/lib/gemini';
+import { generateTextPro, generateText, generateJSON } from '@/lib/gemini';
 
 /**
  * Execute multiple AI text generation calls in parallel
@@ -19,7 +19,7 @@ export async function generateTextsInParallel(
   const promises = prompts.map(({ prompt, usePro }) =>
     usePro
       ? generateTextPro(prompt, options)
-      : generateTextFlash(prompt, options)
+      : generateText(prompt, options)
   );
 
   return Promise.all(promises);
@@ -205,7 +205,7 @@ export async function generateBatchResponsesParallel(
 
     const batchPromises = batch.map(async (customer) => {
       try {
-        const response = await generateTextFlash(customer.prompt);
+        const response = await generateText(customer.prompt);
         return {
           customerId: customer.customerId,
           response,

@@ -11,13 +11,14 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
-// Get Supabase credentials
-const SUPABASE_URL = 'https://ksprdklquoskvjqsicvv.supabase.co';
+// Get Supabase credentials from environment
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
-if (!SUPABASE_SERVICE_KEY) {
-  console.error('Error: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_KEY environment variable is required');
-  console.error('Usage: SUPABASE_KEY=your_key node scripts/seed-database.js');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('Error: Required environment variables are missing');
+  console.error('Please set: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Usage: NEXT_PUBLIC_SUPABASE_URL=your_url SUPABASE_SERVICE_ROLE_KEY=your_key node scripts/seed-database.js');
   process.exit(1);
 }
 

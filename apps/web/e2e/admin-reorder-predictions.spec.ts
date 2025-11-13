@@ -9,7 +9,7 @@
  * - Prediction accuracy tracking
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@/e2e/fixtures/auth';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -30,13 +30,9 @@ test.describe('Reorder Predictions with AI', () => {
     }
   });
 
-  test('should generate reorder predictions with AI analysis', async ({ page }) => {
+  test('should generate reorder predictions with AI analysis', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Navigate to reorder predictions
     await page.goto('/admin/predictions/reorder');
@@ -72,16 +68,16 @@ test.describe('Reorder Predictions with AI', () => {
       .limit(10);
     
     expect(predictions).toBeTruthy();
-    expect(predictions.length).toBeGreaterThan(0);
-    
+    expect(predictions?.length).toBeGreaterThan(0);
+
     // Verify prediction structure
-    const firstPrediction = predictions[0];
-    expect(firstPrediction.customer_id).toBeTruthy();
-    expect(firstPrediction.product_id).toBeTruthy();
-    expect(firstPrediction.predicted_order_date).toBeTruthy();
-    expect(firstPrediction.confidence_score).toBeGreaterThan(0);
-    expect(firstPrediction.confidence_score).toBeLessThanOrEqual(1);
-    expect(firstPrediction.reasoning).toBeTruthy(); // AI-generated reasoning
+    const firstPrediction = predictions?.[0];
+    expect(firstPrediction?.customer_id).toBeTruthy();
+    expect(firstPrediction?.product_id).toBeTruthy();
+    expect(firstPrediction?.predicted_order_date).toBeTruthy();
+    expect(firstPrediction?.confidence_score).toBeGreaterThan(0);
+    expect(firstPrediction?.confidence_score).toBeLessThanOrEqual(1);
+    expect(firstPrediction?.reasoning).toBeTruthy(); // AI-generated reasoning
     
     console.log('✓ Prediction data structure validated');
     console.log(`  - Customer: ${firstPrediction.customer_id}`);
@@ -89,7 +85,7 @@ test.describe('Reorder Predictions with AI', () => {
     console.log(`  - Reasoning: ${firstPrediction.reasoning?.substring(0, 100)}...`);
   });
 
-  test('should analyze purchase patterns with AI', async ({ page }) => {
+  test('should analyze purchase patterns with AI', async ({ adminPage: page }) => {
     // Get a customer with order history
     const { data: customer } = await supabase
       .from('profiles')
@@ -139,7 +135,7 @@ test.describe('Reorder Predictions with AI', () => {
     });
   });
 
-  test('should calculate confidence scores for predictions', async ({ page }) => {
+  test('should calculate confidence scores for predictions', async ({ adminPage: page }) => {
     // Get recent predictions
     const { data: predictions } = await supabase
       .from('reorder_predictions')
@@ -176,7 +172,7 @@ test.describe('Reorder Predictions with AI', () => {
     console.log(`    Low (<40%): ${lowConfidence}`);
   });
 
-  test('should send reorder notification emails', async ({ page }) => {
+  test('should send reorder notification emails', async ({ adminPage: page }) => {
     // Get a high-confidence prediction
     const { data: prediction } = await supabase
       .from('reorder_predictions')
@@ -224,7 +220,7 @@ test.describe('Reorder Predictions with AI', () => {
     expect(updatedPrediction.notification_sent_at).toBeTruthy();
   });
 
-  test('should track prediction accuracy', async ({ page }) => {
+  test('should track prediction accuracy', async ({ adminPage: page }) => {
     // Get predictions that should have been fulfilled by now
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - 7); // 7 days ago
@@ -287,13 +283,9 @@ test.describe('Reorder Predictions with AI', () => {
     expect(accuracyRate).toBeGreaterThan(0.4);
   });
 
-  test('should filter predictions by confidence threshold', async ({ page }) => {
+  test('should filter predictions by confidence threshold', async ({ adminPage: page }) => {
     // Login as admin
-    await page.goto('/auth/login');
-    await page.fill('[data-testid="email-input"]', 'admin@demo.com');
-    await page.fill('[data-testid="password-input"]', 'admin123');
-    await page.click('[data-testid="login-button"]');
-    await page.waitForURL('/admin', { timeout: 10000 });
+    // Already logged in via fixture
     
     // Navigate to reorder predictions
     await page.goto('/admin/predictions/reorder');

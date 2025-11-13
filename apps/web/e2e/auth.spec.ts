@@ -18,7 +18,7 @@ test.describe('Authentication', () => {
       await page.goto('/auth/login');
 
       // Wait for page to be fully loaded
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Fill in login form
       await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
@@ -31,7 +31,7 @@ test.describe('Authentication', () => {
       await page.waitForURL('/chat', { timeout: 10000 });
 
       // Wait for page to fully load and header to render
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Additional wait for session to be fully established (especially important for webkit/Mobile Chrome)
       await page.waitForTimeout(2000);
@@ -166,7 +166,7 @@ test.describe('Authentication', () => {
       await page.goto('/auth/forgot-password');
 
       // Wait for page to be fully loaded and hydrated
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       // Fill in email using data-testid
@@ -184,7 +184,7 @@ test.describe('Authentication', () => {
       await page.goto('/auth/forgot-password');
 
       // Wait for page to be fully loaded
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Fill in invalid email using data-testid
       await page.fill('[data-testid="email-input"]', 'not-an-email');
@@ -206,7 +206,7 @@ test.describe('Authentication', () => {
       await page.goto('/auth/login');
 
       // Wait for page to be fully loaded
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');
       await page.fill('[data-testid="password-input"]', process.env.TEST_USER_PASSWORD || 'TestPassword123!');
@@ -214,7 +214,7 @@ test.describe('Authentication', () => {
       await page.waitForURL('/chat', { timeout: 10000 });
 
       // Wait for header to render
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Click logout button using data-testid
       await page.click('[data-testid="sign-out-button"]');
@@ -223,7 +223,7 @@ test.describe('Authentication', () => {
       await page.waitForURL('/auth/login', { timeout: 5000 });
 
       // Wait for page to fully load after redirect
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify we're on the login page by checking for the login form
       await expect(page.locator('h2:has-text("Sign In")')).toBeVisible();
@@ -244,7 +244,7 @@ test.describe('Authentication', () => {
       await page.goto('/auth/login');
 
       // Wait for page to be fully loaded and hydrated
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
       await page.fill('[data-testid="email-input"]', process.env.TEST_USER_EMAIL || 'test@e2etest.com');

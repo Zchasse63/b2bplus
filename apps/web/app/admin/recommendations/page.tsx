@@ -329,7 +329,7 @@ export default function AdminRecommendationsPage() {
         {topProducts.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-gray-600 dark:text-gray-400">
-              No recommendations yet. Click "Refresh All" to generate recommendations.
+              No recommendations yet. Click &quot;Refresh All&quot; to generate recommendations.
             </p>
           </div>
         ) : (

@@ -241,7 +241,7 @@ export default function ApprovalsPage() {
                           <h3 className="font-semibold">Order #{approval.order_id.substring(0, 8)}</h3>
                           {getRiskBadge(approval.risk_score)}
                           {approval.requires_manual_review && (
-                            <Badge variant="outline" className="border-orange-500 text-orange-500">
+                            <Badge variant="warning">
                               <AlertTriangle className="w-3 h-3 mr-1" />
                               Manual Review Required
                             </Badge>
@@ -280,7 +280,7 @@ export default function ApprovalsPage() {
                           View Details
                         </Button>
                         <Button
-                          variant="default"
+                          variant="secondary"
                           size="sm"
                           onClick={() => handleApprove(approval.id)}
                           disabled={processing === approval.id}
@@ -289,7 +289,7 @@ export default function ApprovalsPage() {
                           Approve
                         </Button>
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
                           onClick={() => {
                             const reason = prompt('Enter rejection reason:');
@@ -363,7 +363,7 @@ export default function ApprovalsPage() {
                     Approve Order
                   </Button>
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     onClick={() => {
                       const reason = prompt('Enter rejection reason:');
                       if (reason) handleReject(selectedApproval.id, reason);

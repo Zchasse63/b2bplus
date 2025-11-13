@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { generateEmbedding } from '@/lib/gemini';
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('embeddings-generate');
 
 // POST generate embeddings for products
 export async function POST(request: NextRequest) {
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
         await new Promise(resolve => setTimeout(resolve, 50));
 
       } catch (error) {
-        console.error('Error generating embedding for product:', product.id, error);
+        logger.error('Error generating embedding for product', { productId: product.id, error });
         failed++;
         errors.push({
           productId: product.id,
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in generate embeddings API:', error);
+    logger.error('Error in generate embeddings API', { error });
     return NextResponse.json(
       { error: 'Failed to generate embeddings', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

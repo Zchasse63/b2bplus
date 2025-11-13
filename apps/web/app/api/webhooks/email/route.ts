@@ -10,6 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { classifyEmail, EmailData } from '@/lib/ai/email-classification';
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('email-webhook');
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -79,10 +82,10 @@ export async function POST(request: NextRequest) {
     const emailId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Classify email with AI
-    console.log(`[Email Webhook] Classifying email from ${email.from_address}`);
+    logger.debug(`Classifying email from ${email.from_address}`);
     const classification = await classifyEmail(email);
 
-    console.log(`[Email Webhook] Classification: ${classification.classification} (${classification.confidence})`);
+    logger.debug(`Classification: ${classification.classification} (${classification.confidence})`);
 
     // Store email in database
     const supabase = await createClient();

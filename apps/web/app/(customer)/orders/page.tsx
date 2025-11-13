@@ -279,7 +279,7 @@ export default function OrdersPage() {
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <FileText className="h-4 w-4" />
                             <span className="font-medium">PO: {order.po_number}</span>
-                            <CopyButton text={order.po_number} label="PO Number" size="icon" />
+                            <CopyButton text={order.po_number} label="PO Number" size="sm" />
                           </div>
                         )}
                       </div>

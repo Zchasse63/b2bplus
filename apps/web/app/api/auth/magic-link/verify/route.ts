@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { generateSecurePassword } from '@/lib/security/password-generator';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Check if token is expired
     const now = new Date();
     const expiresAt = new Date(magicLinkToken.expires_at);
-    
+
     if (now > expiresAt) {
       return NextResponse.redirect(new URL('/login?error=expired_token', request.url));
     }
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
       .update({ used_at: new Date().toISOString() })
       .eq('token', token);
 
-    // If user_id exists, sign them in
+    // If user_id exists, create a session for them
     if (magicLinkToken.user_id) {
       // Get user email from profiles
       const { data: profile } = await supabase
@@ -53,31 +54,43 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (profile?.email) {
-        // Sign in user using Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        // Generate a magic link using Supabase's built-in functionality
+        // This will create a proper session token
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'magiclink',
           email: profile.email,
-          password: magicLinkToken.token, // Use token as temporary password
+          options: {
+            redirectTo: magicLinkToken.redirect_url || '/dashboard',
+          },
         });
 
-        // If password auth fails, try to sign in with OTP
-        if (authError) {
-          const { error: otpError } = await supabase.auth.signInWithOtp({
-            email: profile.email,
-          });
+        if (linkError || !linkData) {
+          console.error('Error generating magic link:', linkError);
+          return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
+        }
 
-          if (otpError) {
-            console.error('Error signing in user:', otpError);
-            return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
-          }
+        // Extract the token from the generated link and redirect to Supabase's auth callback
+        // The callback will create the session
+        const url = new URL(linkData.properties.action_link);
+        const authToken = url.searchParams.get('token');
+        const type = url.searchParams.get('type');
+
+        if (authToken && type) {
+          // Redirect to Supabase's auth callback which will create the session
+          const callbackUrl = new URL('/auth/callback', request.url);
+          callbackUrl.searchParams.set('token_hash', authToken);
+          callbackUrl.searchParams.set('type', type);
+          callbackUrl.searchParams.set('next', magicLinkToken.redirect_url || '/dashboard');
+          return NextResponse.redirect(callbackUrl);
         }
       }
 
-      // Redirect to intended page or dashboard
+      // Fallback redirect if something goes wrong
       const redirectUrl = magicLinkToken.redirect_url || '/dashboard';
       return NextResponse.redirect(new URL(redirectUrl, request.url));
     }
 
-    // If lead_id exists, create account and sign them in
+    // If lead_id exists, create account and sign them in (or sign in if account already exists)
     if (magicLinkToken.lead_id) {
       const { data: lead } = await supabase
         .from('leads')
@@ -89,64 +102,107 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/login?error=lead_not_found', request.url));
       }
 
-      // Create user account
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: lead.email,
-        password: crypto.randomUUID(), // Generate random password (user won't need it)
-        options: {
-          data: {
+      // Check if user already exists by querying profiles table
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', lead.email)
+        .single();
+
+      let userId: string;
+
+      if (existingProfile) {
+        // User already exists - just update lead and log activity
+        userId = existingProfile.id;
+
+        // Update lead with user_id if not already set
+        if (!lead.user_id) {
+          await supabase
+            .from('leads')
+            .update({
+              user_id: userId,
+              account_created: true,
+              account_created_at: new Date().toISOString(),
+              status: 'converted',
+            })
+            .eq('id', magicLinkToken.lead_id);
+        }
+
+        // Log activity
+        await supabase
+          .from('lead_activities')
+          .insert({
+            lead_id: magicLinkToken.lead_id,
+            activity_type: 'magic_link_login',
+            description: 'Logged in via magic link (existing user)',
+            metadata: {
+              user_id: userId,
+              purpose: magicLinkToken.purpose,
+            },
+          });
+      } else {
+        // Create new user account with secure password
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: lead.email,
+          password: generateSecurePassword(), // Generate 32-character secure password
+          options: {
+            data: {
+              full_name: lead.contact_name,
+              company_name: lead.company_name,
+              phone: lead.phone,
+            },
+            emailRedirectTo: magicLinkToken.redirect_url || '/products',
+          },
+        });
+
+        if (signUpError || !authData.user) {
+          console.error('Error creating user account:', signUpError);
+          return NextResponse.redirect(new URL('/login?error=signup_failed', request.url));
+        }
+
+        userId = authData.user.id;
+
+        // Update lead with user_id
+        await supabase
+          .from('leads')
+          .update({
+            user_id: userId,
+            account_created: true,
+            account_created_at: new Date().toISOString(),
+            status: 'converted',
+          })
+          .eq('id', magicLinkToken.lead_id);
+
+        // Create profile
+        await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            email: lead.email,
             full_name: lead.contact_name,
             company_name: lead.company_name,
             phone: lead.phone,
-          },
-        },
-      });
+            address_line1: lead.address_line1,
+            address_line2: lead.address_line2,
+            city: lead.city,
+            state: lead.state,
+            zip_code: lead.zip_code,
+            country: lead.country,
+          });
 
-      if (signUpError || !authData.user) {
-        console.error('Error creating user account:', signUpError);
-        return NextResponse.redirect(new URL('/login?error=signup_failed', request.url));
+        // Log activity
+        await supabase
+          .from('lead_activities')
+          .insert({
+            lead_id: magicLinkToken.lead_id,
+            activity_type: 'account_created',
+            description: 'Account created via magic link',
+            metadata: {
+              user_id: userId,
+              purpose: magicLinkToken.purpose,
+            },
+          });
       }
-
-      // Update lead with user_id
-      await supabase
-        .from('leads')
-        .update({
-          user_id: authData.user.id,
-          account_created: true,
-          account_created_at: new Date().toISOString(),
-          status: 'converted',
-        })
-        .eq('id', magicLinkToken.lead_id);
-
-      // Create profile
-      await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          email: lead.email,
-          full_name: lead.contact_name,
-          company_name: lead.company_name,
-          phone: lead.phone,
-          address_line1: lead.address_line1,
-          address_line2: lead.address_line2,
-          city: lead.city,
-          state: lead.state,
-          zip_code: lead.zip_code,
-          country: lead.country,
-        });
-
-      // Log activity
-      await supabase
-        .from('lead_activities')
-        .insert({
-          lead_id: magicLinkToken.lead_id,
-          activity_type: 'account_created',
-          description: 'Account created via magic link',
-          metadata: {
-            user_id: authData.user.id,
-            purpose: magicLinkToken.purpose,
-          },
-        });
 
       // Redirect to intended page or welcome page
       const redirectUrl = magicLinkToken.redirect_url || '/welcome';

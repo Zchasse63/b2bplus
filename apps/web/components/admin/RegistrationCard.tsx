@@ -228,7 +228,7 @@ export function RegistrationCard({ organization, readonly = false }: Registratio
                 />
                 <div className="flex gap-2">
                   <Button
-                    variant="error"
+                    variant="outline"
                     size="sm"
                     onClick={handleReject}
                     disabled={isProcessing}

@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { checkAdminRole } from '@/lib/auth-helpers';
+import { checkAdminRole } from '@/lib/middleware/admin';
 import { searchDocuments } from '@/lib/ai/document-processing';
 
 export const runtime = 'nodejs';
@@ -48,13 +48,8 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
-    const authCheck = await checkAdminRole();
-    if (!authCheck.authorized) {
-      return NextResponse.json(
-        { error: authCheck.message },
-        { status: 401 }
-      );
-    }
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
 
     const supabase = await createClient();
     const body = await request.json();
@@ -265,13 +260,8 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const authCheck = await checkAdminRole();
-    if (!authCheck.authorized) {
-      return NextResponse.json(
-        { error: authCheck.message },
-        { status: 401 }
-      );
-    }
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
 
     const supabase = await createClient();
 

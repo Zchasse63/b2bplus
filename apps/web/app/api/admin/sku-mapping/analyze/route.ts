@@ -17,7 +17,7 @@ interface CurrentProduct {
   name: string
   description?: string
   category?: string
-  price: number
+  base_price: number
 }
 
 interface SKUMatch {
@@ -45,25 +45,48 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify admin role
-    const { data: membership } = await supabase
-      .from('organization_members')
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single()
 
-    if (!membership || membership.role !== 'admin') {
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
-    const { productsToMap, sourceSystem } = body as {
-      productsToMap: ProductToMap[]
-      sourceSystem: string
+    let { productsToMap, sourceSystem, oldSKUs, skus } = body as {
+      productsToMap?: ProductToMap[]
+      sourceSystem?: string
+      oldSKUs?: any[]
+      skus?: string[]
+    }
+
+    // Handle different input formats
+    if (!productsToMap) {
+      if (oldSKUs && Array.isArray(oldSKUs)) {
+        // Convert oldSKUs format to productsToMap
+        productsToMap = oldSKUs.map((item: any) => ({
+          oldSKU: item.oldSKU || item,
+          description: item.description || item,
+          category: item.category,
+          size: item.size,
+          uom: item.uom,
+          price: item.price,
+        }))
+      } else if (skus && Array.isArray(skus)) {
+        // Convert simple SKU strings to productsToMap
+        productsToMap = skus.map((sku: string) => ({
+          oldSKU: sku,
+          description: sku,
+        }))
+      }
     }
 
     if (!productsToMap || !Array.isArray(productsToMap) || productsToMap.length === 0) {
       return NextResponse.json(
-        { error: 'productsToMap array is required' },
+        { error: 'productsToMap, oldSKUs, or skus array is required' },
         { status: 400 }
       )
     }
@@ -71,25 +94,37 @@ export async function POST(request: NextRequest) {
     // Fetch all current products
     const { data: currentProducts, error: productsError } = await supabase
       .from('products')
-      .select('id, sku, name, description, category, price')
+      .select('id, sku, name, description, category, base_price')
 
     if (productsError) {
       throw new Error(`Failed to fetch products: ${productsError.message}`)
     }
 
     const matches: SKUMatch[] = []
+    const mappings: any[] = []
 
     // Process each product to map
     for (const productToMap of productsToMap) {
       const match = await findBestMatch(productToMap, currentProducts as CurrentProduct[])
       if (match) {
         matches.push(match)
+
+        // Also add to mappings array with test-expected format
+        const product = (currentProducts as CurrentProduct[]).find(p => p.id === match.currentProductId)
+        mappings.push({
+          old_sku: match.oldSKU,
+          suggested_product_id: match.currentProductId,
+          suggested_product_name: product?.name || 'Unknown',
+          confidence_score: match.confidenceScore,
+          match_reasoning: match.reasoning,
+        })
       }
     }
 
     return NextResponse.json({
       success: true,
       matches,
+      mappings, // Include both formats for compatibility
       totalProcessed: productsToMap.length,
       totalMatched: matches.length,
       matchRate: (matches.length / productsToMap.length * 100).toFixed(1) + '%'

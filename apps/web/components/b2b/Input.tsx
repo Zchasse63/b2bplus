@@ -49,7 +49,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               {icon}
             </div>
           )}
-          <motion.input
+          <input
             ref={ref}
             type={type}
             className={cn(
@@ -64,10 +64,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            animate={{
-              scale: isFocused ? 1.01 : 1,
-            }}
-            transition={fast}
             {...props}
           />
           {icon && iconPosition === 'right' && (

@@ -84,7 +84,7 @@ describe('Task 1.4.1: RLS Policies for Cross-Organization Access', () => {
     const { data: orders } = await supabase
       .from('orders')
       .select('*')
-      .eq('organization_id', membership.organization_id);
+      .eq('organization_id', membership?.organization_id || '');
 
     // Verify all orders belong to user's organization
     expect(orders).toHaveLength(2);
@@ -341,10 +341,11 @@ describe('Task 1.4.3: Unapproved Organization Restrictions', () => {
       .single();
 
     // Verify organization is not approved
-    expect(membership.organization.approval_status).not.toBe('approved');
-    
+    const org = (membership as any)?.organization;
+    expect(org?.approval_status).not.toBe('approved');
+
     // In real implementation, this would redirect to pending page
-    const isApproved = membership.organization.approval_status === 'approved';
+    const isApproved = org?.approval_status === 'approved';
     expect(isApproved).toBe(false);
   });
 });
@@ -408,10 +409,10 @@ describe('Task 1.4.5: Admin Role Requirements', () => {
       .single();
 
     // Verify user is not admin
-    expect(membership.role).not.toBe('admin');
-    
+    expect(membership?.role).not.toBe('admin');
+
     // In real implementation, this would return 403
-    const isAdmin = membership.role === 'admin';
+    const isAdmin = membership?.role === 'admin';
     expect(isAdmin).toBe(false);
   });
 
@@ -445,7 +446,7 @@ describe('Task 1.4.5: Admin Role Requirements', () => {
       .eq('user_id', 'admin-123')
       .single();
 
-    expect(membership.role).toBe('admin');
+    expect(membership?.role).toBe('admin');
   });
 });
 

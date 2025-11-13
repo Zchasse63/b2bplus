@@ -9,18 +9,12 @@ interface OpportunityCardProps {
   opportunity: {
     id: string;
     opportunity_type: string;
-    potential_revenue: number;
-    confidence_score: number;
-    ai_reasoning: string;
+    predicted_revenue: number;
+    opportunity_score: number;
+    reason: string;
     status: string;
     created_at: string;
-    customer: {
-      id: string;
-      email: string;
-      organization: {
-        name: string;
-      };
-    };
+    customer_id: string;
     product: {
       id: string;
       name: string;
@@ -75,7 +69,7 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
           },
           body: JSON.stringify({
             action,
-            notes: `${action} opportunity for ${opportunity.customer.organization.name}`,
+            notes: `${action} opportunity for customer ${opportunity.customer_id}`,
           }),
         }
       );
@@ -102,12 +96,12 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
           <h3 className="font-bold text-lg text-b2b-dark">
-            {opportunity.customer.organization.name}
+            {opportunityTypeLabels[opportunity.opportunity_type] ||
+              opportunity.opportunity_type}
           </h3>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm text-b2b-gray-500">
-              {opportunityTypeLabels[opportunity.opportunity_type] ||
-                opportunity.opportunity_type}
+              Customer: {opportunity.customer_id.substring(0, 8)}...
             </span>
             <Badge variant={statusVariants[opportunity.status] || 'default'} size="sm">
               {statusLabels[opportunity.status] || opportunity.status}
@@ -116,7 +110,7 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
         </div>
         <div className="text-right">
           <div className="text-xl font-bold text-green-600">
-            ${opportunity.potential_revenue?.toLocaleString() || '0'}
+            ${opportunity.predicted_revenue?.toLocaleString() || '0'}
           </div>
           <div className="text-xs text-b2b-gray-500">potential</div>
         </div>
@@ -134,7 +128,7 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
       <div className="mb-3">
         <div className="text-xs text-b2b-gray-500 mb-1">AI Insight</div>
         <p className="text-sm text-b2b-gray-700 leading-relaxed">
-          {opportunity.ai_reasoning}
+          {opportunity.reason}
         </p>
       </div>
 
@@ -143,14 +137,14 @@ export function OpportunityCard({ opportunity }: OpportunityCardProps) {
         <div className="flex justify-between text-sm mb-1">
           <span className="text-b2b-gray-500">Confidence</span>
           <span className="font-medium text-b2b-dark">
-            {Math.round((opportunity.confidence_score || 0) * 100)}%
+            {Math.round((opportunity.opportunity_score || 0) * 100)}%
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
             className="bg-blue-600 h-2 rounded-full transition-all"
             style={{
-              width: `${(opportunity.confidence_score || 0) * 100}%`,
+              width: `${(opportunity.opportunity_score || 0) * 100}%`,
             }}
           />
         </div>

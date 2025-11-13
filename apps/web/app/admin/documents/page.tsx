@@ -240,14 +240,6 @@ export default function DocumentsPage() {
           <p className="text-gray-600 mt-2">AI-powered document management and search</p>
         </div>
         <div>
-          <Label htmlFor="document-upload" className="cursor-pointer">
-            <Button disabled={uploading} asChild>
-              <span>
-                <Upload className="w-4 h-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Upload Document'}
-              </span>
-            </Button>
-          </Label>
           <Input
             id="document-upload"
             type="file"
@@ -255,6 +247,12 @@ export default function DocumentsPage() {
             onChange={handleFileUpload}
             className="hidden"
           />
+          <Label htmlFor="document-upload" className="cursor-pointer">
+            <Button disabled={uploading} onClick={() => document.getElementById('document-upload')?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              {uploading ? 'Uploading...' : 'Upload Document'}
+            </Button>
+          </Label>
         </div>
       </div>
 
@@ -278,36 +276,36 @@ export default function DocumentsPage() {
             </div>
             <div>
               <Label>Document Type</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="contract">Contracts</SelectItem>
-                  <SelectItem value="quote">Quotes</SelectItem>
-                  <SelectItem value="invoice">Invoices</SelectItem>
-                  <SelectItem value="purchase_order">Purchase Orders</SelectItem>
-                  <SelectItem value="packing_slip">Packing Slips</SelectItem>
-                  <SelectItem value="receipt">Receipts</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Types' },
+                  { value: 'contract', label: 'Contracts' },
+                  { value: 'quote', label: 'Quotes' },
+                  { value: 'invoice', label: 'Invoices' },
+                  { value: 'purchase_order', label: 'Purchase Orders' },
+                  { value: 'packing_slip', label: 'Packing Slips' },
+                  { value: 'receipt', label: 'Receipts' },
+                  { value: 'other', label: 'Other' },
+                ]}
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>Status</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
+              <Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'processing', label: 'Processing' },
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'failed', label: 'Failed' },
+                ]}
+                className="mt-1"
+              />
             </div>
           </div>
           <div className="flex justify-between items-center mt-4">
@@ -316,14 +314,14 @@ export default function DocumentsPage() {
             </p>
             <div className="flex gap-2">
               <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                variant={viewMode === 'grid' ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
               >
                 <Grid className="w-4 h-4" />
               </Button>
               <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
+                variant={viewMode === 'list' ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('list')}
               >
@@ -400,7 +398,7 @@ export default function DocumentsPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     {doc.similarity_score && (
-                      <Badge variant="outline">
+                      <Badge variant="info">
                         {(doc.similarity_score * 100).toFixed(0)}% match
                       </Badge>
                     )}
@@ -464,7 +462,7 @@ export default function DocumentsPage() {
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDelete(selectedDocument.id)}>
+                  <Button variant="outline" onClick={() => handleDelete(selectedDocument.id)}>
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete
                   </Button>

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       features: features || [],
-      is_super_admin: user.role === "super_admin",
+      is_super_admin: user!.role === "super_admin",
     });
   } catch (error: any) {
     console.error("Unexpected error:", error);

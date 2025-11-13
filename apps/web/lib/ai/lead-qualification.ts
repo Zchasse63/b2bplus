@@ -78,10 +78,10 @@ export async function createOrUpdateLead(
   if (qualification.email) {
     const { data } = await supabase
       .from('leads')
-      .select('id, lead_score, status')
+      .select('id, lead_score, status, company_name, contact_name, phone, industry, notes')
       .eq('email', qualification.email)
       .single();
-    
+
     existingLead = data;
   }
 

@@ -129,7 +129,7 @@ export default function FilterPanel({
               <MdFilterList className="h-5 w-5" />
               Filters
               {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="info" className="ml-2">
                   {activeFilterCount}
                 </Badge>
               )}
@@ -171,7 +171,7 @@ export default function FilterPanel({
               {datePresets.map(preset => (
                 <Button
                   key={preset.value}
-                  variant={filters.dateRange.preset === preset.value ? 'default' : 'outline'}
+                  variant={filters.dateRange.preset === preset.value ? 'primary' : 'outline'}
                   size="sm"
                   onClick={() => handleDatePresetChange(preset.value as FilterState['dateRange']['preset'])}
                 >
@@ -212,7 +212,7 @@ export default function FilterPanel({
               {statusOptions.map(status => (
                 <Button
                   key={status.value}
-                  variant={filters.statuses.includes(status.value) ? 'default' : 'outline'}
+                  variant={filters.statuses.includes(status.value) ? 'primary' : 'outline'}
                   size="sm"
                   onClick={() => handleStatusToggle(status.value)}
                   className="gap-2"

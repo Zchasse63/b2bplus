@@ -120,7 +120,7 @@ async function login(page: Page, email: string, password: string) {
 
     // Wait for and fill email
     console.log('Waiting for email input...');
-    const emailInput = page.locator('[data-testid="login-email"]');
+    const emailInput = page.locator('[data-testid="email-input"]');
     await emailInput.waitFor({ state: 'visible', timeout: 10000 });
 
     // Fill email with proper React event triggering
@@ -131,7 +131,7 @@ async function login(page: Page, email: string, password: string) {
 
     // Wait for and fill password
     console.log('Waiting for password input...');
-    const passwordInput = page.locator('[data-testid="login-password"]');
+    const passwordInput = page.locator('[data-testid="password-input"]');
     await passwordInput.waitFor({ state: 'visible', timeout: 10000 });
 
     // Fill password with proper React event triggering
@@ -205,7 +205,7 @@ async function login(page: Page, email: string, password: string) {
 /**
  * Extended test with authentication fixtures
  */
-export const test = base.extend<AuthFixtures>({
+const test = base.extend<AuthFixtures>({
   /**
    * Authenticated page for regular user
    */
@@ -213,19 +213,21 @@ export const test = base.extend<AuthFixtures>({
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await login(page, TEST_USERS.regular.email, TEST_USERS.regular.password);
+    try {
+      await login(page, TEST_USERS.regular.email, TEST_USERS.regular.password);
 
-    // Wait for cookies to be fully set (especially important for webkit/Safari)
-    await page.waitForTimeout(2000);
+      // Wait for cookies to be fully set (especially important for webkit/Safari)
+      await page.waitForTimeout(2000);
 
-    // TEMPORARILY DISABLED - Cart cleanup is broken and causing test failures
-    // The clearCart() function claims success but doesn't actually remove items
-    // This needs to be fixed properly - see PLAYWRIGHT-FAILING-TESTS.md
-    // await clearCart(page);
+      // TEMPORARILY DISABLED - Cart cleanup is broken and causing test failures
+      // The clearCart() function claims success but doesn't actually remove items
+      // This needs to be fixed properly - see PLAYWRIGHT-FAILING-TESTS.md
+      // await clearCart(page);
 
-    await use(page);
-
-    await context.close();
+      await use(page);
+    } finally {
+      await context.close();
+    }
   },
 
   /**
@@ -235,16 +237,24 @@ export const test = base.extend<AuthFixtures>({
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    await login(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
+    try {
+      await login(page, TEST_USERS.admin.email, TEST_USERS.admin.password);
 
-    // Clear cart to ensure clean state for tests
-    await clearCart(page);
+      // Wait for cookies to be fully set
+      await page.waitForTimeout(2000);
 
-    await use(page);
+      // Navigate to admin dashboard to ensure we're in the right place
+      await page.goto('/admin', { waitUntil: 'networkidle' });
 
-    await context.close();
+      // Clear cart to ensure clean state for tests
+      // await clearCart(page);
+
+      await use(page);
+    } finally {
+      await context.close();
+    }
   },
 });
 
-export { expect };
+export { test, expect };
 

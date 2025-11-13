@@ -163,7 +163,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-b2b-gray-600 mb-4 italic">
-                "B2B+ has streamlined our ordering process. The container optimization tool alone has saved us thousands in shipping costs."
+                &quot;B2B+ has streamlined our ordering process. The container optimization tool alone has saved us thousands in shipping costs.&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-b2b-blue-100 flex items-center justify-center">
@@ -183,7 +183,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-b2b-gray-600 mb-4 italic">
-                "The platform is incredibly user-friendly. We can manage all our locations from one dashboard. Highly recommended!"
+                &quot;The platform is incredibly user-friendly. We can manage all our locations from one dashboard. Highly recommended!&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-b2b-green-100 flex items-center justify-center">
@@ -203,7 +203,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-b2b-gray-600 mb-4 italic">
-                "Outstanding customer service and product quality. The bulk ordering features have made our operations much more efficient."
+                &quot;Outstanding customer service and product quality. The bulk ordering features have made our operations much more efficient.&quot;
               </p>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-b2b-orange-100 flex items-center justify-center">

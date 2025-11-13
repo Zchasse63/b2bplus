@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -96,14 +96,11 @@ export async function POST(request: NextRequest) {
 
     // Log AI usage
     await logAIUsage({
-      user_id: validation.userId,
-      organization_id: null,
+      userId: validation.userId!,
+      organizationId: '',
       endpoint: '/api/admin/pricing/recommendations',
-      model: 'gemini-2.0-flash-exp',
-      input_tokens: recommendations.length * 300,
-      output_tokens: recommendations.length * 200,
-      total_tokens: recommendations.length * 500,
-      cost: recommendations.length * 0.0002,
+      operationType: 'pricing-recommendations',
+      tokensUsed: recommendations.length * 500,
       success: true,
     });
 
@@ -134,7 +131,7 @@ export async function GET(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -183,7 +180,7 @@ export async function PATCH(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 
@@ -272,7 +269,7 @@ export async function DELETE(request: NextRequest) {
     if (!validation.authorized) {
       return NextResponse.json(
         { error: validation.error },
-        { status: validation.status }
+        { status: 403 }
       );
     }
 

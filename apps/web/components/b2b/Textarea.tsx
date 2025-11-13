@@ -34,7 +34,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             {label}
           </label>
         )}
-        <motion.textarea
+        <textarea
           ref={ref}
           className={cn(
             'w-full rounded-lg border border-b2b-gray-300 bg-white px-4 py-2.5 text-b2b-dark placeholder:text-b2b-gray-500',
@@ -47,10 +47,6 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           disabled={disabled}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          animate={{
-            scale: isFocused ? 1.01 : 1,
-          }}
-          transition={fast}
           {...props}
         />
         <AnimatePresence>

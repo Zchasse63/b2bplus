@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSON } from '@/lib/gemini';
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('ai-excel-import');
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -193,7 +196,7 @@ Only map columns where you have at least 50% confidence. Return null for targetF
     });
 
   } catch (error) {
-    console.error('Error in AI Excel import API:', error);
+    logger.error('Error in AI Excel import API', { error });
     return NextResponse.json(
       { error: 'Failed to analyze file', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

@@ -1,0 +1,191 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "B2B+" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img [ref=e5]
+        - generic [ref=e8]: B2B+
+      - navigation [ref=e9]:
+        - link "Home" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - button "Home" [ref=e11]:
+            - img [ref=e13]
+            - text: Home
+        - link "Products" [ref=e16] [cursor=pointer]:
+          - /url: /products
+          - button "Products" [ref=e17]:
+            - img [ref=e19]
+            - text: Products
+        - link "Orders" [ref=e23] [cursor=pointer]:
+          - /url: /orders
+          - button "Orders" [ref=e24]:
+            - img [ref=e26]
+            - text: Orders
+        - link "Invoices" [ref=e29] [cursor=pointer]:
+          - /url: /invoices
+          - button "Invoices" [ref=e30]:
+            - img [ref=e32]
+            - text: Invoices
+        - link "Calculator" [ref=e35] [cursor=pointer]:
+          - /url: /tools/container-calculator
+          - button "Calculator" [ref=e36]:
+            - img [ref=e38]
+            - text: Calculator
+        - link "AI Assistant" [ref=e41] [cursor=pointer]:
+          - /url: /chat
+          - button "AI Assistant" [ref=e42]:
+            - img [ref=e44]
+            - text: AI Assistant
+        - link "Analytics" [ref=e47] [cursor=pointer]:
+          - /url: /analytics
+          - button "Analytics" [ref=e48]:
+            - img [ref=e50]
+            - text: Analytics
+        - link "Notifications" [ref=e53] [cursor=pointer]:
+          - /url: /notifications
+          - button "Notifications" [ref=e54]:
+            - img [ref=e56]
+            - text: Notifications
+        - link "Admin" [ref=e59] [cursor=pointer]:
+          - /url: /admin/products
+          - button "Admin" [ref=e60]:
+            - img [ref=e62]
+            - text: Admin
+        - link "Cart" [ref=e66] [cursor=pointer]:
+          - /url: /cart
+          - button "Cart" [ref=e68]:
+            - img [ref=e70]
+            - text: Cart
+      - generic [ref=e73]:
+        - link [ref=e74] [cursor=pointer]:
+          - /url: /profile
+          - button [ref=e75]:
+            - img [ref=e77]
+        - button [ref=e80] [cursor=pointer]:
+          - img [ref=e82]
+  - main [ref=e85]:
+    - generic [ref=e86]:
+      - complementary [ref=e87]:
+        - generic [ref=e88]:
+          - heading "B2B+ Admin" [level=1] [ref=e90]
+          - navigation [ref=e91]:
+            - link "Dashboard" [ref=e92] [cursor=pointer]:
+              - /url: /admin
+              - img [ref=e93]
+              - text: Dashboard
+            - link "Products" [ref=e96] [cursor=pointer]:
+              - /url: /admin/products
+              - img [ref=e97]
+              - text: Products
+            - link "Orders" [ref=e101] [cursor=pointer]:
+              - /url: /admin/orders
+              - img [ref=e102]
+              - text: Orders
+            - link "Customers" [ref=e106] [cursor=pointer]:
+              - /url: /admin/customers
+              - img [ref=e107]
+              - text: Customers
+            - link "Analytics" [ref=e112] [cursor=pointer]:
+              - /url: /admin/analytics
+              - img [ref=e113]
+              - text: Analytics
+            - link "Opportunities" [ref=e116] [cursor=pointer]:
+              - /url: /admin/opportunities
+              - img [ref=e117]
+              - text: Opportunities
+            - link "Forecasts" [ref=e121] [cursor=pointer]:
+              - /url: /admin/forecasts
+              - img [ref=e122]
+              - text: Forecasts
+            - link "Pricing" [ref=e123] [cursor=pointer]:
+              - /url: /admin/pricing/recommendations
+              - img [ref=e124]
+              - text: Pricing
+            - link "Registrations" [ref=e126] [cursor=pointer]:
+              - /url: /admin/registrations
+              - img [ref=e127]
+              - text: Registrations
+            - link "Invoices" [ref=e131] [cursor=pointer]:
+              - /url: /admin/invoices
+              - img [ref=e132]
+              - text: Invoices
+            - link "Shipping" [ref=e135] [cursor=pointer]:
+              - /url: /admin/shipping
+              - img [ref=e136]
+              - text: Shipping
+            - link "Monitoring" [ref=e141] [cursor=pointer]:
+              - /url: /admin/monitoring
+              - img [ref=e142]
+              - text: Monitoring
+            - link "Settings" [ref=e144] [cursor=pointer]:
+              - /url: /admin/settings
+              - img [ref=e145]
+              - text: Settings
+      - generic [ref=e148]:
+        - link "View Site" [ref=e151] [cursor=pointer]:
+          - /url: /
+        - main [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - heading "Reorder Predictions" [level=1] [ref=e155]
+              - paragraph [ref=e156]: AI-powered predictions for product reorders
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - heading "Generate Predictions" [level=2] [ref=e159]
+                - paragraph [ref=e160]: Use AI to analyze purchase patterns and generate reorder predictions
+              - button "Generate Predictions" [ref=e162] [cursor=pointer]
+            - generic [ref=e163]:
+              - generic [ref=e164]:
+                - heading "Recent Predictions" [level=2] [ref=e165]
+                - paragraph [ref=e166]: Latest AI-generated reorder predictions
+              - paragraph [ref=e168]: No predictions yet. Generate some to get started.
+  - contentinfo [ref=e169]:
+    - generic [ref=e170]:
+      - generic [ref=e171]:
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - img [ref=e174]
+            - generic [ref=e178]: B2B+
+          - paragraph [ref=e179]: Food service disposables ordering platform with container optimization
+        - generic [ref=e180]:
+          - heading "Products" [level=3] [ref=e181]
+          - list [ref=e182]:
+            - listitem [ref=e183]:
+              - link "Browse Catalog" [ref=e184] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e185]:
+              - link "Categories" [ref=e186] [cursor=pointer]:
+                - /url: /products
+            - listitem [ref=e187]:
+              - link "New Arrivals" [ref=e188] [cursor=pointer]:
+                - /url: /products
+        - generic [ref=e189]:
+          - heading "Company" [level=3] [ref=e190]
+          - list [ref=e191]:
+            - listitem [ref=e192]:
+              - link "About Us" [ref=e193] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e194]:
+              - link "Contact" [ref=e195] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e196]:
+              - link "Support" [ref=e197] [cursor=pointer]:
+                - /url: /
+        - generic [ref=e198]:
+          - heading "Legal" [level=3] [ref=e199]
+          - list [ref=e200]:
+            - listitem [ref=e201]:
+              - link "Privacy Policy" [ref=e202] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e203]:
+              - link "Terms of Service" [ref=e204] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e205]:
+              - link "Cookie Policy" [ref=e206] [cursor=pointer]:
+                - /url: /
+      - paragraph [ref=e208]: © 2025 B2B+ Platform. All rights reserved.
+  - alert [ref=e209]
+```

@@ -12,6 +12,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createLogger } from '@/lib/logging/logger';
+
+const logger = createLogger('sendgrid-webhook');
 
 // Use service role key for webhook (bypasses RLS)
 const supabase = createClient(
@@ -27,24 +30,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    console.log(`Received ${events.length} SendGrid webhook events`);
+    logger.info(`Received ${events.length} SendGrid webhook events`);
 
     for (const event of events) {
       try {
         await processEvent(event);
       } catch (error) {
-        console.error('Error processing event:', error, event);
+        logger.error('Error processing event', { error, event });
         // Continue processing other events
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      processed: events.length 
+    return NextResponse.json({
+      success: true,
+      processed: events.length
     });
 
   } catch (error: any) {
-    console.error('SendGrid webhook error:', error);
+    logger.error('SendGrid webhook error', { error });
     return NextResponse.json({ 
       error: 'Failed to process webhook', 
       details: error.message 
@@ -69,7 +72,7 @@ async function processEvent(event: any) {
     ip,
   } = event;
 
-  console.log(`Processing ${eventType} event for ${email}`);
+  logger.debug(`Processing ${eventType} event for ${email}`);
 
   // Find recipient by custom args or email
   let recipient;
@@ -107,7 +110,7 @@ async function processEvent(event: any) {
   }
 
   if (!recipient) {
-    console.warn(`Recipient not found for event: ${eventType}, email: ${email}`);
+    logger.warn(`Recipient not found for event: ${eventType}, email: ${email}`);
     return;
   }
 
@@ -144,7 +147,7 @@ async function processEvent(event: any) {
       break;
     
     default:
-      console.log(`Unhandled event type: ${eventType}`);
+      logger.debug(`Unhandled event type: ${eventType}`);
   }
 }
 
@@ -397,8 +400,28 @@ async function handleSpamReport(recipient: any, timestamp: string) {
         created_at: timestamp,
       });
 
-    // TODO: Send alert to admin about spam report
-    console.warn(`SPAM REPORT: Lead ${recipient.lead_id} marked email as spam`);
+    // Log spam report for admin review
+    try {
+      await supabase
+        .from('admin_alerts')
+        .insert({
+          alert_type: 'spam_report',
+          severity: 'medium',
+          title: 'Email Marked as Spam',
+          description: `Lead ${recipient.lead_id} marked email from campaign ${recipient.campaign_id} as spam`,
+          metadata: {
+            lead_id: recipient.lead_id,
+            campaign_id: recipient.campaign_id,
+            recipient_id: recipient.id,
+            timestamp,
+          },
+          created_at: timestamp,
+        });
+    } catch (alertError) {
+      logger.error('Failed to create admin alert for spam report', { alertError });
+    }
+
+    logger.warn(`SPAM REPORT: Lead ${recipient.lead_id} marked email as spam`);
   }
 }
 

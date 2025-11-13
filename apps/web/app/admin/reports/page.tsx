@@ -7,8 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Select } from '@/components/b2b';
 import { FiFileText, FiTrendingUp, FiDollarSign, FiShoppingCart, FiUsers } from 'react-icons/fi';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { fadeIn, fast } from '@/lib/animations';
+import {
+  RevenueChart,
+  OrdersStatusChart,
+  CategoriesRevenueChart,
+  CustomerGrowthChart,
+} from '@/components/admin/ReportsCharts';
 
 interface ReportData {
   revenue_by_day: Array<{ date: string; revenue: number }>;
@@ -204,16 +209,7 @@ export default function AdminReportsPage() {
           <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
             Revenue Trend
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={reportData?.revenue_by_day || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" stroke="#7f7f7f" />
-              <YAxis stroke="#7f7f7f" />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="revenue" stroke="#0ACF83" strokeWidth={2} name="Revenue ($)" />
-            </LineChart>
-          </ResponsiveContainer>
+          <RevenueChart data={reportData?.revenue_by_day || []} />
         </Card>
 
         {/* Orders by Status */}
@@ -221,25 +217,7 @@ export default function AdminReportsPage() {
           <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
             Orders by Status
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={reportData?.orders_by_status || []}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry) => `${entry.status}: ${entry.count}`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="count"
-              >
-                {(reportData?.orders_by_status || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <OrdersStatusChart data={reportData?.orders_by_status || []} />
         </Card>
 
         {/* Top Categories */}
@@ -247,16 +225,7 @@ export default function AdminReportsPage() {
           <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
             Top Categories by Revenue
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={reportData?.top_categories || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="category" stroke="#7f7f7f" />
-              <YAxis stroke="#7f7f7f" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="revenue" fill="#FFC120" name="Revenue ($)" />
-            </BarChart>
-          </ResponsiveContainer>
+          <CategoriesRevenueChart data={reportData?.top_categories || []} colors={COLORS} />
         </Card>
 
         {/* Customer Growth */}
@@ -264,16 +233,7 @@ export default function AdminReportsPage() {
           <h2 className="mb-4 text-lg font-bold text-navy-700 dark:text-white">
             Customer Growth
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={reportData?.customer_growth || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#7f7f7f" />
-              <YAxis stroke="#7f7f7f" />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="customers" stroke="#111012" strokeWidth={2} name="New Customers" />
-            </LineChart>
-          </ResponsiveContainer>
+          <CustomerGrowthChart data={reportData?.customer_growth || []} />
         </Card>
       </div>
     </div>

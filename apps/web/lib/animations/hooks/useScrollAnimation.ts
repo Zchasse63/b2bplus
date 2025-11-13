@@ -42,10 +42,10 @@ interface UseScrollAnimationOptions {
  */
 export function useScrollAnimation(options: UseScrollAnimationOptions = {}) {
   const { once = true, amount = 0.1, margin = '0px' } = options;
-  
+
   const ref = useRef<HTMLElement>(null);
-  const isInView = useInView(ref, { once, amount, margin });
-  
+  const isInView = useInView(ref, { once, amount, margin: margin as any });
+
   return { ref, isInView };
 }
 

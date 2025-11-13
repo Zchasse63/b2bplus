@@ -74,6 +74,41 @@ export default function CheckoutPage() {
         throw new Error('No organization found')
       }
 
+      // Check organization approval status
+      const { data: orgMember, error: orgMemberError } = await supabase
+        .from('organization_members')
+        .select(`
+          organization:organizations!inner(
+            id,
+            name,
+            approval_status,
+            rejection_reason
+          )
+        `)
+        .eq('user_id', user.id)
+        .single()
+
+      if (orgMemberError || !orgMember) {
+        throw new Error('Organization membership not found')
+      }
+
+      const org = orgMember.organization as any
+
+      if (org.approval_status === 'pending') {
+        throw new Error('Your organization is still pending approval. You cannot place orders at this time.')
+      }
+
+      if (org.approval_status === 'rejected') {
+        const rejectionReason = org.rejection_reason
+          ? ` Reason: ${org.rejection_reason}`
+          : ''
+        throw new Error(`Your organization registration was rejected.${rejectionReason}`)
+      }
+
+      if (org.approval_status !== 'approved') {
+        throw new Error('Your organization has not been approved for ordering.')
+      }
+
       // Load cart items
       const { data: cart, error: cartError } = await supabase
         .from('cart_items')
@@ -98,7 +133,7 @@ export default function CheckoutPage() {
 
       if (addressError) throw addressError
       setAddresses(addressData || [])
-      
+
       // Select default address
       const defaultAddress = addressData?.find(a => a.is_default)
       if (defaultAddress) {
@@ -153,7 +188,7 @@ export default function CheckoutPage() {
         .single()
 
       // Calculate totals
-      const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) => 
+      const subtotal = pricing?.totalPrice || cartItems.reduce((sum, item) =>
         sum + (item.products.base_price * item.quantity), 0
       )
       const tax = subtotal * 0.08 // 8% tax rate

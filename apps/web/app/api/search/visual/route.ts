@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateJSON } from '@/lib/gemini';
+import { analyzeImageJSON } from '@/lib/gemini';
 
 interface VisualSearchRequest {
   image: string; // Base64 encoded image
@@ -59,9 +59,7 @@ Provide the analysis in JSON format with these fields:
 }
 `;
 
-    const analysis = await generateJSON(analysisPrompt, {
-      image: base64Data,
-    });
+    const analysis = await analyzeImageJSON(base64Data, analysisPrompt, 'image/jpeg');
 
     // Build search query from analysis
     const searchKeywords = [
@@ -117,7 +115,7 @@ Provide the analysis in JSON format with these fields:
     });
 
     // Sort by similarity score
-    scoredProducts.sort((a, b) => b.similarity_score - a.similarity_score);
+    scoredProducts.sort((a: any, b: any) => b.similarity_score - a.similarity_score);
 
     return NextResponse.json({
       success: true,
