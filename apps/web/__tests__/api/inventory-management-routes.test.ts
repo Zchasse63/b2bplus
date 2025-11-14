@@ -17,6 +17,20 @@ jest.mock('@/lib/supabase/server', () => ({
 
 import { createClient } from '@/lib/supabase/server';
 
+function createTestRequest(url: string): NextRequest {
+  const request = new NextRequest(url);
+  if (request.nextUrl === undefined) {
+    const nextUrl = new URL(url);
+    Object.defineProperty(request, 'nextUrl', {
+      value: nextUrl,
+      writable: false,
+      enumerable: true,
+      configurable: true
+    });
+  }
+  return request;
+}
+
 describe('Inventory Management API Routes - REAL TESTS', () => {
   let mockSupabase: any;
 
@@ -41,7 +55,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: new Error('Not authenticated'),
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 
@@ -69,7 +83,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
 
       mockSupabase.from.mockReturnValueOnce(chain);
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 
@@ -102,7 +116,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: null,
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -136,7 +150,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: null,
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -168,7 +182,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
     });
 
     it('should return 400 if product_id is missing', async () => {
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability'
       );
 
@@ -180,7 +194,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
     });
 
     it('should return 400 if product_id is empty', async () => {
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id='
       );
 
@@ -217,7 +231,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: null,
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -234,7 +248,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: null,
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -251,7 +265,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: new Error('Database error'),
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -268,7 +282,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         error: null,
       });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123&location_id=loc-456'
       );
 
@@ -316,7 +330,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         .mockResolvedValueOnce({ data: 100, error: null })
         .mockResolvedValueOnce({ data: 50, error: null });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 
@@ -358,7 +372,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         .mockReturnValueOnce(profileChain)
         .mockReturnValueOnce(locationsChain);
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 
@@ -407,7 +421,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         .mockResolvedValueOnce({ data: 50, error: null })
         .mockResolvedValueOnce({ data: 75, error: null });
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 
@@ -449,7 +463,7 @@ describe('Inventory Management API Routes - REAL TESTS', () => {
         .mockReturnValueOnce(profileChain)
         .mockReturnValueOnce(locationsChain);
 
-      const request = new NextRequest(
+      const request = createTestRequest(
         'http://localhost:3000/api/admin/inventory/availability?product_id=prod-123'
       );
 

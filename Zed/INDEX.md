@@ -7,6 +7,7 @@ This folder centralizes all test planning documentation and sprint summaries for
 - **Session 5 Target:** 543+ (100+ new tests)
 - **Coverage:** 49% → 61% (in progress)
 - **Enterprise Goal:** 100% rock-solid, bulletproof platform at 80%+ coverage
+- **Security Hardening (Nov 2025):** Supabase RLS enabled with policies; extensions moved to extensions schema; functions hardened with search_path=public, pg_temp; views set to SECURITY INVOKER where applicable; remaining action: enable leaked password protection in Auth
 
 ## 🚀 Session 5: API & Integration Testing (ACTIVE)
 

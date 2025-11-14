@@ -8,6 +8,13 @@
 
 ## 📊 SESSION SNAPSHOT
 
+> Security Hardening Update (Nov 2025)
+- Applied Supabase RLS and policies to flagged public/audit tables
+- Moved pg_trgm and vector extensions to the extensions schema
+- Set views to security invoker (where applicable)
+- Hardened all public functions with search_path = 'public, pg_temp'
+- Advisor re-check clean except: enable leaked password protection in Auth
+
 ### Starting Point
 - 162 real unit tests from previous session
 - 678 placeholder tests remaining

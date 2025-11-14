@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { MiniCart } from './MiniCart'
 import { createClient } from '@/lib/supabase/client'
@@ -103,7 +103,9 @@ describe('MiniCart', () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     mockSupabase.order.mockResolvedValue({ data: [], error: null })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     // Drawer should be rendered - check for specific title
     expect(screen.getByText('Shopping Cart')).toBeInTheDocument()
@@ -112,7 +114,9 @@ describe('MiniCart', () => {
   it('does not load cart when isOpen is false', () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
-    render(<MiniCart isOpen={false} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={false} onClose={jest.fn()} />)
+    })
 
     // Should not call getUser when drawer is closed
     expect(mockSupabase.auth.getUser).not.toHaveBeenCalled()
@@ -127,7 +131,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(mockSupabase.from).toHaveBeenCalledWith('cart_items')
@@ -145,7 +151,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 1')).toBeInTheDocument()
@@ -162,7 +170,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       // Total should be (2 * 50) + (1 * 75) = 175
@@ -179,7 +189,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 1')).toBeInTheDocument()
@@ -190,7 +202,7 @@ describe('MiniCart', () => {
 
     // Find and click + button for first item
     const plusButtons = screen.getAllByText('+')
-    fireEvent.click(plusButtons[0])
+    await act(async () => fireEvent.click(plusButtons[0]))
 
     await waitFor(() => {
       expect(mockSupabase.update).toHaveBeenCalledWith({ quantity: 3 })
@@ -206,7 +218,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 1')).toBeInTheDocument()
@@ -217,7 +231,7 @@ describe('MiniCart', () => {
 
     // Find and click - button for first item
     const minusButtons = screen.getAllByText('-')
-    fireEvent.click(minusButtons[0])
+    await act(async () => fireEvent.click(minusButtons[0]))
 
     await waitFor(() => {
       expect(mockSupabase.update).toHaveBeenCalledWith({ quantity: 1 })
@@ -233,7 +247,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 2')).toBeInTheDocument()
@@ -256,7 +272,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 1')).toBeInTheDocument()
@@ -281,7 +299,7 @@ describe('MiniCart', () => {
 
     // Click first delete button (should be for first product)
     if (deleteButtons.length > 2) { // Skip close button
-      fireEvent.click(deleteButtons[1])
+      await act(async () => fireEvent.click(deleteButtons[1]))
 
       await waitFor(() => {
         expect(mockSupabase.delete).toHaveBeenCalled()
@@ -302,7 +320,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText('Test Product 1')).toBeInTheDocument()
@@ -310,7 +330,7 @@ describe('MiniCart', () => {
 
     // Find and click checkout button - use getByRole to be specific
     const checkoutButton = screen.getByRole('button', { name: /checkout/i })
-    fireEvent.click(checkoutButton)
+    await act(async () => fireEvent.click(checkoutButton))
 
     expect(mockRouter.push).toHaveBeenCalledWith('/checkout')
   })
@@ -324,7 +344,9 @@ describe('MiniCart', () => {
       error: null,
     })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(screen.getByText(/empty/i)).toBeInTheDocument()
@@ -335,21 +357,25 @@ describe('MiniCart', () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     const mockOnClose = jest.fn()
 
-    render(<MiniCart isOpen={true} onClose={mockOnClose} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={mockOnClose} />)
+    })
 
     // Find and click close button (X icon)
     const closeButton = screen.getAllByRole('button')[0]
-    fireEvent.click(closeButton)
+    await act(async () => fireEvent.click(closeButton))
 
     expect(mockOnClose).toHaveBeenCalled()
   })
 
   it('handles cart load error gracefully', async () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
-    
+
     mockSupabase.auth.getUser.mockRejectedValue(new Error('Auth error'))
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     await waitFor(() => {
       expect(consoleErrorSpy).toHaveBeenCalled()
@@ -361,7 +387,9 @@ describe('MiniCart', () => {
   it('sets up real-time subscription when opened', () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
-    render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    await act(async () => {
+      render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    })
 
     expect(mockSupabase.channel).toHaveBeenCalledWith('cart-changes')
   })
@@ -369,11 +397,10 @@ describe('MiniCart', () => {
   it('cleans up subscription when closed', () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
-    const { unmount } = render(<MiniCart isOpen={true} onClose={jest.fn()} />)
+    const { unmount } = await act(async () => render(<MiniCart isOpen={true} onClose={jest.fn()} />))
 
-    unmount()
+    await act(async () => unmount())
 
     expect(mockSupabase.removeChannel).toHaveBeenCalled()
   })
 })
-
