@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { csrfProtection } from '@/lib/middleware/csrf';
 
 interface ApprovePricingRequest {
   action: 'approve' | 'reject' | 'modify';
@@ -16,6 +17,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // CSRF Protection
+  const { valid, response: csrfResponse } = await csrfProtection(request);
+  if (!valid) {
+    return csrfResponse!;
+  }
+
   try {
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();

@@ -35,7 +35,12 @@ export const VERSION_INFO: Record<string, APIVersion> = {
  */
 export function getAPIVersion(headers: Headers | Record<string, string>): string {
   // Check header: Accept: application/vnd.b2bplus+json;version=1
-  const acceptHeader = headers['accept'] || headers['Accept'] || '';
+  let acceptHeader = '';
+  if (headers instanceof Headers) {
+    acceptHeader = headers.get('accept') || headers.get('Accept') || '';
+  } else {
+    acceptHeader = (headers as any)['accept'] || (headers as any)['Accept'] || '';
+  }
   const versionMatch = acceptHeader.match(/version=(\d+)/);
   if (versionMatch) {
     return `v${versionMatch[1]}`;
@@ -105,7 +110,7 @@ export function createVersionedResponse<T>(
     data,
     apiVersion: version,
     deprecated,
-    deprecationWarning: warning,
+    deprecationWarning: warning || undefined,
     timestamp: new Date().toISOString(),
   };
 }

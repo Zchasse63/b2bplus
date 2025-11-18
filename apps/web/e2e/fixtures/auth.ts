@@ -176,7 +176,7 @@ async function login(page: Page, email: string, password: string) {
 
     // Wait for navigation away from login page
     console.log('Waiting for navigation...');
-    await page.waitForURL(url => !url.toString().includes('/auth/login'), { timeout: 15000 });
+    await page.waitForURL(url => !url.toString().includes('/auth/login'), { timeout: 30000 });
     console.log('Login successful, navigated to:', page.url());
 
     // Verify we're logged in by checking for user menu

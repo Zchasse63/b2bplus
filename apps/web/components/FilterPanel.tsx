@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card } from '@/components/b2b'
 import { Button } from '@/components/b2b'
 import { Input } from '@/components/b2b'
-import { Label } from '@/components/b2b'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/b2b'
 import { MdFilterList, MdClose, MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md'
 

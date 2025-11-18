@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { csrfProtection, addCSRFTokenToCookie } from '@/lib/middleware/csrf'
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +8,7 @@ export async function GET(
 ) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -68,7 +69,7 @@ export async function GET(
         .select('*')
         .eq('id', invoice.orders.shipping_address_id)
         .single()
-      
+
       shippingAddress = address
     }
 
@@ -88,8 +89,14 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // CSRF Protection
+    const { valid, response: csrfResponse } = await csrfProtection(request)
+    if (!valid) {
+      return csrfResponse!
+    }
+
     const supabase = await createClient()
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -129,7 +136,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 })
     }
 
-    return NextResponse.json(invoice)
+    return addCSRFTokenToCookie(NextResponse.json(invoice), '')
 
   } catch (error) {
     console.error('Error updating invoice:', error)

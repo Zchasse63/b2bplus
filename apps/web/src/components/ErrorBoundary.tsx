@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { logger } from '@b2b-plus/shared/utils/logger';
+import { logger } from '@b2b-plus/shared';
 import * as Sentry from '@sentry/nextjs';
 
 interface Props {

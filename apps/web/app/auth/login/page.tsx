@@ -43,10 +43,13 @@ export default function Login() {
 
     setLoading(true);
 
+    console.log('Attempting login for:', email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+
+    console.log('Login result:', { success: !error, error: error?.message, userId: data?.user?.id });
 
     if (error) {
       setErrorMessage(error.message);

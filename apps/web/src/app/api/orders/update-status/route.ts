@@ -1,14 +1,14 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { validateTransition, getStatusDisplayName } from '@b2b-plus/shared/utils/order-status-machine';
-import type { OrderStatus } from '@b2b-plus/shared/utils/order-status-machine';
+import { validateTransition, getStatusDisplayName } from '@b2b-plus/shared';
+import { logger } from '@b2b-plus/shared';
+import type { OrderStatus } from '@b2b-plus/shared';
 
 /**
  * PATCH /api/orders/update-status
  * Updates order status with validation and audit trail
  */
-export async function PATCH(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const { orderId, newStatus, reason, notes } = await request.json();
 
@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createClient();
 
     // Get current user
     const {

@@ -101,8 +101,8 @@ class APILogger {
       error,
       userAgent: request.headers.get('user-agent') || undefined,
       ipAddress: request.headers.get('x-forwarded-for') ||
-                 request.headers.get('x-real-ip') ||
-                 'unknown',
+        request.headers.get('x-real-ip') ||
+        'unknown',
     };
   }
 
@@ -126,7 +126,7 @@ class APILogger {
     };
 
     const consoleMethod = level === 'error' ? 'error' : level === 'warn' ? 'warn' : 'log';
-    console[consoleMethod as any](message, meta);
+    (console as any)[consoleMethod](message, meta);
   }
 
   /**

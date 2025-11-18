@@ -4,7 +4,7 @@
  */
 
 import { parseISO, isAfter, isBefore, isEqual, startOfDay, endOfDay } from 'date-fns';
-import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 /**
  * Convert UTC date string to a specific timezone
@@ -12,7 +12,7 @@ import { utcToZonedTime, zonedTimeToUtc } from 'date-fns-tz';
 export function convertToTimezone(utcDate: string | Date, timezone: string = 'UTC'): Date {
   try {
     const date = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
-    return utcToZonedTime(date, timezone);
+    return toZonedTime(date, timezone);
   } catch (error) {
     console.error('Error converting timezone:', error);
     return new Date(utcDate);
@@ -24,7 +24,7 @@ export function convertToTimezone(utcDate: string | Date, timezone: string = 'UT
  */
 export function convertToUTC(date: Date, timezone: string = 'UTC'): Date {
   try {
-    return zonedTimeToUtc(date, timezone);
+    return fromZonedTime(date, timezone);
   } catch (error) {
     console.error('Error converting to UTC:', error);
     return date;
@@ -46,7 +46,7 @@ export function isDateInRange(
     const end = convertToTimezone(endDate, timezone);
 
     return (isAfter(checkDate, start) || isEqual(checkDate, start)) &&
-           (isBefore(checkDate, end) || isEqual(checkDate, end));
+      (isBefore(checkDate, end) || isEqual(checkDate, end));
   } catch (error) {
     console.error('Error checking date range:', error);
     return false;
@@ -75,7 +75,7 @@ export function isPricingActive(
   // If no end date, it's always active after start
   if (!endDate) {
     return isAfter(now, convertToTimezone(startDate, timezone)) ||
-           isEqual(now, convertToTimezone(startDate, timezone));
+      isEqual(now, convertToTimezone(startDate, timezone));
   }
 
   // Both dates exist, check range

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { csrfProtection } from '@/lib/middleware/csrf';
 
 // GET all campaigns
 export async function GET(request: NextRequest) {
@@ -58,6 +59,12 @@ export async function GET(request: NextRequest) {
 
 // POST create campaign
 export async function POST(request: NextRequest) {
+  // CSRF Protection
+  const { valid, response: csrfResponse } = await csrfProtection(request);
+  if (!valid) {
+    return csrfResponse!;
+  }
+
   try {
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
@@ -151,6 +158,12 @@ export async function POST(request: NextRequest) {
 
 // PATCH update campaign
 export async function PATCH(request: NextRequest) {
+  // CSRF Protection
+  const { valid, response: csrfResponse } = await csrfProtection(request);
+  if (!valid) {
+    return csrfResponse!;
+  }
+
   try {
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
@@ -204,6 +217,12 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE campaign
 export async function DELETE(request: NextRequest) {
+  // CSRF Protection
+  const { valid, response: csrfResponse } = await csrfProtection(request);
+  if (!valid) {
+    return csrfResponse!;
+  }
+
   try {
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();

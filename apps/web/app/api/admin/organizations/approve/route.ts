@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { sendEmail, createEmailTemplate } from '@/lib/sendgrid';
+import { csrfProtection } from '@/lib/middleware/csrf';
 
 /**
  * Organization Approval API
@@ -10,6 +11,12 @@ import { sendEmail, createEmailTemplate } from '@/lib/sendgrid';
  * Phase 1, Task 1.3: Registration Approval System
  */
 export async function POST(request: NextRequest) {
+  // CSRF Protection
+  const { valid, response: csrfResponse } = await csrfProtection(request);
+  if (!valid) {
+    return csrfResponse!;
+  }
+
   try {
     const { organizationId, action, reason } = await request.json();
 
@@ -79,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Update organization based on action
     const updateData: any = {};
-    
+
     if (action === 'approve') {
       updateData.approval_status = 'approved';
       updateData.approved_by = user!.id;

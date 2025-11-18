@@ -28,11 +28,20 @@ export default function ChatPage() {
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) throw error;
+
+        if (!user) {
+          console.log('No user found, redirecting to login');
+          router.push('/auth/login');
+        } else {
+          console.log('User authenticated:', user.id);
+          setUser(user);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
         router.push('/auth/login');
-      } else {
-        setUser(user);
       }
     };
     checkAuth();
@@ -221,26 +230,23 @@ export default function ChatPage() {
           {messages.map((msg, idx) => (
             <div key={idx}>
               <div
-                className={`flex ${
-                  msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-4 shadow-b2b-sm ${
-                    msg.role === 'user'
+                  className={`max-w-[80%] rounded-lg p-4 shadow-b2b-sm ${msg.role === 'user'
                       ? 'bg-b2b-blue text-white'
                       : 'bg-white text-b2b-dark border border-b2b-gray-200'
-                  }`}
+                    }`}
                 >
                   <div className="whitespace-pre-wrap break-words">
                     {msg.content}
                   </div>
                   <div
-                    className={`mt-2 text-xs ${
-                      msg.role === 'user'
+                    className={`mt-2 text-xs ${msg.role === 'user'
                         ? 'text-b2b-blue-100'
                         : 'text-b2b-gray-400'
-                    }`}
+                      }`}
                   >
                     {msg.timestamp.toLocaleTimeString([], {
                       hour: '2-digit',
