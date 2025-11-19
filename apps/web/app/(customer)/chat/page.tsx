@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/b2b/Button';
 import { MdSend, MdRefresh } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
@@ -20,32 +21,18 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const { user, loading: authLoading } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
   // Check authentication
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) throw error;
-
-        if (!user) {
-          console.log('No user found, redirecting to login');
-          router.push('/auth/login');
-        } else {
-          console.log('User authenticated:', user.id);
-          setUser(user);
-        }
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        router.push('/auth/login');
-      }
-    };
-    checkAuth();
-  }, [router, supabase.auth]);
+    if (!authLoading && !user) {
+      console.log('No user found, redirecting to login');
+      router.push('/auth/login');
+    }
+  }, [user, authLoading, router]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -142,7 +129,7 @@ export default function ChatPage() {
     },
   ];
 
-  if (!user) {
+  if (authLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -235,8 +222,8 @@ export default function ChatPage() {
               >
                 <div
                   className={`max-w-[80%] rounded-lg p-4 shadow-b2b-sm ${msg.role === 'user'
-                      ? 'bg-b2b-blue text-white'
-                      : 'bg-white text-b2b-dark border border-b2b-gray-200'
+                    ? 'bg-b2b-blue text-white'
+                    : 'bg-white text-b2b-dark border border-b2b-gray-200'
                     }`}
                 >
                   <div className="whitespace-pre-wrap break-words">
@@ -244,8 +231,8 @@ export default function ChatPage() {
                   </div>
                   <div
                     className={`mt-2 text-xs ${msg.role === 'user'
-                        ? 'text-b2b-blue-100'
-                        : 'text-b2b-gray-400'
+                      ? 'text-b2b-blue-100'
+                      : 'text-b2b-gray-400'
                       }`}
                   >
                     {msg.timestamp.toLocaleTimeString([], {

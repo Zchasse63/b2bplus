@@ -58,6 +58,17 @@ export default function Login() {
     }
 
     if (data.user) {
+      // Wait a moment for the session to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify session is active
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setErrorMessage('Login successful but session failed to start. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       // Check user role to determine redirect
       const { data: profile } = await supabase
         .from('profiles')
@@ -93,6 +104,17 @@ export default function Login() {
     }
 
     if (data.user) {
+      // Wait a moment for the session to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify session is active
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setErrorMessage('Login successful but session failed to start. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       // Check user role to determine redirect
       const { data: profile } = await supabase
         .from('profiles')

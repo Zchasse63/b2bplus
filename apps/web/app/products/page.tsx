@@ -30,16 +30,27 @@ export default function ProductsPage() {
   }, [products, searchQuery, selectedCategory, sortBy]);
 
   async function fetchProducts() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('name', { ascending: true });
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('name', { ascending: true });
 
-    if (!error && data) {
-      setProducts(data);
+      if (error) {
+        console.error('Error fetching products:', error);
+        throw error;
+      }
+
+      if (data) {
+        setProducts(data);
+      }
+    } catch (err) {
+      console.error('Failed to load products:', err);
+      // You might want to set an error state here to show in the UI
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function fetchCategories() {
