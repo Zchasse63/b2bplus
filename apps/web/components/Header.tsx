@@ -9,12 +9,10 @@ import {
   MdInventory,
   MdPerson,
   MdLogout,
-  MdCalculate,
   MdSettings,
   MdHome,
   MdShoppingBag,
   MdReceipt,
-  MdChat,
   MdShowChart,
   MdNotifications,
 } from 'react-icons/md';
@@ -104,30 +102,6 @@ export default function Header() {
                     iconPosition="left"
                   >
                     Invoices
-                  </Button>
-                </Link>
-              </Tooltip>
-              <Tooltip content="Calculate container capacity">
-                <Link href="/tools/container-calculator">
-                  <Button
-                    variant={isActive('/tools/container-calculator') ? 'primary' : 'ghost'}
-                    size="sm"
-                    icon={<MdCalculate />}
-                    iconPosition="left"
-                  >
-                    Calculator
-                  </Button>
-                </Link>
-              </Tooltip>
-              <Tooltip content="Chat with AI Assistant">
-                <Link href="/chat">
-                  <Button
-                    variant={isActive('/chat') ? 'primary' : 'ghost'}
-                    size="sm"
-                    icon={<MdChat />}
-                    iconPosition="left"
-                  >
-                    AI Assistant
                   </Button>
                 </Link>
               </Tooltip>

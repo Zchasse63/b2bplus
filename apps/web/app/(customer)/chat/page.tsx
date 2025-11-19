@@ -199,15 +199,16 @@ export default function ChatPage() {
                 {/* Quick Action Buttons */}
                 <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
                   {quickActions.map((action) => (
-                    <button
+                    <Button
                       key={action.label}
                       onClick={() => sendMessage(action.message)}
                       disabled={loading}
-                      className="px-4 py-2 bg-white border border-b2b-gray-300 rounded-lg hover:bg-b2b-gray-50 hover:border-b2b-blue transition-colors shadow-b2b-sm disabled:opacity-50 text-sm font-medium text-b2b-dark"
+                      variant="outline"
+                      size="sm"
                       data-testid="quick-action"
                     >
                       {action.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

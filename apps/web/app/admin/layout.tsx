@@ -120,7 +120,8 @@ export default function AdminLayout({
             <h1 className="text-xl font-bold text-b2b-dark">B2B+ Admin</h1>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden"
+              className="lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-blue-300 rounded"
+              aria-label="Close sidebar"
             >
               <FiX className="h-6 w-6 text-b2b-gray-500" />
             </button>
@@ -135,7 +136,7 @@ export default function AdminLayout({
                 <Link
                   key={route.path}
                   href={route.path}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-blue-300 focus-visible:ring-offset-2 ${
                     isActive
                       ? 'bg-b2b-yellow text-b2b-dark'
                       : 'text-b2b-gray-500 hover:bg-b2b-gray-50 hover:text-b2b-dark'
@@ -157,14 +158,15 @@ export default function AdminLayout({
         <header className="flex h-16 items-center justify-between border-b border-b2b-gray-100 bg-white px-6 shadow-b2b-sm">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden"
+            className="lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-blue-300 rounded"
+            aria-label="Open sidebar"
           >
             <FiMenu className="h-6 w-6 text-b2b-gray-500" />
           </button>
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="text-sm text-b2b-gray-500 hover:text-b2b-dark"
+              className="text-sm text-b2b-gray-500 hover:text-b2b-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-blue-300 rounded px-2 py-1"
             >
               View Site
             </Link>

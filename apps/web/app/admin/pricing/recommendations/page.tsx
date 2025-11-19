@@ -8,6 +8,8 @@ import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Badge, Button, Select } from '@/components/b2b';
 import { FiDollarSign, FiTrendingUp, FiRefreshCw, FiCheck, FiX, FiSearch } from 'react-icons/fi';
 import { fadeIn, fast } from '@/lib/animations';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
+
 
 interface PricingRecommendation {
   customer_id: string;
@@ -69,7 +71,7 @@ export default function PricingRecommendationsPage() {
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(rec => 
+      filtered = filtered.filter(rec =>
         rec.customer?.full_name?.toLowerCase().includes(query) ||
         rec.customer?.email?.toLowerCase().includes(query) ||
         rec.product?.name?.toLowerCase().includes(query) ||
@@ -115,7 +117,7 @@ export default function PricingRecommendationsPage() {
       });
 
       if (!response.ok) throw new Error('Failed to generate recommendations');
-      
+
       const data = await response.json();
       setRecommendations(data.recommendations || []);
     } catch (error) {
@@ -139,9 +141,9 @@ export default function PricingRecommendationsPage() {
         });
 
       if (error) throw error;
-      
+
       // Remove from recommendations
-      setRecommendations(prev => 
+      setRecommendations(prev =>
         prev.filter(r => !(r.customer_id === customerId && r.product_id === productId))
       );
     } catch (error) {
@@ -150,7 +152,7 @@ export default function PricingRecommendationsPage() {
   };
 
   const rejectRecommendation = (customerId: string, productId: string) => {
-    setRecommendations(prev => 
+    setRecommendations(prev =>
       prev.filter(r => !(r.customer_id === customerId && r.product_id === productId))
     );
   };
@@ -226,7 +228,7 @@ export default function PricingRecommendationsPage() {
             <div>
               <p className="text-sm text-b2b-gray-500">Avg Win Probability</p>
               <p className="text-2xl font-bold text-b2b-dark">
-                {recommendations.length > 0 
+                {recommendations.length > 0
                   ? Math.round(recommendations.reduce((sum, rec) => sum + rec.win_probability, 0) / recommendations.length)
                   : 0}%
               </p>
@@ -284,6 +286,26 @@ export default function PricingRecommendationsPage() {
           </div>
         </Card>
       </motion.div>
+      {/* AI Pricing Advisor */}
+      <motion.div {...fadeIn} transition={{ ...fast, delay: 0.25 }}>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card padding="md" className="lg:col-span-2">
+            <h2 className="text-lg font-bold text-b2b-dark">AI Pricing Advisor</h2>
+            <p className="mt-2 text-sm text-b2b-gray-500">
+              Use the assistant to sanity-check recommendations and explore custom pricing strategies.
+            </p>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-b2b-gray-500">
+              <li>Ask which recommendations to prioritize for this week or month.</li>
+              <li>Explore the tradeoffs between margin, win rate, and revenue.</li>
+              <li>Have AI draft talking points for customer pricing conversations.</li>
+            </ul>
+          </Card>
+          <div>
+            <EmbeddedAIAssistantPanel mode="admin" />
+          </div>
+        </div>
+      </motion.div>
+
 
       {/* Recommendations Table */}
       <motion.div {...fadeIn} transition={{ ...fast, delay: 0.3 }}>

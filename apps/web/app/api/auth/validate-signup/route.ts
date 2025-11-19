@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface SignupValidationRequest {
@@ -70,8 +71,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const supabase = await createClient();
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    const adminClient = createAdminClient();
+    const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
 
     if (usersError) {
       return NextResponse.json(

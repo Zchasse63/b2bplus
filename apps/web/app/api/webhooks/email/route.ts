@@ -9,8 +9,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { classifyEmail, EmailData } from '@/lib/ai/email-classification';
 import { createLogger } from '@/lib/logging/logger';
+import { verifyEmailWebhookToken, extractEmailWebhookHeaders } from '@/lib/webhooks/email-verify';
+import { checkRateLimit, getClientIp } from '@/lib/webhooks/rate-limit';
 
 const logger = createLogger('email-webhook');
 
@@ -38,11 +41,27 @@ export const maxDuration = 60;
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook signature (implement based on your email provider)
-    // const signature = request.headers.get('x-webhook-signature');
-    // if (!verifyWebhookSignature(signature, body)) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    // }
+    // Rate limiting
+    const clientIp = getClientIp(request);
+    if (!checkRateLimit(`email-webhook-${clientIp}`, 500, 60000)) {
+      logger.warn('Email webhook rate limit exceeded', { clientIp });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429 }
+      );
+    }
+
+    // Verify webhook authentication
+    const { authorization } = extractEmailWebhookHeaders(request);
+    const webhookSecret = process.env.EMAIL_WEBHOOK_SECRET;
+
+    if (!verifyEmailWebhookToken(authorization, webhookSecret)) {
+      logger.warn('Unauthorized email webhook request - invalid or missing authentication', { clientIp });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
 
     const contentType = request.headers.get('content-type') || '';
     let emailData: any;
@@ -87,9 +106,9 @@ export async function POST(request: NextRequest) {
 
     logger.debug(`Classification: ${classification.classification} (${classification.confidence})`);
 
-    // Store email in database
-    const supabase = await createClient();
-    
+    // Store email in database using admin client (webhooks bypass RLS)
+    const supabase = createAdminClient();
+
     const { data: processedEmail, error: insertError } = await supabase
       .from('processed_emails')
       .insert({

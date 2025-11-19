@@ -3,7 +3,23 @@ import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 
+/**
+ * SECURITY WARNING: This endpoint is for local development only.
+ * In production and shared environments, all schema changes must go through
+ * Supabase CLI migrations (supabase db push / supabase db reset).
+ *
+ * This endpoint is disabled in non-development environments to prevent
+ * unauthorized SQL execution via the service-role key.
+ */
 export async function POST(request: Request) {
+  // CRITICAL: Disable this endpoint in production and non-dev environments
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json(
+      { error: 'Not found' },
+      { status: 404 }
+    )
+  }
+
   try {
     const { migrationName } = await request.json()
     

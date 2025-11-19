@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
 import { generateSecurePassword } from '@/lib/security/password-generator';
 
@@ -58,7 +59,9 @@ export async function GET(request: NextRequest) {
       if (profile?.email) {
         // Generate a magic link using Supabase's built-in functionality
         // This will create a proper session token
-        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+        // Use admin client for auth.admin operations
+        const adminClient = createAdminClient();
+        const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
           type: 'magiclink',
           email: profile.email,
           options: {

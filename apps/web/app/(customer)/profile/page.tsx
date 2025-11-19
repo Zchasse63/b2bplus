@@ -11,6 +11,7 @@ import { Input } from '@/components/b2b';
 import { Modal } from '@/components/b2b';
 import { FiUser, FiMail, FiPhone, FiBriefcase, FiSave, FiCheckCircle } from 'react-icons/fi';
 import { fadeIn, fast } from '@/lib/animations';
+	import CustomerDashboardLayout from '@/components/CustomerDashboardLayout';
 
 interface Profile {
   id: string;
@@ -111,38 +112,43 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading profile...</div>
-      </div>
+      <CustomerDashboardLayout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading profile...</div>
+        </div>
+      </CustomerDashboardLayout>
     );
   }
 
   if (!profile) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Profile not found</div>
-      </div>
+      <CustomerDashboardLayout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Profile not found</div>
+        </div>
+      </CustomerDashboardLayout>
     );
   }
 
   return (
-    <div className="mt-3">
-      {/* Header */}
-      <Card padding="lg" className="mb-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600">
-            <FiUser className="h-8 w-8 text-white" />
+    <CustomerDashboardLayout>
+      <div className="mt-3">
+        {/* Header */}
+        <Card padding="lg" className="mb-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600">
+              <FiUser className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">My Profile</h1>
+              <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                Manage your personal information
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">My Profile</h1>
-            <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
-              Manage your personal information
-            </p>
-          </div>
-        </div>
-      </Card>
+        </Card>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Personal Information */}
         <div className="lg:col-span-2">
           <Card padding="lg">
@@ -240,25 +246,25 @@ export default function ProfilePage() {
             </Card>
           )}
         </div>
-      </div>
 
-      {/* Success Modal */}
-      <Modal
-        isOpen={successModal}
-        onClose={() => setSuccessModal(false)}
-        title="Profile Updated!"
-        size="sm"
-      >
-        <div className="space-y-4 text-center">
-          <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
-          <p className="text-gray-700 dark:text-gray-300">
-            Your profile has been updated successfully!
-          </p>
-          <Button variant="primary" className="w-full" onClick={() => setSuccessModal(false)}>
-            Continue
-          </Button>
-        </div>
-      </Modal>
-    </div>
+        {/* Success Modal */}
+        <Modal
+          isOpen={successModal}
+          onClose={() => setSuccessModal(false)}
+          title="Profile Updated!"
+          size="sm"
+        >
+          <div className="space-y-4 text-center">
+            <FiCheckCircle className="mx-auto h-16 w-16 text-green-500" />
+            <p className="text-gray-700 dark:text-gray-300">
+              Your profile has been updated successfully!
+            </p>
+            <Button variant="primary" className="w-full" onClick={() => setSuccessModal(false)}>
+              Continue
+            </Button>
+          </div>
+        </Modal>
+      </div>
+    </CustomerDashboardLayout>
   );
 }

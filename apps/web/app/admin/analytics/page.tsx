@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Button, Select } from '@/components/b2b';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
 import { FiTrendingUp, FiDollarSign, FiShoppingCart, FiUsers, FiPackage, FiBarChart2 } from 'react-icons/fi';
 import { fadeIn, fast } from '@/lib/animations';
 
@@ -354,6 +355,27 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
         </Card>
+      </div>
+
+      {/* AI analytics advisor and assistant */}
+      <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="p-6 lg:col-span-2">
+          <div className="mb-3 flex items-center gap-2">
+            <FiBarChart2 className="h-5 w-5 text-b2b-yellow" />
+            <h2 className="text-lg font-bold text-navy-700 dark:text-white">AI Analytics Advisor</h2>
+          </div>
+          <p className="mb-2 text-sm text-gray-600 dark:text-gray-300">
+            Use the AI assistant to interpret these numbers and spot trends you might miss at a glance.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-gray-500 dark:text-gray-400">
+            <li>Ask about sudden changes in revenue or order volume across the selected time range.</li>
+            <li>Have AI flag customers or products with unusual behavior or churn risk.</li>
+            <li>Explore upsell and cross-sell ideas based on your top products and customers.</li>
+          </ul>
+        </Card>
+        <div className="lg:col-span-1">
+          <EmbeddedAIAssistantPanel mode="admin" />
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { OpportunityCard } from '@/components/admin/OpportunityCard';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
+
 
 interface Opportunity {
   id: string;
@@ -191,6 +193,24 @@ export default async function OpportunitiesPage({
             Apply Filters
           </button>
         </form>
+      </div>
+
+      {/* AI Opportunities Advisor */}
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="bg-white rounded-lg shadow-b2b p-4 border border-b2b-gray-100 lg:col-span-2">
+          <h2 className="text-lg font-bold text-b2b-dark">AI Opportunities Advisor</h2>
+          <p className="mt-2 text-sm text-b2b-gray-500">
+            Use the assistant to prioritize and act on AI-detected opportunities.
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-b2b-gray-500">
+            <li>Ask which opportunities have the highest revenue impact this week.</li>
+            <li>Get suggestions for outreach sequences or offer bundles.</li>
+            <li>Have AI group opportunities by customer, product, or status.</li>
+          </ul>
+        </div>
+        <div>
+          <EmbeddedAIAssistantPanel mode="admin" />
+        </div>
       </div>
 
       {/* Opportunities Grid */}

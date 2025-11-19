@@ -8,6 +8,7 @@ import { Badge } from '@/components/b2b/Badge';
 import { MdCheckCircle, MdClose, MdFilterList, MdShoppingCart } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+	import CustomerDashboardLayout from '@/components/CustomerDashboardLayout';
 
 interface Notification {
   id: string;
@@ -173,8 +174,9 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-b2b-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <CustomerDashboardLayout>
+      <div className="min-h-screen bg-b2b-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-b2b-dark mb-2">Notifications</h1>
@@ -334,8 +336,9 @@ export default function NotificationsPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </CustomerDashboardLayout>
   );
 }
 

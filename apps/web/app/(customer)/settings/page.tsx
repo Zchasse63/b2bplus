@@ -19,6 +19,7 @@ import {
   FiCheckCircle,
   FiStar,
 } from 'react-icons/fi';
+	import CustomerDashboardLayout from '@/components/CustomerDashboardLayout';
 
 interface ShippingAddress {
   id: string;
@@ -233,30 +234,33 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading settings...</div>
-      </div>
+      <CustomerDashboardLayout>
+        <div className="flex h-screen items-center justify-center">
+          <div className="text-lg text-b2b-gray-500 dark:text-b2b-gray-500">Loading settings...</div>
+        </div>
+      </CustomerDashboardLayout>
     );
   }
 
   return (
-    <div className="mt-3">
-      {/* Header */}
-      <Card padding="lg" className="mb-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">Settings</h1>
-            <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
-              Manage your account preferences and shipping addresses
-            </p>
+    <CustomerDashboardLayout>
+      <div className="mt-3">
+        {/* Header */}
+        <Card padding="lg" className="mb-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-b2b-dark dark:text-white">Settings</h1>
+              <p className="mt-1 text-sm text-b2b-gray-500 dark:text-b2b-gray-500">
+                Manage your account preferences and shipping addresses
+              </p>
+            </div>
+            <Button variant="primary" icon={<FiPlus />} onClick={() => handleOpenModal()}>
+              Add Address
+            </Button>
           </div>
-          <Button variant="primary" icon={<FiPlus />} onClick={() => handleOpenModal()}>
-            Add Address
-          </Button>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Shipping Addresses */}
+        {/* Shipping Addresses */}
       <Card padding="lg">
         <h2 className="mb-5 text-xl font-bold text-b2b-dark dark:text-white">
           Shipping Addresses
@@ -437,5 +441,6 @@ export default function SettingsPage() {
         </div>
       </Modal>
     </div>
+  </CustomerDashboardLayout>
   );
 }

@@ -14,13 +14,13 @@ interface EmptyStateProps {
 
 export default function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
-    <Card className="border-dashed">
+    <Card variant="bordered" className="border-dashed border-b2b-gray-300">
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <Icon className="h-16 w-16 text-muted-foreground mb-4" />
-        <h3 className="text-xl font-semibold mb-2">{title}</h3>
-        <p className="text-muted-foreground mb-6 max-w-sm">{description}</p>
+        <Icon className="h-16 w-16 text-b2b-gray-400 mb-4" />
+        <h3 className="text-xl font-semibold mb-2 text-b2b-dark">{title}</h3>
+        <p className="text-b2b-gray-500 mb-6 max-w-sm">{description}</p>
         {action && (
-          <Button onClick={action.onClick}>
+          <Button onClick={action.onClick} variant="primary" size="md">
             {action.label}
           </Button>
         )}

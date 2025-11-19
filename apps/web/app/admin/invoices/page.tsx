@@ -207,17 +207,14 @@ export default function InvoicesPage() {
       <div className="mb-6">
         <div className="flex gap-2 flex-wrap">
           {['all', 'pending', 'auto_approved', 'manually_approved', 'rejected'].map((status) => (
-            <button
+            <Button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === status
-                  ? 'bg-b2b-blue text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-              }`}
+              variant={filterStatus === status ? 'primary' : 'outline'}
+              size="sm"
             >
               {status === 'all' ? 'All' : status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

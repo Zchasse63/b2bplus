@@ -94,16 +94,12 @@ describe('Header', () => {
   })
 
   it('renders logo and brand name', () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
-
     render(<Header />)
 
     expect(screen.getByText('B2B+')).toBeInTheDocument()
   })
 
   it('renders public navigation links', () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
-
     render(<Header />)
 
     expect(screen.getByText('Home')).toBeInTheDocument()
@@ -111,15 +107,16 @@ describe('Header', () => {
   })
 
   it('shows cart count when user is logged in', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: 5,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'customer' },
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-123', email: 'test@example.com' },
+      loading: false,
+      cartCount: 5,
+      isAdmin: false,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
     })
 
     render(<Header />)
@@ -165,16 +162,6 @@ describe('Header', () => {
   })
 
   it('handles sign out correctly', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: 0,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'customer' },
-    })
     mockSupabase.auth.signOut.mockResolvedValue({ error: null })
 
     // Ensure the AuthContext hook returns a logged-in user
@@ -192,11 +179,6 @@ describe('Header', () => {
 
     render(<Header />)
 
-    // Wait for component to load user data
-    await waitFor(() => {
-      expect(mockSupabase.auth.getUser).toHaveBeenCalled()
-    })
-
     // Find and click sign out button using test ID
     const signOutButton = screen.getByTestId('sign-out-button')
     fireEvent.click(signOutButton)
@@ -210,52 +192,25 @@ describe('Header', () => {
 
   it('highlights active navigation link', () => {
     ;(usePathname as jest.Mock).mockReturnValue('/products')
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
-    render(<AuthProvider><Header /></AuthProvider>)
+    render(<Header />)
 
     // The active link should have primary variant
     const productsLink = screen.getByText('Products').closest('button')
     expect(productsLink).toBeInTheDocument()
   })
 
-  it('fetches user data on pathname change', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: 0,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'customer' },
-    })
-
-    const { rerender } = render(<Header />)
-
-    await waitFor(() => {
-      expect(mockSupabase.auth.getUser).toHaveBeenCalledTimes(1)
-    })
-
-    // Change pathname
-    ;(usePathname as jest.Mock).mockReturnValue('/products')
-    rerender(<Header />)
-
-    await waitFor(() => {
-      expect(mockSupabase.auth.getUser).toHaveBeenCalledTimes(2)
-    })
-  })
-
   it('handles cart count query correctly', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: 3,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'customer' },
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-123', email: 'test@example.com' },
+      loading: false,
+      cartCount: 3,
+      isAdmin: false,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
     })
 
     render(<Header />)
@@ -268,18 +223,19 @@ describe('Header', () => {
   })
 
   it('identifies super_admin as admin', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'superadmin-123', email: 'superadmin@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: 0,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'super_admin' },
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'superadmin-123', email: 'superadmin@example.com' },
+      loading: false,
+      cartCount: 0,
+      isAdmin: true,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
     })
 
-    render(<AuthProvider><Header /></AuthProvider>)
+    render(<Header />)
 
     await waitFor(() => {
       // Admin nav should appear for super_admin
@@ -288,73 +244,78 @@ describe('Header', () => {
   })
 
   it('handles missing user gracefully', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: null,
+      loading: false,
+      cartCount: 0,
+      isAdmin: false,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
     })
 
     render(<Header />)
 
     await waitFor(() => {
-      expect(mockSupabase.auth.getUser).toHaveBeenCalled()
+      // Should show only public nav + auth buttons
+      expect(screen.getByText('Home')).toBeInTheDocument()
+      expect(screen.getByText('Products')).toBeInTheDocument()
+      expect(screen.getByText('Sign In')).toBeInTheDocument()
+      expect(screen.getByText('Sign Up')).toBeInTheDocument()
     })
 
-    // Should not try to fetch cart or membership data
-    expect(mockSupabase.from).not.toHaveBeenCalled()
+    // Authenticated-only links should not be visible
+    expect(screen.queryByText('Orders')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cart')).not.toBeInTheDocument()
+    expect(screen.queryByText('Admin')).not.toBeInTheDocument()
   })
 
   it('handles cart count of zero', async () => {
-    it('shows cart count when user is logged in', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'user-123', email: 'test@example.com' } },
-      })
-      mockSupabase.select.mockReturnValue({
-        ...mockSupabase,
-        count: 5,
-      })
-      mockSupabase.single.mockResolvedValue({
-        data: { role: 'customer' },
-      })
-
-      // Ensure the AuthContext hook returns a logged-in user with cartCount
-      const authModule = require('@/contexts/AuthContext') as any
-      ;(authModule.useAuth as jest.Mock).mockReturnValue({
-        user: { id: 'user-123', email: 'test@example.com' },
-        loading: false,
-        cartCount: 5,
-        isAdmin: false,
-        error: null,
-        refetch: jest.fn(),
-        updateCartCount: jest.fn(),
-        refreshUser: jest.fn(),
-      })
-
-      render(<Header />)
-
-      await waitFor(() => {
-        // Verify UI shows cart and count badge when user is logged in
-        expect(screen.getByText('Cart')).toBeInTheDocument()
-        expect(screen.getByText('5')).toBeInTheDocument()
-      })
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-123', email: 'test@example.com' },
+      loading: false,
+      cartCount: 0,
+      isAdmin: false,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
     })
 
-  it('handles null cart count', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: 'user-123', email: 'test@example.com' } },
-    })
-    mockSupabase.select.mockReturnValue({
-      ...mockSupabase,
-      count: null,
-    })
-    mockSupabase.single.mockResolvedValue({
-      data: { role: 'customer' },
-    })
-
-    render(<AuthProvider><Header /></AuthProvider>)
+    render(<Header />)
 
     await waitFor(() => {
-      expect(mockSupabase.from).toHaveBeenCalledWith('cart_items')
+      expect(screen.getByText('Cart')).toBeInTheDocument()
     })
 
-    // Should default to 0
+    // Should not show a count badge when cartCount is 0
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  })
+
+  it('handles null cart count', async () => {
+    const authModule = require('@/contexts/AuthContext') as any
+    ;(authModule.useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-123', email: 'test@example.com' },
+      loading: false,
+      // Simulate null/undefined flowing through as 0 from context
+      cartCount: 0,
+      isAdmin: false,
+      error: null,
+      refetch: jest.fn(),
+      updateCartCount: jest.fn(),
+      refreshUser: jest.fn(),
+    })
+
+    render(<Header />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Cart')).toBeInTheDocument()
+    })
+
+    // Should still not show a count badge
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 })

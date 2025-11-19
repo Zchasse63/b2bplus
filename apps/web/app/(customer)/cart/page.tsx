@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { FiTrash2, FiShoppingCart, FiArrowRight, FiMinusCircle, FiTag, FiCheck, FiX } from 'react-icons/fi';
 import { useToast } from '@/hooks/use-toast';
 import { fadeIn, fast } from '@/lib/animations';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
+
 
 interface CartItem {
   id: string;
@@ -398,7 +400,7 @@ export default function CartPage() {
         </div>
 
         {/* Order Summary */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
           <Card className="p-6 sticky top-4">
             <h2 className="mb-4 text-xl font-bold text-b2b-dark dark:text-white">
               Order Summary
@@ -531,6 +533,8 @@ export default function CartPage() {
               Continue Shopping
             </Button>
           </Card>
+          <EmbeddedAIAssistantPanel mode="cart" />
+
         </div>
       </div>
 

@@ -20,6 +20,10 @@ const EnvSchema = z.object({
   SENDGRID_FROM_EMAIL: z.string().email('Invalid SendGrid from email'),
   SENDGRID_FROM_NAME: z.string().min(1, 'SendGrid from name is required'),
   SENDGRID_REPLY_TO_EMAIL: z.string().email('Invalid SendGrid reply-to email').optional(),
+  SENDGRID_WEBHOOK_SIGNING_KEY: z.string().min(1, 'SendGrid webhook signing key is required').optional(),
+
+  // Email Webhook (Optional - for inbound email authentication)
+  EMAIL_WEBHOOK_SECRET: z.string().min(1, 'Email webhook secret is required').optional(),
 
   // Upstash Redis (Optional - for rate limiting)
   UPSTASH_REDIS_REST_URL: z.string().url('Invalid Upstash Redis URL').optional(),
@@ -56,6 +60,8 @@ export function validateEnv(): Env {
     SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL,
     SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME,
     SENDGRID_REPLY_TO_EMAIL: process.env.SENDGRID_REPLY_TO_EMAIL,
+    SENDGRID_WEBHOOK_SIGNING_KEY: process.env.SENDGRID_WEBHOOK_SIGNING_KEY,
+    EMAIL_WEBHOOK_SECRET: process.env.EMAIL_WEBHOOK_SECRET,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,

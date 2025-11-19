@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import FilterPanel, { FilterState } from '@/components/FilterPanel'
 import CopyButton from '@/components/CopyButton'
+	import CustomerDashboardLayout from '@/components/CustomerDashboardLayout'
 
 interface Order {
   id: string
@@ -206,136 +207,140 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        >
-          <RefreshCw className="h-8 w-8 text-primary" />
-        </motion.div>
-      </div>
+      <CustomerDashboardLayout>
+        <div className="flex min-h-screen items-center justify-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          >
+            <RefreshCw className="h-8 w-8 text-primary" />
+          </motion.div>
+        </div>
+      </CustomerDashboardLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-secondary-500 mb-2">Order History</h1>
-          <p className="text-muted-foreground">View and track your orders</p>
-        </div>
-
-        {/* Filters */}
-        <FilterPanel
-          filters={filters}
-          onFiltersChange={setFilters}
-          onClearFilters={handleClearFilters}
-          activeFilterCount={getActiveFilterCount()}
-        />
-
-        {/* MdSearch */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by order number or PO number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+    <CustomerDashboardLayout>
+      <div className="min-h-screen bg-neutral-50 py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-secondary-500 mb-2">Order History</h1>
+            <p className="text-muted-foreground">View and track your orders</p>
           </div>
-        </div>
 
-        {/* Orders List */}
-        {filteredOrders.length === 0 ? (
-          <Card className="p-6">
-            <div className="flex flex-col items-center justify-center py-12">
-              <Package className="h-16 w-16 text-muted-foreground mb-4" />
-              <h2 className="text-xl font-semibold mb-2">
-                {searchQuery ? 'No orders found' : 'No orders yet'}
-              </h2>
-              <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'Try a different search term' : 'Start shopping to create your first order'}
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => router.push('/products')}>
-                  Browse Products
-                </Button>
-              )}
+          {/* Filters */}
+          <FilterPanel
+            filters={filters}
+            onFiltersChange={setFilters}
+            onClearFilters={handleClearFilters}
+            activeFilterCount={getActiveFilterCount()}
+          />
+
+          {/* MdSearch */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by order number or PO number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredOrders.map(order => (
-              <Card key={order.id} className="hover:shadow-md transition-shadow">
-                <div className="mb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-bold text-b2b-dark">
-                          Order {order.order_number}
-                        </h2>
-                        {order.po_number && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <FileText className="h-4 w-4" />
-                            <span className="font-medium">PO: {order.po_number}</span>
-                            <CopyButton text={order.po_number} label="PO Number" size="sm" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Placed on {format(new Date(order.submitted_at || order.created_at), 'MMM dd, yyyy')}
-                      </p>
-                    </div>
-                    <Badge className={statusColors[order.status]}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">
-                        {getTotalItems(order)} {getTotalItems(order) === 1 ? 'item' : 'items'}
-                      </p>
-                      <p className="text-lg font-bold text-primary">
-                        ${order.total.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => handleReorder(order.id)}
-                        disabled={reorderingId === order.id}
-                      >
-                        {reorderingId === order.id ? (
-                          <motion.div
-                            className="inline-block mr-2"
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </motion.div>
-                        ) : (
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                        )}
-                        Reorder
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push(`/orders/${order.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
           </div>
-        )}
+
+          {/* Orders List */}
+          {filteredOrders.length === 0 ? (
+            <Card className="p-6">
+              <div className="flex flex-col items-center justify-center py-12">
+                <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2">
+                  {searchQuery ? 'No orders found' : 'No orders yet'}
+                </h2>
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery ? 'Try a different search term' : 'Start shopping to create your first order'}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => router.push('/products')}>
+                    Browse Products
+                  </Button>
+                )}
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredOrders.map(order => (
+                <Card key={order.id} className="hover:shadow-md transition-shadow">
+                  <div className="mb-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-b2b-dark">
+                            Order {order.order_number}
+                          </h2>
+                          {order.po_number && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <FileText className="h-4 w-4" />
+                              <span className="font-medium">PO: {order.po_number}</span>
+                              <CopyButton text={order.po_number} label="PO Number" size="sm" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Placed on {format(new Date(order.submitted_at || order.created_at), 'MMM dd, yyyy')}
+                        </p>
+                      </div>
+                      <Badge className={statusColors[order.status]}>
+                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {getTotalItems(order)} {getTotalItems(order) === 1 ? 'item' : 'items'}
+                        </p>
+                        <p className="text-lg font-bold text-primary">
+                          ${order.total.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleReorder(order.id)}
+                          disabled={reorderingId === order.id}
+                        >
+                          {reorderingId === order.id ? (
+                            <motion.div
+                              className="inline-block mr-2"
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </motion.div>
+                          ) : (
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                          )}
+                          Reorder
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/orders/${order.id}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </CustomerDashboardLayout>
   )
 }

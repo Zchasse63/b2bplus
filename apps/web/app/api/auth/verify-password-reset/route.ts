@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -20,10 +21,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const adminClient = createAdminClient();
 
     // Verify user exists
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
 
     if (usersError) {
       return NextResponse.json(

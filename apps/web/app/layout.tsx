@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
+import { SkipLink } from "@/components/SkipLink";
 import { validateStartup } from "@/lib/startup";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -23,8 +24,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased flex flex-col min-h-screen">
         <AuthProvider>
+          <SkipLink />
           <Header />
-          <main className="flex-1">
+          <main id="main-content" className="flex-1">
             {children}
           </main>
           <Footer />

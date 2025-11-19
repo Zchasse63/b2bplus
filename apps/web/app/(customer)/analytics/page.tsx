@@ -1,26 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { Card } from '@/components/b2b/Card';
-import { Badge } from '@/components/b2b/Badge';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Card } from "@/components/b2b/Card";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
+  CartesianGrid,
   Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { MdTrendingUp, MdTrendingDown, MdShowChart, MdLightbulb } from 'react-icons/md';
-import { useRouter } from 'next/navigation';
+} from "recharts";
+import { MdLightbulb, MdShowChart, MdTrendingUp } from "react-icons/md";
+import CustomerDashboardLayout from "@/components/CustomerDashboardLayout";
+import { EmbeddedAIAssistantPanel } from "@/components/EmbeddedAIAssistantPanel";
 
 interface SpendingData {
   month: string;
@@ -31,7 +30,6 @@ interface CategoryData {
   name: string;
   value: number;
   color: string;
-  [key: string]: string | number;
 }
 
 interface TopProduct {
@@ -46,7 +44,7 @@ interface AIInsight {
   description: string;
   actionLabel: string;
   actionUrl: string;
-  type: 'opportunity' | 'warning' | 'info';
+  type: "opportunity" | "warning" | "info";
 }
 
 export default function AnalyticsPage() {
@@ -59,30 +57,36 @@ export default function AnalyticsPage() {
   const [avgOrderValue, setAvgOrderValue] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [user, setUser] = useState<any>(null);
+
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+    const checkAuthAndLoad = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) {
-        router.push('/auth/login');
-      } else {
-        setUser(user);
-        await fetchAnalytics(user.id);
+        router.push("/auth/login");
+        return;
       }
+
+      setUser(user);
+      await fetchAnalytics(user.id);
     };
-    checkAuth();
-  }, [router, supabase.auth]);
+
+    checkAuthAndLoad();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const fetchAnalytics = async (userId: string) => {
     setLoading(true);
     try {
-      // Get user's organization
       const { data: membership } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', userId)
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", userId)
         .single();
 
       if (!membership) {
@@ -90,302 +94,318 @@ export default function AnalyticsPage() {
         return;
       }
 
-      // Fetch orders for the last 12 months
       const twelveMonthsAgo = new Date();
       twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
       const { data: orders } = await supabase
-        .from('orders')
-        .select('total, created_at, order_items(product_id, quantity, price)')
-        .eq('organization_id', membership.organization_id)
-        .gte('created_at', twelveMonthsAgo.toISOString())
-        .order('created_at', { ascending: true });
+        .from("orders")
+        .select("total, created_at, order_items(product_id, quantity, price)")
+        .eq("organization_id", membership.organization_id)
+        .gte("created_at", twelveMonthsAgo.toISOString())
+        .order("created_at", { ascending: true });
 
-      if (orders) {
-        // Calculate spending by month
-        const monthlySpending: { [key: string]: number } = {};
-        let total = 0;
+      if (!orders) {
+        setLoading(false);
+        return;
+      }
 
-        orders.forEach((order) => {
-          const month = new Date(order.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            year: 'numeric',
-          });
-          monthlySpending[month] = (monthlySpending[month] || 0) + order.total;
-          total += order.total;
+      const monthlySpending: Record<string, number> = {};
+      let total = 0;
+
+      orders.forEach((order) => {
+        const month = new Date(order.created_at).toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
         });
 
-        const spendingArray = Object.entries(monthlySpending).map(([month, amount]) => ({
-          month,
-          amount: Math.round(amount),
+        monthlySpending[month] = (monthlySpending[month] || 0) + order.total;
+        total += order.total;
+      });
+
+      const spendingArray = Object.entries(monthlySpending).map(([month, amount]) => ({
+        month,
+        amount: Math.round(amount),
+      }));
+
+      setSpendingData(spendingArray);
+      setTotalSpend(total);
+      setOrderCount(orders.length);
+      setAvgOrderValue(orders.length > 0 ? total / orders.length : 0);
+
+      const productSpending: Record<
+        string,
+        { total: number; count: number; name: string }
+      > = {};
+
+      for (const order of orders as any[]) {
+        if (!order.order_items) continue;
+
+        for (const item of order.order_items as any[]) {
+          const key = item.product_id as string;
+
+          if (!productSpending[key]) {
+            const { data: product } = await supabase
+              .from("products")
+              .select("name")
+              .eq("id", item.product_id)
+              .single();
+
+            productSpending[key] = {
+              total: 0,
+              count: 0,
+              name: product?.name ?? "Unknown Product",
+            };
+          }
+
+          productSpending[key].total += item.price * item.quantity;
+          productSpending[key].count += 1;
+        }
+      }
+
+      const topProductsArray: TopProduct[] = Object.values(productSpending)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5)
+        .map((p) => ({
+          name: p.name,
+          total_spent: p.total,
+          order_count: p.count,
         }));
 
-        setSpendingData(spendingArray);
-        setTotalSpend(total);
-        setOrderCount(orders.length);
-        setAvgOrderValue(orders.length > 0 ? total / orders.length : 0);
+      setTopProducts(topProductsArray);
 
-        // Calculate top products
-        const productSpending: { [key: string]: { total: number; count: number; name: string } } = {};
+      setCategoryData([
+        { name: "Disposables", value: 35, color: "#0066cc" },
+        { name: "Packaging", value: 25, color: "#00a8e8" },
+        { name: "Containers", value: 20, color: "#00c9a7" },
+        { name: "Utensils", value: 15, color: "#ffa500" },
+        { name: "Other", value: 5, color: "#6b7280" },
+      ]);
 
-        for (const order of orders) {
-          if (order.order_items) {
-            for (const item of order.order_items as any[]) {
-              const key = item.product_id;
-              if (!productSpending[key]) {
-                // Fetch product name
-                const { data: product } = await supabase
-                  .from('products')
-                  .select('name')
-                  .eq('id', item.product_id)
-                  .single();
-
-                productSpending[key] = {
-                  total: 0,
-                  count: 0,
-                  name: product?.name || 'Unknown Product',
-                };
-              }
-              productSpending[key].total += item.price * item.quantity;
-              productSpending[key].count += 1;
-            }
-          }
-        }
-
-        const topProductsArray = Object.values(productSpending)
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 5)
-          .map((p) => ({
-            name: p.name,
-            total_spent: p.total,
-            order_count: p.count,
-          }));
-
-        setTopProducts(topProductsArray);
-
-        // Mock category data (would come from product categories in real implementation)
-        setCategoryData([
-          { name: 'Disposables', value: 35, color: '#0066cc' },
-          { name: 'Packaging', value: 25, color: '#00a8e8' },
-          { name: 'Containers', value: 20, color: '#00c9a7' },
-          { name: 'Utensils', value: 15, color: '#ffa500' },
-          { name: 'Other', value: 5, color: '#6b7280' },
-        ]);
-
-        // Generate AI insights
-        generateInsights(orders, topProductsArray);
-      }
+      generateInsights(orders, topProductsArray);
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error("Error fetching analytics:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const generateInsights = (orders: any[], topProducts: TopProduct[]) => {
-    const insights: AIInsight[] = [];
+    const generated: AIInsight[] = [];
 
-    // Spending trend insight
-    if (orders.length >= 2) {
+    if (orders.length >= 6) {
       const recentTotal = orders.slice(-3).reduce((sum, o) => sum + o.total, 0);
       const previousTotal = orders.slice(-6, -3).reduce((sum, o) => sum + o.total, 0);
-      const percentChange = ((recentTotal - previousTotal) / previousTotal) * 100;
-
-      if (percentChange > 10) {
-        insights.push({
-          id: '1',
-          title: 'Spending Increasing',
-          description: `Your spending has increased by ${Math.round(percentChange)}% in the last 3 months. Consider bulk ordering to save on costs.`,
-          actionLabel: 'View Bulk Discounts',
-          actionUrl: '/products',
-          type: 'opportunity',
-        });
+      if (previousTotal > 0) {
+        const percentChange = ((recentTotal - previousTotal) / previousTotal) * 100;
+        if (percentChange > 10) {
+          generated.push({
+            id: "1",
+            title: "Spending Increasing",
+            description: `Your spending has increased by ${Math.round(
+              percentChange
+            )}% in the last 3 months. Consider bulk ordering to save on costs.`,
+            actionLabel: "View bulk discounts",
+            actionUrl: "/products",
+            type: "opportunity",
+          });
+        }
       }
     }
 
-    // Top product insight
     if (topProducts.length > 0) {
-      insights.push({
-        id: '2',
-        title: 'Top Product Opportunity',
+      generated.push({
+        id: "2",
+        title: "Top product opportunity",
         description: `${topProducts[0].name} is your most ordered item. You could save 15% by setting up a recurring order.`,
-        actionLabel: 'Set Up Recurring Order',
-        actionUrl: '/products',
-        type: 'opportunity',
+        actionLabel: "Set up recurring order",
+        actionUrl: "/products",
+        type: "opportunity",
       });
     }
 
-    // Seasonal pattern insight
-    insights.push({
-      id: '3',
-      title: 'Seasonal Pattern Detected',
-      description: 'Your orders typically increase by 30% during summer months. Plan ahead to ensure availability.',
-      actionLabel: 'View Forecast',
-      actionUrl: '/analytics',
-      type: 'info',
+    generated.push({
+      id: "3",
+      title: "Seasonal pattern detected",
+      description:
+        "Your orders typically increase by ~30% during summer months. Plan ahead to ensure availability.",
+      actionLabel: "View forecast",
+      actionUrl: "/analytics",
+      type: "info",
     });
 
-    setInsights(insights);
+    setInsights(generated);
   };
 
   if (!user || loading) {
     return (
-      <div className="min-h-screen bg-b2b-gray-50 py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <p className="text-center text-b2b-gray-500">Loading analytics...</p>
+      <CustomerDashboardLayout>
+        <div className="min-h-screen bg-b2b-gray-50 py-8">
+          <div className="container mx-auto max-w-7xl px-4">
+            <p className="text-center text-b2b-gray-500">Loading analytics...</p>
+          </div>
         </div>
-      </div>
+      </CustomerDashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-b2b-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-b2b-dark mb-2">Analytics Dashboard</h1>
-          <p className="text-b2b-gray-500">
-            Insights into your spending, trends, and opportunities
-          </p>
-        </div>
+    <CustomerDashboardLayout>
+      <div className="min-h-screen bg-b2b-gray-50 py-8">
+        <div className="container mx-auto max-w-7xl px-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:grid-cols-4">
+            {/* Main analytics content */}
+            <div className="space-y-8 lg:col-span-2 xl:col-span-3">
+              {/* Header */}
+              <div>
+                <h1 className="mb-2 text-3xl font-bold text-b2b-dark">Analytics Dashboard</h1>
+                <p className="text-b2b-gray-500">
+                  Insights into your spending, trends, and opportunities.
+                </p>
+              </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-b2b-gray-500">Total Spend (12mo)</p>
-              <MdShowChart className="text-b2b-blue text-xl" />
-            </div>
-            <p className="text-3xl font-bold text-b2b-dark">
-              ${totalSpend.toLocaleString()}
-            </p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-b2b-gray-500">Avg Order Value</p>
-              <MdTrendingUp className="text-green-600 text-xl" />
-            </div>
-            <p className="text-3xl font-bold text-b2b-dark">
-              ${avgOrderValue.toFixed(0)}
-            </p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-b2b-gray-500">Total Orders</p>
-              <MdShowChart className="text-b2b-blue text-xl" />
-            </div>
-            <p className="text-3xl font-bold text-b2b-dark">{orderCount}</p>
-          </Card>
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Spending Trend */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-b2b-dark mb-4">Spending Trend</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={spendingData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="amount"
-                  stroke="#0066cc"
-                  strokeWidth={2}
-                  name="Spending ($)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Category Breakdown */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-b2b-dark mb-4">Category Breakdown</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => `${entry.name} (${entry.value}%)`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-
-        {/* Top Products & AI Insights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Products */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-b2b-dark mb-4">Top Products</h2>
-            <div className="space-y-3">
-              {topProducts.map((product, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-b2b-gray-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-b2b-dark">{product.name}</p>
-                    <p className="text-sm text-b2b-gray-500">
-                      {product.order_count} orders
-                    </p>
+              {/* Summary cards */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <Card className="p-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm text-b2b-gray-500">Total spend (12 mo)</p>
+                    <MdShowChart className="text-xl text-b2b-blue" />
                   </div>
-                  <p className="text-lg font-bold text-b2b-dark">
-                    ${product.total_spent.toFixed(0)}
+                  <p className="text-3xl font-bold text-b2b-dark">
+                    ${totalSpend.toLocaleString()}
                   </p>
-                </div>
-              ))}
-            </div>
-          </Card>
+                </Card>
 
-          {/* AI Insights */}
-          <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <MdLightbulb className="text-yellow-500 text-2xl" />
-              <h2 className="text-xl font-bold text-b2b-dark">AI Insights</h2>
+                <Card className="p-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm text-b2b-gray-500">Avg order value</p>
+                    <MdTrendingUp className="text-xl text-green-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-b2b-dark">
+                    ${avgOrderValue.toFixed(0)}
+                  </p>
+                </Card>
+
+                <Card className="p-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-sm text-b2b-gray-500">Total orders</p>
+                    <MdShowChart className="text-xl text-b2b-blue" />
+                  </div>
+                  <p className="text-3xl font-bold text-b2b-dark">{orderCount}</p>
+                </Card>
+              </div>
+
+              {/* Charts row */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card className="p-6">
+                  <h2 className="mb-4 text-xl font-bold text-b2b-dark">Spending trend</h2>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={spendingData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="#0066cc"
+                        strokeWidth={2}
+                        name="Spending ($)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Card>
+
+                <Card className="p-6">
+                  <h2 className="mb-4 text-xl font-bold text-b2b-dark">Category breakdown</h2>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={(entry) => `${entry.name} (${entry.value}%)`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Card>
+              </div>
+
+              {/* Top products & AI insights */}
+              <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card className="p-6">
+                  <h2 className="mb-4 text-xl font-bold text-b2b-dark">Top products</h2>
+                  <div className="space-y-3">
+                    {topProducts.map((product, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-lg bg-b2b-gray-50 p-3"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-b2b-dark">{product.name}</p>
+                          <p className="text-sm text-b2b-gray-500">
+                            {product.order_count} orders
+                          </p>
+                        </div>
+                        <p className="text-lg font-bold text-b2b-dark">
+                          ${product.total_spent.toFixed(0)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <div className="mb-4 flex items-center gap-2">
+                    <MdLightbulb className="text-2xl text-yellow-500" />
+                    <h2 className="text-xl font-bold text-b2b-dark">AI insights</h2>
+                  </div>
+                  <div className="space-y-4">
+                    {insights.map((insight) => (
+                      <div
+                        key={insight.id}
+                        className={`rounded-lg border-l-4 p-4 ${
+                          insight.type === "opportunity"
+                            ? "bg-green-50 border-green-500"
+                            : insight.type === "warning"
+                            ? "bg-yellow-50 border-yellow-500"
+                            : "bg-blue-50 border-blue-500"
+                        }`}
+                      >
+                        <h3 className="mb-2 font-bold text-b2b-dark">{insight.title}</h3>
+                        <p className="mb-3 text-sm text-b2b-gray-600">
+                          {insight.description}
+                        </p>
+                        <a
+                          href={insight.actionUrl}
+                          className="text-sm font-medium text-b2b-blue hover:underline"
+                        >
+                          {insight.actionLabel}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
             </div>
-            <div className="space-y-4">
-              {insights.map((insight) => (
-                <div
-                  key={insight.id}
-                  className={`p-4 rounded-lg border-l-4 ${
-                    insight.type === 'opportunity'
-                      ? 'bg-green-50 border-green-500'
-                      : insight.type === 'warning'
-                      ? 'bg-yellow-50 border-yellow-500'
-                      : 'bg-blue-50 border-blue-500'
-                  }`}
-                >
-                  <h3 className="font-bold text-b2b-dark mb-2">{insight.title}</h3>
-                  <p className="text-sm text-b2b-gray-600 mb-3">{insight.description}</p>
-                  <a
-                    href={insight.actionUrl}
-                    className="text-sm text-b2b-blue hover:underline font-medium"
-                  >
-                    {insight.actionLabel} →
-                  </a>
-                </div>
-              ))}
+
+            {/* Right column - AI spend advisor */}
+            <div className="lg:col-span-1 xl:col-span-1">
+              <EmbeddedAIAssistantPanel mode="analytics" />
             </div>
-          </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </CustomerDashboardLayout>
   );
 }
 

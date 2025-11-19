@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { PageHeader, Card, Input, Button, Select } from '@/components/b2b';
 import ProductCardWithPricing from '@/components/ProductCardWithPricing';
+import { CartSidebarSummary } from '@/components/CartSidebarSummary';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
+
 import { FiSearch, FiGrid, FiList } from 'react-icons/fi';
 import type { Product } from '@b2b-plus/supabase';
 import { fadeIn, fast } from '@/lib/animations';
@@ -143,57 +146,73 @@ export default function ProductsPage() {
         }
       />
 
-      {/* Filters */}
-      <Card padding="lg">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Input
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            icon={<FiSearch />}
-            iconPosition="left"
-          />
-          <Select
-            options={categoryOptions}
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          />
-          <Select options={sortOptions} value={sortBy} onChange={(e) => setSortBy(e.target.value)} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 xl:grid-cols-5">
+        {/* Left sidebar - filters */}
+        <div className="lg:col-span-1 xl:col-span-1">
+          <Card padding="lg" className="space-y-4">
+            <h2 className="text-sm font-semibold text-b2b-dark">Filter & sort</h2>
+            <div className="space-y-3">
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                icon={<FiSearch />}
+                iconPosition="left"
+              />
+              <Select
+                options={categoryOptions}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              />
+              <Select
+                options={sortOptions}
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              />
+            </div>
+          </Card>
         </div>
-      </Card>
 
-      {/* Results Count */}
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-b2b-gray-500">
-          Showing {filteredProducts.length} of {products.length} products
-        </p>
-      </div>
-
-      {/* Products Grid */}
-      {filteredProducts.length === 0 ? (
-        <Card padding="lg" className="text-center">
-          <div className="text-b2b-gray-500">
-            <FiSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
-            <h3 className="mb-2 text-lg font-semibold">No products found</h3>
-            <p className="text-sm">Try adjusting your search or filters</p>
+        {/* Main content - products */}
+        <div className="lg:col-span-2 xl:col-span-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-b2b-gray-500">
+              Showing {filteredProducts.length} of {products.length} products
+            </p>
           </div>
-        </Card>
-      ) : (
-        <div
-          className={
-            viewMode === 'grid'
-              ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-              : 'flex flex-col gap-4'
-          }
-        >
-          {filteredProducts.map((product) => (
-            <ProductCardWithPricing
-              key={product.id}
-              product={product}
-            />
-          ))}
+
+          {filteredProducts.length === 0 ? (
+            <Card padding="lg" className="text-center">
+              <div className="text-b2b-gray-500">
+                <FiSearch className="mx-auto mb-4 h-16 w-16 opacity-30" />
+                <h3 className="mb-2 text-lg font-semibold">No products found</h3>
+                <p className="text-sm">Try adjusting your search or filters</p>
+              </div>
+            </Card>
+          ) : (
+            <div
+              className={
+                viewMode === 'grid'
+                  ? 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
+                  : 'flex flex-col gap-4'
+              }
+            >
+              {filteredProducts.map((product) => (
+                <ProductCardWithPricing
+                  key={product.id}
+                  product={product}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Right sidebar - cart + AI */}
+        <div className="lg:col-span-1 xl:col-span-1 space-y-4">
+          <CartSidebarSummary />
+          <EmbeddedAIAssistantPanel mode="products" />
+        </div>
+      </div>
     </motion.div>
   );
 }

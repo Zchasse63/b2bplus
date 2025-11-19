@@ -142,33 +142,30 @@ export default function ContainerCalculatorPage() {
             </h2>
             <div className="grid grid-cols-3 gap-3">
               {Object.entries(CONTAINER_TYPES).map(([key, container]) => (
-                <button
+                <Button
                   key={key}
                   onClick={() => {
                     setContainerType(key);
                     setResult(null);
                   }}
-                  className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                    containerType === key
-                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                      : 'border-gray-200 hover:border-brand-300 dark:border-gray-700'
-                  }`}
+                  variant={containerType === key ? 'primary' : 'outline'}
+                  className="flex flex-col items-center gap-2"
                 >
                   <FiPackage
                     className={`h-6 w-6 ${
-                      containerType === key ? 'text-b2b-yellow' : 'text-b2b-gray-500'
+                      containerType === key ? 'text-white' : 'text-b2b-gray-500'
                     }`}
                   />
                   <span
                     className={`text-sm font-semibold ${
                       containerType === key
-                        ? 'text-brand-600 dark:text-brand-400'
-                        : 'text-gray-700 dark:text-gray-300'
+                        ? 'text-white'
+                        : 'text-b2b-blue'
                     }`}
                   >
                     {container.name}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
             <div className="mt-4 rounded-lg bg-gray-100 p-4 dark:bg-gray-800">

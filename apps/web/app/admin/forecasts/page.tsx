@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ForecastChart } from '@/components/admin/ForecastChart';
 import { InventoryRecommendations } from '@/components/admin/InventoryRecommendations';
+import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
+
 
 interface Forecast {
   id: string;
@@ -111,7 +113,7 @@ export default async function ForecastsPage({
     (sum, f) => sum + (f.predicted_quantity || 0),
     0
   );
-  
+
   // Calculate average accuracy for forecasts that have actual data
   const forecastsWithActuals = filteredForecasts.filter(f => f.accuracy_score !== null);
   const avgAccuracy = forecastsWithActuals.length > 0
@@ -204,6 +206,24 @@ export default async function ForecastsPage({
           <InventoryRecommendations forecasts={filteredForecasts} />
         </div>
       )}
+      {/* AI Forecast Advisor */}
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="bg-white rounded-lg shadow-b2b p-4 border border-b2b-gray-100 lg:col-span-2">
+          <h2 className="text-lg font-bold text-b2b-dark">AI Forecast Advisor</h2>
+          <p className="mt-2 text-sm text-b2b-gray-500">
+            Use the assistant to turn forecast data into concrete inventory and purchasing actions.
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-b2b-gray-500">
+            <li>Ask which products are most at risk of stockouts.</li>
+            <li>Get reorder suggestions based on demand and current stock.</li>
+            <li>Explore what-if scenarios for key customers or SKUs.</li>
+          </ul>
+        </div>
+        <div>
+          <EmbeddedAIAssistantPanel mode="admin" />
+        </div>
+      </div>
+
 
       {/* Forecasts Table */}
       <div className="bg-white rounded-lg shadow-b2b border border-b2b-gray-100 overflow-hidden">

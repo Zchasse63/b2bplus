@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,7 +109,8 @@ export async function POST(request: NextRequest) {
         // Auto-create account if requested
         if (autoCreateAccounts && insertedLead) {
           try {
-            const { data: authData, error: signUpError } = await supabase.auth.admin.createUser({
+            const adminClient = createAdminClient();
+            const { data: authData, error: signUpError } = await adminClient.auth.admin.createUser({
               email: leadData.email,
               password: crypto.randomUUID(),
               email_confirm: true,

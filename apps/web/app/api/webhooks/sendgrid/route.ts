@@ -13,6 +13,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createLogger } from '@/lib/logging/logger';
+import { verifySendGridSignature, extractSendGridHeaders } from '@/lib/webhooks/sendgrid-verify';
+import { checkRateLimit, getClientIp } from '@/lib/webhooks/rate-limit';
 
 const logger = createLogger('sendgrid-webhook');
 
@@ -24,8 +26,40 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const events = await request.json();
-    
+    // Rate limiting
+    const clientIp = getClientIp(request);
+    if (!checkRateLimit(`sendgrid-${clientIp}`, 1000, 60000)) {
+      logger.warn('SendGrid webhook rate limit exceeded', { clientIp });
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429 }
+      );
+    }
+
+    // Verify webhook signature
+    const { signature, timestamp } = extractSendGridHeaders(request);
+    const signingKey = process.env.SENDGRID_WEBHOOK_SIGNING_KEY;
+
+    // Get raw body for signature verification
+    const rawBody = await request.text();
+
+    if (!verifySendGridSignature(rawBody, signature, timestamp, signingKey)) {
+      logger.warn('Invalid SendGrid webhook signature - rejecting request');
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      );
+    }
+
+    // Parse the verified payload
+    let events;
+    try {
+      events = JSON.parse(rawBody);
+    } catch (parseError) {
+      logger.error('Failed to parse webhook payload', { parseError });
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }

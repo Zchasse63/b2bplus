@@ -41,13 +41,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-b2b-blue-300';
 
     const variants = {
-      primary: 'bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm',
-      secondary: 'bg-b2b-green text-white hover:bg-b2b-green-600 shadow-b2b-sm',
-      outline: 'border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50',
-      ghost: 'text-b2b-text hover:bg-b2b-gray-50',
+      primary: 'bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm focus-visible:ring-b2b-blue-300',
+      secondary: 'bg-b2b-green text-white hover:bg-b2b-green-600 shadow-b2b-sm focus-visible:ring-b2b-green-300',
+      outline: 'border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50 focus-visible:ring-b2b-blue-300',
+      ghost: 'text-b2b-text hover:bg-b2b-gray-50 focus-visible:ring-b2b-blue-300',
     };
 
     const sizes = {
@@ -67,8 +67,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         disabled={disabled || loading}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? {} : { scale: 1.02 }}
+        whileTap={typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? {} : { scale: 0.98 }}
         transition={{ duration: 0.15 }}
         {...props}
       >
