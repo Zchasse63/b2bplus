@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Get customer statistics in bulk (optimized to avoid N+1 queries)
  * GET /api/admin/customers/stats
