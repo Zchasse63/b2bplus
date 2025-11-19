@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
     img-src 'self' blob: data: https://*.supabase.co https://*.supabase.in https://images.unsplash.com;
     font-src 'self' https://fonts.gstatic.com;
-    connect-src 'self' https://*.supabase.co https://*.supabase.in;
+    connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co wss://*.supabase.in;
     frame-ancestors 'none';
   `
 
