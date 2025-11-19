@@ -21,12 +21,13 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize the Gemini API client
-if (!process.env.GOOGLE_API_KEY) {
-  throw new Error('GOOGLE_API_KEY environment variable is not set');
-}
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// Initialize the Gemini API client lazily
+const getGenAI = () => {
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error('GOOGLE_API_KEY environment variable is not set');
+  }
+  return new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+};
 
 /**
  * Sanitize error messages to prevent API key exposure in logs
@@ -55,7 +56,7 @@ function sanitizeError(error: any): string {
  * - Real-time operations
  */
 export const getFlashModel = () => {
-  return genAI.getGenerativeModel({
+  return getGenAI().getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.7,
@@ -80,7 +81,7 @@ export const getFlashModel = () => {
  * - Multi-step reasoning tasks
  */
 export const getProModel = () => {
-  return genAI.getGenerativeModel({
+  return getGenAI().getGenerativeModel({
     model: "gemini-2.5-pro",
     generationConfig: {
       temperature: 0.3,  // Lower temperature for more deterministic reasoning
@@ -101,7 +102,7 @@ export const getProModel = () => {
  * - Similar product detection
  */
 export const getEmbeddingModel = () => {
-  return genAI.getGenerativeModel({ 
+  return getGenAI().getGenerativeModel({
     model: "text-embedding-004"
   });
 };
@@ -132,7 +133,7 @@ export async function generateText(prompt: string, options?: {
   systemPrompt?: string;
 }): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({
+    const model = getGenAI().getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: {
         temperature: options?.temperature ?? 0.7,
@@ -199,7 +200,7 @@ export async function generateJSON<T = any>(prompt: string, options?: {
   systemPrompt?: string;
 }): Promise<T> {
   // Add JSON instruction to system prompt
-  const systemPrompt = options?.systemPrompt 
+  const systemPrompt = options?.systemPrompt
     ? `${options.systemPrompt}\n\nIMPORTANT: You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON.`
     : 'You must respond with valid JSON only. Do not include any markdown formatting, code blocks, or additional text. Just pure JSON.';
 
@@ -211,7 +212,7 @@ export async function generateJSON<T = any>(prompt: string, options?: {
 
   // Clean up response (remove markdown code blocks if present)
   let cleanedResponse = response.trim();
-  
+
   // Remove markdown code blocks
   if (cleanedResponse.startsWith('```json')) {
     cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
@@ -254,7 +255,7 @@ export async function generateTextPro(prompt: string, options?: {
   systemPrompt?: string;
 }): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({
+    const model = getGenAI().getGenerativeModel({
       model: "gemini-2.5-pro",
       generationConfig: {
         temperature: options?.temperature ?? 0.3,  // Lower default for Pro
@@ -368,9 +369,9 @@ export async function generateJSONPro<T = any>(prompt: string, options?: {
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   const model = getEmbeddingModel();
-  
+
   const result = await model.embedContent(text);
-  
+
   // Gemini returns embedding in result.embedding.values
   return result.embedding.values;
 }
@@ -394,12 +395,12 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   const model = getEmbeddingModel();
-  
+
   // Process in parallel for better performance
   const results = await Promise.all(
     texts.map(text => model.embedContent(text))
   );
-  
+
   return results.map(result => result.embedding.values);
 }
 
@@ -466,7 +467,7 @@ export async function processDocument(
 ): Promise<string> {
   const modelName = options?.usePro ? "gemini-2.5-pro" : "gemini-2.5-flash";
 
-  const model = genAI.getGenerativeModel({
+  const model = getGenAI().getGenerativeModel({
     model: modelName,
     generationConfig: {
       temperature: options?.temperature ?? (options?.usePro ? 0.3 : 0.7),
@@ -599,7 +600,7 @@ export async function analyzeImageJSON<T = any>(
     systemPrompt?: string;
   }
 ): Promise<T> {
-  const model = genAI.getGenerativeModel({
+  const model = getGenAI().getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
       temperature: options?.temperature ?? 0.3,
