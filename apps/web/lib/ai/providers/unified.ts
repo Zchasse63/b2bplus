@@ -207,3 +207,35 @@ export async function generateStructuredObject<T>(
 
 // Re-export for embeddings (still use Gemini for now as xAI doesn't have embeddings)
 export { generateEmbedding, generateEmbeddings, cosineSimilarity } from '../../gemini';
+
+/**
+ * Analyze image and return JSON (falls back to Gemini for vision)
+ */
+export async function analyzeImageJSON<T>(
+  imageUrl: string,
+  prompt: string,
+  options?: {
+    temperature?: number;
+    systemPrompt?: string;
+  }
+): Promise<T> {
+  // xAI doesn't have vision yet, use Gemini
+  const { analyzeImageJSON: geminiAnalyzeImageJSON } = await import('../../gemini');
+  return geminiAnalyzeImageJSON<T>(imageUrl, prompt, options);
+}
+
+/**
+ * Process document and return JSON (falls back to Gemini for document processing)
+ */
+export async function processDocumentJSON<T>(
+  document: string | Buffer,
+  prompt: string,
+  options?: {
+    temperature?: number;
+    systemPrompt?: string;
+  }
+): Promise<T> {
+  // Use Gemini for document processing (can switch to Grok when supported)
+  const { processDocumentJSON: geminiProcessDocumentJSON } = await import('../../gemini');
+  return geminiProcessDocumentJSON<T>(document, prompt, options);
+}

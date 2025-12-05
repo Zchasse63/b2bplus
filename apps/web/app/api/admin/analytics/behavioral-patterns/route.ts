@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateJSONPro } from '@/lib/gemini';
+import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
 
 export const runtime = 'nodejs';

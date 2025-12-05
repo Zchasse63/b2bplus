@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateJSON } from '@/lib/gemini';
+import { generateJSON } from '@/lib/ai/providers/unified';
 import { createLogger } from '@/lib/logging/logger';
 
 const logger = createLogger('ai-excel-import');

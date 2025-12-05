@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/sendgrid';
 import { checkAdminRole } from '@/lib/middleware/admin';
-import { generateJSON } from '@/lib/gemini';
+import { generateJSON } from '@/lib/ai/providers/unified';
 
 // Batch size for concurrent email sends
 const BATCH_SIZE = 50;

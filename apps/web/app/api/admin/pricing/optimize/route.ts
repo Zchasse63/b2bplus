@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateTextPro } from '@/lib/gemini'
+import { generateTextPro } from '@/lib/ai/providers/unified'
 
 /**
  * Pricing Optimization API
