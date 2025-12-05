@@ -1,13 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/lib/hooks/useAdmin';
 import { Card, Button, Badge } from '@/components/b2b';
 import { FiMail, FiSend, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { fadeIn, fast } from '@/lib/animations';
+import DOMPurify from 'dompurify';
 
 interface Campaign {
   id: string;
@@ -202,7 +203,7 @@ export default function CampaignDetailPage() {
         <div className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
           <div
             className="prose dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: campaign.html_content }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(campaign.html_content || '') }}
           />
         </div>
       </Card>
