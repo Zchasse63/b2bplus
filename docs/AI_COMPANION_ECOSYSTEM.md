@@ -898,6 +898,750 @@ export const profileTools = {
 };
 ```
 
+### Domain: Document Processing (AI-Assisted Parsing)
+
+This domain is **critical** for B2B operations and uses **Grok 4.1 Fast Reasoning** for complex document analysis.
+
+#### Supported Document Types
+
+| Type | Formats | Use Cases |
+|------|---------|-----------|
+| **Invoices** | PDF, CSV, Excel | Historical data import, accounts payable |
+| **Purchase Orders (POs)** | PDF, CSV, Excel | New order submission, bulk ordering |
+| **Price Lists** | CSV, Excel | Product catalog updates, regional pricing |
+| **Product Catalogs** | CSV, Excel | Bulk product import, spec updates |
+
+#### Document Processing Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Document Processing Pipeline                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  1. UPLOAD          2. EXTRACT           3. ANALYZE (AI)             │
+│  ┌─────────┐       ┌─────────────┐      ┌──────────────────┐        │
+│  │ CSV/XLSX│ ───►  │ Raw rows/   │ ───► │ Grok 4.1 Fast    │        │
+│  │ PDF     │       │ columns     │      │ REASONING model  │        │
+│  └─────────┘       └─────────────┘      │ - Detect schema  │        │
+│                                          │ - Map fields     │        │
+│                                          │ - Flag issues    │        │
+│                                          └──────────────────┘        │
+│                                                   │                   │
+│                                                   ▼                   │
+│  6. IMPORT          5. CONFIRM           4. VALIDATE                 │
+│  ┌─────────────┐   ┌─────────────┐      ┌──────────────────┐        │
+│  │ Create DB   │◄──│ User review │ ◄─── │ Check products   │        │
+│  │ records     │   │ & confirm   │      │ Check pricing    │        │
+│  └─────────────┘   └─────────────┘      │ Flag errors      │        │
+│                                          └──────────────────┘        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Document Processing Schemas
+
+```typescript
+// lib/ai/schemas/documents.ts
+import { z } from 'zod';
+
+// Invoice Line Item (parsed from uploaded invoices)
+export const invoiceLineItemSchema = z.object({
+  lineNumber: z.number().optional(),
+  itemNumber: z.string().describe('Product SKU or item code'),
+  description: z.string(),
+  quantity: z.number().positive(),
+  unitPrice: z.number().positive(),
+  extendedPrice: z.number().optional(),
+  unit: z.string().optional().describe('e.g., EA, CS, PK'),
+});
+
+// Parsed Invoice
+export const parsedInvoiceSchema = z.object({
+  invoiceNumber: z.string(),
+  invoiceDate: z.string().describe('ISO date'),
+  dueDate: z.string().optional(),
+  customerInfo: z.object({
+    name: z.string().optional(),
+    accountNumber: z.string().optional(),
+    address: z.string().optional(),
+  }),
+  vendorInfo: z.object({
+    name: z.string().optional(),
+    address: z.string().optional(),
+  }),
+  lineItems: z.array(invoiceLineItemSchema),
+  subtotal: z.number().optional(),
+  tax: z.number().optional(),
+  shipping: z.number().optional(),
+  total: z.number(),
+  paymentTerms: z.string().optional(),
+  poNumber: z.string().optional(),
+});
+
+// Purchase Order Line Item
+export const poLineItemSchema = z.object({
+  lineNumber: z.number().optional(),
+  itemNumber: z.string().describe('Product SKU'),
+  description: z.string().optional(),
+  quantity: z.number().positive(),
+  requestedDeliveryDate: z.string().optional(),
+  unitPrice: z.number().optional(),
+  notes: z.string().optional(),
+});
+
+// Parsed Purchase Order
+export const parsedPurchaseOrderSchema = z.object({
+  poNumber: z.string(),
+  poDate: z.string(),
+  shipToAddress: z.object({
+    name: z.string().optional(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    zip: z.string().optional(),
+  }),
+  lineItems: z.array(poLineItemSchema),
+  specialInstructions: z.string().optional(),
+  requestedDeliveryDate: z.string().optional(),
+});
+
+// Price List Item with Regional Pricing
+export const priceListItemSchema = z.object({
+  itemNumber: z.string().describe('Product SKU'),
+  description: z.string(),
+  packSize: z.string().optional().describe('e.g., 12/1LB, 24/16OZ'),
+  unit: z.string().optional(),
+  categoryPath: z.string().optional(),
+  // Regional pricing columns (4-5 typically)
+  pricing: z.record(z.string(), z.number()).describe('Region/tier to price mapping'),
+  specs: z.record(z.string(), z.string()).optional().describe('Additional specifications'),
+});
+
+// Parsed Price List
+export const parsedPriceListSchema = z.object({
+  listName: z.string().optional(),
+  effectiveDate: z.string().optional(),
+  expirationDate: z.string().optional(),
+  pricingRegions: z.array(z.string()).describe('Column headers for regional pricing'),
+  items: z.array(priceListItemSchema),
+});
+
+// Document Analysis Result (from AI)
+export const documentAnalysisSchema = z.object({
+  documentType: z.enum(['invoice', 'purchase_order', 'price_list', 'product_catalog', 'unknown']),
+  confidence: z.number().min(0).max(100),
+  detectedColumns: z.array(z.object({
+    originalHeader: z.string(),
+    mappedTo: z.string().describe('Standard field name'),
+    confidence: z.number(),
+    sampleValues: z.array(z.string()),
+  })),
+  warnings: z.array(z.object({
+    type: z.enum(['missing_column', 'ambiguous_mapping', 'invalid_data', 'unknown_sku', 'price_mismatch']),
+    message: z.string(),
+    rowNumbers: z.array(z.number()).optional(),
+    suggestion: z.string().optional(),
+  })),
+  summary: z.object({
+    totalRows: z.number(),
+    validRows: z.number(),
+    errorRows: z.number(),
+    warningRows: z.number(),
+  }),
+});
+
+export type ParsedInvoice = z.infer<typeof parsedInvoiceSchema>;
+export type ParsedPurchaseOrder = z.infer<typeof parsedPurchaseOrderSchema>;
+export type ParsedPriceList = z.infer<typeof parsedPriceListSchema>;
+export type DocumentAnalysis = z.infer<typeof documentAnalysisSchema>;
+```
+
+#### Document Processing Tools
+
+```typescript
+// lib/ai/tools/documents.ts
+import { tool } from 'ai';
+import { z } from 'zod';
+import { grokModels } from '../providers/xai';
+import { generateObject } from 'ai';
+import {
+  documentAnalysisSchema,
+  parsedInvoiceSchema,
+  parsedPurchaseOrderSchema,
+  parsedPriceListSchema,
+} from '../schemas/documents';
+
+export const documentTools = {
+  // ═══════════════════════════════════════════════════════════════════
+  // FILE UPLOAD & EXTRACTION
+  // ═══════════════════════════════════════════════════════════════════
+
+  uploadDocument: tool({
+    description: 'Upload a document (CSV, Excel, PDF) for AI-assisted parsing',
+    parameters: z.object({
+      fileId: z.string().describe('Uploaded file ID from storage'),
+      documentType: z.enum(['invoice', 'purchase_order', 'price_list', 'product_catalog', 'auto_detect'])
+        .default('auto_detect'),
+      context: z.string().optional().describe('Additional context about the document'),
+    }),
+    execute: async ({ fileId, documentType, context }, { userId, isAdmin }) => {
+      // 1. Retrieve file from storage
+      const file = await getFileFromStorage(fileId);
+
+      // 2. Extract raw content based on file type
+      let rawContent: string;
+      if (file.mimeType === 'application/pdf') {
+        rawContent = await extractPdfContent(file);
+      } else if (file.mimeType.includes('spreadsheet') || file.name.endsWith('.xlsx')) {
+        rawContent = await extractExcelContent(file);
+      } else {
+        rawContent = await extractCsvContent(file);
+      }
+
+      // 3. Return for analysis
+      return {
+        fileId,
+        fileName: file.name,
+        mimeType: file.mimeType,
+        rowCount: rawContent.split('\n').length,
+        preview: rawContent.substring(0, 2000), // First 2000 chars for preview
+        status: 'ready_for_analysis',
+      };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // AI-POWERED DOCUMENT ANALYSIS (Uses Grok 4.1 Fast REASONING)
+  // ═══════════════════════════════════════════════════════════════════
+
+  analyzeDocumentStructure: tool({
+    description: 'Use AI to analyze document structure, detect columns, and map to known schemas. Uses reasoning model for complex analysis.',
+    parameters: z.object({
+      fileId: z.string(),
+      rawContent: z.string().describe('Raw content from extraction'),
+      expectedType: z.enum(['invoice', 'purchase_order', 'price_list', 'product_catalog', 'auto_detect'])
+        .default('auto_detect'),
+    }),
+    execute: async ({ fileId, rawContent, expectedType }) => {
+      // Use REASONING model for complex document analysis
+      const { object: analysis } = await generateObject({
+        model: grokModels.reasoning, // ← REASONING MODEL for complex analysis
+        schema: documentAnalysisSchema,
+        prompt: `Analyze this document and identify its structure.
+
+## Document Content (first 10000 characters):
+${rawContent.substring(0, 10000)}
+
+## Expected Document Type: ${expectedType}
+
+## Your Task:
+1. Determine the document type (invoice, purchase_order, price_list, product_catalog)
+2. Identify all columns/fields present
+3. Map each column to standard field names:
+   - For invoices: itemNumber, description, quantity, unitPrice, extendedPrice
+   - For POs: itemNumber, quantity, requestedDeliveryDate
+   - For price lists: itemNumber, description, packSize, and pricing columns (detect regional pricing)
+4. Flag any issues:
+   - Missing required columns
+   - Ambiguous column names
+   - Invalid data formats
+   - Rows that don't parse correctly
+5. Provide a summary of valid/error rows
+
+Be thorough - this data will be imported into the system.`,
+        temperature: 0.1, // Low temperature for accuracy
+      });
+
+      return {
+        fileId,
+        analysis,
+        status: 'analyzed',
+      };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // INVOICE PARSING
+  // ═══════════════════════════════════════════════════════════════════
+
+  parseInvoice: tool({
+    description: 'Parse an invoice document (PDF/CSV/Excel) with AI assistance. Extracts line items, totals, and customer info.',
+    parameters: z.object({
+      fileId: z.string(),
+      columnMapping: z.record(z.string(), z.string()).optional()
+        .describe('Override automatic column mapping'),
+      customerId: z.string().optional().describe('Associate with existing customer'),
+    }),
+    execute: async ({ fileId, columnMapping, customerId }, { userId, isAdmin }) => {
+      const file = await getFileFromStorage(fileId);
+      const rawContent = await extractContent(file);
+
+      // Use REASONING model for invoice parsing
+      const { object: invoice } = await generateObject({
+        model: grokModels.reasoning,
+        schema: parsedInvoiceSchema,
+        prompt: `Parse this invoice document and extract all information.
+
+## Document Content:
+${rawContent}
+
+## Column Mapping Override:
+${columnMapping ? JSON.stringify(columnMapping) : 'Use automatic detection'}
+
+## Instructions:
+1. Extract invoice header info (number, date, customer, vendor)
+2. Parse ALL line items with:
+   - Item number/SKU
+   - Description
+   - Quantity
+   - Unit price
+   - Extended price (calculate if missing)
+3. Extract totals (subtotal, tax, shipping, total)
+4. Identify PO number if present
+
+Return structured data matching the schema exactly.`,
+        temperature: 0.1,
+      });
+
+      // Validate SKUs against product database
+      const validationResult = await validateInvoiceItems(invoice.lineItems);
+
+      return {
+        fileId,
+        parsedInvoice: invoice,
+        validation: validationResult,
+        status: 'parsed',
+      };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PURCHASE ORDER PARSING
+  // ═══════════════════════════════════════════════════════════════════
+
+  parsePurchaseOrder: tool({
+    description: 'Parse a purchase order document. Validates SKUs against product catalog and checks availability.',
+    parameters: z.object({
+      fileId: z.string(),
+      columnMapping: z.record(z.string(), z.string()).optional(),
+      validateInventory: z.boolean().default(true),
+    }),
+    execute: async ({ fileId, columnMapping, validateInventory }, { userId }) => {
+      const file = await getFileFromStorage(fileId);
+      const rawContent = await extractContent(file);
+
+      // Use REASONING model for PO parsing
+      const { object: po } = await generateObject({
+        model: grokModels.reasoning,
+        schema: parsedPurchaseOrderSchema,
+        prompt: `Parse this purchase order document.
+
+## Document Content:
+${rawContent}
+
+## Instructions:
+1. Extract PO number and date
+2. Extract shipping address
+3. Parse ALL line items:
+   - Item number/SKU (CRITICAL - must be accurate)
+   - Quantity
+   - Description (if available)
+   - Requested delivery date (if specified)
+4. Extract any special instructions
+
+Pay careful attention to SKU formats - they may include dashes, dots, or spaces.`,
+        temperature: 0.1,
+      });
+
+      // Validate SKUs and check inventory
+      const validation = await validatePurchaseOrderItems(po.lineItems, validateInventory);
+
+      return {
+        fileId,
+        parsedPO: po,
+        validation,
+        itemsFound: validation.found.length,
+        itemsNotFound: validation.notFound.length,
+        status: validation.notFound.length > 0 ? 'needs_review' : 'ready_to_import',
+      };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PRICE LIST PARSING (Complex - Multiple Pricing Columns)
+  // ═══════════════════════════════════════════════════════════════════
+
+  parsePriceList: tool({
+    description: 'Parse a price list with multiple pricing columns (regional/tier pricing). Identifies item numbers, descriptions, pack sizes, and all price columns.',
+    parameters: z.object({
+      fileId: z.string(),
+      pricingColumnHints: z.array(z.string()).optional()
+        .describe('Hints for pricing column names, e.g., ["East", "West", "Central"]'),
+      effectiveDate: z.string().optional(),
+    }),
+    execute: async ({ fileId, pricingColumnHints, effectiveDate }, { isAdmin }) => {
+      if (!isAdmin) throw new Error('Admin only');
+
+      const file = await getFileFromStorage(fileId);
+      const rawContent = await extractContent(file);
+
+      // Use REASONING model for complex price list parsing
+      const { object: priceList } = await generateObject({
+        model: grokModels.reasoning,
+        schema: parsedPriceListSchema,
+        prompt: `Parse this price list document with multiple pricing tiers.
+
+## Document Content:
+${rawContent}
+
+## Pricing Column Hints:
+${pricingColumnHints ? pricingColumnHints.join(', ') : 'Auto-detect pricing columns'}
+
+## Instructions:
+1. Identify all columns, paying special attention to:
+   - Item number/SKU column
+   - Description column
+   - Pack size column (e.g., "12/1LB", "24/16OZ", "4/1GAL")
+   - Unit column (EA, CS, PK, etc.)
+   - Category/classification columns
+
+2. CRITICAL: Identify ALL pricing columns
+   - Look for columns with names like: "Price", "East", "West", "Tier 1", "Region A", etc.
+   - There are typically 4-5 pricing columns
+   - Each represents a different customer tier or region
+   - All values should be numeric (currency)
+
+3. For each item, extract:
+   - itemNumber (SKU)
+   - description
+   - packSize
+   - unit
+   - pricing: { [regionName]: price } for ALL pricing columns
+
+4. Also extract any specification columns (dimensions, weight, etc.)
+
+Be very careful with pricing - accuracy is critical for B2B.`,
+        temperature: 0.1,
+      });
+
+      // Validate against existing products
+      const validation = await validatePriceListItems(priceList.items);
+
+      return {
+        fileId,
+        parsedPriceList: priceList,
+        pricingRegionsFound: priceList.pricingRegions,
+        totalItems: priceList.items.length,
+        validation,
+        effectiveDate: effectiveDate || priceList.effectiveDate,
+        status: 'ready_for_review',
+      };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // VALIDATION & ERROR CORRECTION
+  // ═══════════════════════════════════════════════════════════════════
+
+  validateParsedDocument: tool({
+    description: 'Validate parsed document data against the database. Checks SKUs, pricing, and identifies mismatches.',
+    parameters: z.object({
+      fileId: z.string(),
+      documentType: z.enum(['invoice', 'purchase_order', 'price_list']),
+      parsedData: z.any(),
+    }),
+    execute: async ({ fileId, documentType, parsedData }) => {
+      const supabase = await createClient();
+      const issues: Array<{
+        type: string;
+        severity: 'error' | 'warning';
+        message: string;
+        lineNumber?: number;
+        suggestion?: string;
+      }> = [];
+
+      if (documentType === 'invoice' || documentType === 'purchase_order') {
+        // Validate SKUs
+        const skus = parsedData.lineItems.map((item: any) => item.itemNumber);
+        const { data: products } = await supabase
+          .from('products')
+          .select('sku, name, base_price')
+          .in('sku', skus);
+
+        const foundSkus = new Set(products?.map(p => p.sku));
+
+        parsedData.lineItems.forEach((item: any, index: number) => {
+          if (!foundSkus.has(item.itemNumber)) {
+            // Try fuzzy match
+            const fuzzyMatch = await findSimilarSku(item.itemNumber);
+            issues.push({
+              type: 'unknown_sku',
+              severity: 'error',
+              message: `SKU "${item.itemNumber}" not found in catalog`,
+              lineNumber: index + 1,
+              suggestion: fuzzyMatch ? `Did you mean "${fuzzyMatch}"?` : undefined,
+            });
+          }
+        });
+      }
+
+      if (documentType === 'price_list') {
+        // Validate pricing makes sense
+        for (const item of parsedData.items) {
+          const prices = Object.values(item.pricing);
+          const maxPrice = Math.max(...prices as number[]);
+          const minPrice = Math.min(...prices as number[]);
+
+          if (maxPrice > minPrice * 3) {
+            issues.push({
+              type: 'price_variance',
+              severity: 'warning',
+              message: `Large price variance for ${item.itemNumber}: $${minPrice} to $${maxPrice}`,
+              suggestion: 'Please verify regional pricing is correct',
+            });
+          }
+        }
+      }
+
+      return {
+        fileId,
+        isValid: issues.filter(i => i.severity === 'error').length === 0,
+        errors: issues.filter(i => i.severity === 'error'),
+        warnings: issues.filter(i => i.severity === 'warning'),
+        summary: {
+          totalIssues: issues.length,
+          errors: issues.filter(i => i.severity === 'error').length,
+          warnings: issues.filter(i => i.severity === 'warning').length,
+        },
+      };
+    },
+  }),
+
+  suggestSkuCorrections: tool({
+    description: 'AI suggests corrections for unrecognized SKUs based on similar products',
+    parameters: z.object({
+      unknownSkus: z.array(z.string()),
+    }),
+    execute: async ({ unknownSkus }) => {
+      const supabase = await createClient();
+
+      // Get all SKUs for comparison
+      const { data: products } = await supabase
+        .from('products')
+        .select('sku, name')
+        .limit(5000);
+
+      const suggestions = await Promise.all(
+        unknownSkus.map(async (sku) => {
+          // Use AI to find best match
+          const { object } = await generateObject({
+            model: grokModels.fast, // Fast model for simple matching
+            schema: z.object({
+              originalSku: z.string(),
+              suggestedSku: z.string().nullable(),
+              confidence: z.number(),
+              reasoning: z.string(),
+            }),
+            prompt: `Find the best matching SKU for "${sku}" from this list:
+${products?.map(p => `${p.sku}: ${p.name}`).join('\n')}
+
+Consider:
+- Similar character patterns
+- Common typos (0 vs O, 1 vs I)
+- Missing/extra dashes or spaces
+- Partial matches
+
+If no good match exists, return null for suggestedSku.`,
+          });
+
+          return object;
+        })
+      );
+
+      return { suggestions };
+    },
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // IMPORT ACTIONS
+  // ═══════════════════════════════════════════════════════════════════
+
+  importInvoiceHistory: tool({
+    description: 'Import parsed invoice data as historical orders for a customer',
+    parameters: z.object({
+      fileId: z.string(),
+      parsedInvoice: z.any(),
+      customerId: z.string(),
+      createMissingProducts: z.boolean().default(false),
+    }),
+    execute: async (params, { isAdmin }) => {
+      if (!isAdmin) throw new Error('Admin only');
+      // Creates historical order records
+    },
+    requiresConfirmation: true,
+  }),
+
+  importPurchaseOrder: tool({
+    description: 'Import parsed PO as a new order or add to cart',
+    parameters: z.object({
+      fileId: z.string(),
+      parsedPO: z.any(),
+      action: z.enum(['create_order', 'add_to_cart']),
+    }),
+    execute: async (params, { userId }) => {
+      // Creates order or adds to cart
+    },
+    requiresConfirmation: true,
+  }),
+
+  importPriceList: tool({
+    description: 'Import parsed price list to update product pricing',
+    parameters: z.object({
+      fileId: z.string(),
+      parsedPriceList: z.any(),
+      updateMode: z.enum(['update_existing', 'create_missing', 'full_replace']),
+      pricingTierMapping: z.record(z.string(), z.string())
+        .describe('Map column names to pricing tier IDs'),
+    }),
+    execute: async (params, { isAdmin }) => {
+      if (!isAdmin) throw new Error('Admin only');
+      // Updates product pricing in database
+    },
+    requiresConfirmation: true,
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════
+  // BULK OPERATIONS
+  // ═══════════════════════════════════════════════════════════════════
+
+  bulkParseDocuments: tool({
+    description: 'Process multiple documents in batch',
+    parameters: z.object({
+      fileIds: z.array(z.string()),
+      documentType: z.enum(['invoice', 'purchase_order', 'price_list']),
+    }),
+    execute: async ({ fileIds, documentType }, { isAdmin }) => {
+      if (!isAdmin) throw new Error('Admin only');
+
+      const results = await Promise.all(
+        fileIds.map(async (fileId) => {
+          try {
+            // Process each document
+            return { fileId, status: 'success' };
+          } catch (error) {
+            return { fileId, status: 'error', error: String(error) };
+          }
+        })
+      );
+
+      return {
+        total: fileIds.length,
+        successful: results.filter(r => r.status === 'success').length,
+        failed: results.filter(r => r.status === 'error').length,
+        results,
+      };
+    },
+  }),
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════
+
+async function extractPdfContent(file: File): Promise<string> {
+  // Use pdf-parse or similar library
+  const pdfParse = await import('pdf-parse');
+  const buffer = await file.arrayBuffer();
+  const data = await pdfParse(Buffer.from(buffer));
+  return data.text;
+}
+
+async function extractExcelContent(file: File): Promise<string> {
+  // Use xlsx library
+  const XLSX = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer);
+  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_csv(firstSheet);
+}
+
+async function extractCsvContent(file: File): Promise<string> {
+  return await file.text();
+}
+
+async function validateInvoiceItems(items: any[]) {
+  const supabase = await createClient();
+  const skus = items.map(i => i.itemNumber);
+
+  const { data: products } = await supabase
+    .from('products')
+    .select('sku, name, base_price')
+    .in('sku', skus);
+
+  const foundSkus = new Set(products?.map(p => p.sku));
+
+  return {
+    found: items.filter(i => foundSkus.has(i.itemNumber)),
+    notFound: items.filter(i => !foundSkus.has(i.itemNumber)),
+    products: products || [],
+  };
+}
+
+async function validatePurchaseOrderItems(items: any[], checkInventory: boolean) {
+  const supabase = await createClient();
+  const skus = items.map(i => i.itemNumber);
+
+  const { data: products } = await supabase
+    .from('products')
+    .select('id, sku, name, base_price, inventory_count')
+    .in('sku', skus);
+
+  const productMap = new Map(products?.map(p => [p.sku, p]));
+  const found: any[] = [];
+  const notFound: any[] = [];
+  const insufficientStock: any[] = [];
+
+  for (const item of items) {
+    const product = productMap.get(item.itemNumber);
+    if (!product) {
+      notFound.push(item);
+    } else if (checkInventory && product.inventory_count < item.quantity) {
+      insufficientStock.push({
+        ...item,
+        available: product.inventory_count,
+        requested: item.quantity,
+      });
+      found.push(item);
+    } else {
+      found.push(item);
+    }
+  }
+
+  return { found, notFound, insufficientStock };
+}
+
+async function validatePriceListItems(items: any[]) {
+  const supabase = await createClient();
+  const skus = items.map(i => i.itemNumber);
+
+  const { data: existingProducts } = await supabase
+    .from('products')
+    .select('sku')
+    .in('sku', skus);
+
+  const existingSkus = new Set(existingProducts?.map(p => p.sku));
+
+  return {
+    existing: items.filter(i => existingSkus.has(i.itemNumber)),
+    new: items.filter(i => !existingSkus.has(i.itemNumber)),
+  };
+}
+
+async function findSimilarSku(sku: string): Promise<string | null> {
+  // Implement Levenshtein distance or similar fuzzy matching
+  return null;
+}
+```
+
 ### Domain: Navigation & Context
 
 ```typescript
@@ -982,7 +1726,8 @@ export const navigationTools = {
 | ANALYZE | 25 | 24 | 96% |
 | EXPORT | 12 | 11 | 92% |
 | CONFIGURE | 23 | 21 | 91% |
-| **TOTAL** | **180** | **169** | **94%** |
+| **PARSE/IMPORT** | **15** | **12** | **80%** |
+| **TOTAL** | **195** | **181** | **93%** |
 
 ### Gaps Identified
 
@@ -997,18 +1742,92 @@ export const navigationTools = {
 
 ### Tools by Domain Summary
 
-| Domain | Read Tools | Write Tools | Total |
-|--------|------------|-------------|-------|
-| Orders | 4 | 5 | 9 |
-| Products | 8 | 1 | 9 |
-| Cart | 2 | 7 | 9 |
-| Analytics | 8 | 1 | 9 |
-| Campaigns | 4 | 5 | 9 |
-| Customers | 4 | 3 | 7 |
-| Invoices | 3 | 5 | 8 |
-| Profile | 4 | 3 | 7 |
-| Navigation | 4 | 1 | 5 |
-| **Total** | **41** | **31** | **72** |
+| Domain | Read Tools | Write Tools | Total | Model Used |
+|--------|------------|-------------|-------|------------|
+| Orders | 4 | 5 | 9 | Fast |
+| Products | 8 | 1 | 9 | Fast |
+| Cart | 2 | 7 | 9 | Fast |
+| Analytics | 8 | 1 | 9 | Fast/Reasoning |
+| Campaigns | 4 | 5 | 9 | Fast |
+| Customers | 4 | 3 | 7 | Fast |
+| Invoices | 3 | 5 | 8 | Fast |
+| Profile | 4 | 3 | 7 | Fast |
+| Navigation | 4 | 1 | 5 | Fast |
+| **Documents** | **5** | **7** | **12** | **Reasoning** |
+| **Total** | **46** | **38** | **84** |
+
+---
+
+## Model Selection Guide: Grok 4.1 Fast vs Reasoning
+
+### When to Use Each Model
+
+| Model | Use Case | Examples |
+|-------|----------|----------|
+| **Grok 4.1 Fast** | Simple queries, CRUD operations, navigation | Product search, cart updates, order status |
+| **Grok 4.1 Fast Reasoning** | Complex analysis, document parsing, multi-step logic | Invoice parsing, price list import, customer insights |
+
+### Model Selection by Tool Category
+
+```typescript
+// lib/ai/providers/xai.ts
+import { createXai } from '@ai-sdk/xai';
+
+export const xai = createXai({
+  apiKey: process.env.XAI_API_KEY,
+});
+
+export const grokModels = {
+  // Fast: Simple operations, low latency, cheap
+  // - Product search, cart operations
+  // - Order status, navigation
+  // - Simple Q&A
+  fast: xai('grok-4.1-fast'),
+
+  // Reasoning: Complex analysis requiring multi-step thinking
+  // - Document parsing (CSV, Excel, PDF)
+  // - Field mapping and schema detection
+  // - Customer insights and churn prediction
+  // - Price list parsing with regional pricing
+  // - Error detection and correction suggestions
+  reasoning: xai('grok-4.1-fast-reasoning'),
+};
+```
+
+### Document Processing: Why Reasoning is Required
+
+Document parsing requires the **Reasoning** model because it involves:
+
+1. **Structure Detection** - Identifying document type from ambiguous content
+2. **Column Mapping** - Mapping arbitrary headers to standard fields
+3. **Error Detection** - Finding invalid data, missing fields, format issues
+4. **Multi-step Validation** - Cross-referencing with product catalog
+5. **Fuzzy Matching** - Suggesting corrections for unrecognized SKUs
+
+```typescript
+// Example: Complex price list with 5 regional pricing columns
+const rawHeaders = ['Item #', 'Desc.', 'Pk Sz', 'East Coast', 'West', 'Central', 'Mountain', 'Pacific'];
+
+// Reasoning model can:
+// 1. Identify 'Item #' → itemNumber
+// 2. Identify 'Desc.' → description
+// 3. Identify 'Pk Sz' → packSize
+// 4. Recognize 'East Coast', 'West', etc. as PRICING columns (not product attributes)
+// 5. Handle edge cases like 'N/A', blanks, currency symbols
+```
+
+### Cost Comparison
+
+| Model | Input Cost | Output Cost | Best For |
+|-------|------------|-------------|----------|
+| Grok 4.1 Fast | $0.15/1M | $0.50/1M | 90% of operations |
+| Grok 4.1 Fast Reasoning | $0.30/1M | $0.50/1M | Document parsing, analytics |
+
+**Recommendation**: Use **Fast** by default, switch to **Reasoning** for:
+- Any document parsing operation
+- Customer insights generation
+- Churn risk analysis
+- Complex report generation
 
 ---
 
@@ -1565,12 +2384,26 @@ Compared to current Gemini costs of ~$75/month, the AI Companion with Grok repre
 
 This AI Companion ecosystem design provides:
 
-1. **72 tools** across 9 domains covering 94% of platform actions
-2. **Seamless integration** with existing Vercel AI SDK migration
-3. **Role-based permissions** (customer vs admin tools)
-4. **Context-aware assistance** that adapts to current page
-5. **Streaming responses** for responsive UX
-6. **Multi-step reasoning** for complex tasks
-7. **Cost-effective** operation using Grok 4.1 Fast
+1. **84 tools** across 10 domains covering 93% of platform actions
+2. **AI-powered document parsing** for CSV, Excel, and PDF (invoices, POs, price lists)
+3. **Intelligent model selection** - Fast for simple ops, Reasoning for complex analysis
+4. **Seamless integration** with existing Vercel AI SDK migration
+5. **Role-based permissions** (customer vs admin tools)
+6. **Context-aware assistance** that adapts to current page
+7. **Streaming responses** for responsive UX
+8. **Multi-step reasoning** for complex tasks (document parsing, analytics)
+9. **Cost-effective** operation using Grok 4.1 Fast/Reasoning
 
-The companion transforms B2B Plus from a traditional e-commerce platform into an **AI-native experience** where users can accomplish nearly any task through natural conversation.
+### Key Document Processing Capabilities
+
+| Document Type | Capabilities |
+|---------------|--------------|
+| **Invoices** | Parse line items, extract totals, validate SKUs, import as historical orders |
+| **Purchase Orders** | Parse SKUs/quantities, validate against catalog, check inventory, create orders |
+| **Price Lists** | Detect regional pricing columns (4-5 tiers), map to pricing tiers, bulk update products |
+
+The companion transforms B2B Plus from a traditional e-commerce platform into an **AI-native experience** where users can:
+- Upload documents and have AI parse them automatically
+- Get intelligent suggestions for unrecognized SKUs
+- Validate data before import with clear error reporting
+- Accomplish nearly any task through natural conversation
