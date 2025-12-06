@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail, createEmailTemplate, addUtmParameters, EMAIL_CONFIG } from '@/lib/sendgrid';
-import { generateJSON } from '@/lib/gemini';
+import { generateJSON } from '@/lib/ai/providers/unified';
 
 export async function POST(request: NextRequest) {
   try {

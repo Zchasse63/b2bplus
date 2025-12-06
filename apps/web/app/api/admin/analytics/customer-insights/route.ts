@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateJSONPro } from '@/lib/gemini'
+import { generateJSONPro } from '@/lib/ai/providers/unified'
 import { checkAdminRole } from '@/lib/middleware/admin'
 
 /**
  * Customer Analytics Insights API
- * Uses Gemini 2.5 Pro for deep customer analysis including:
+ * Uses Grok 4.1 Fast Reasoning for deep customer analysis including:
  * - Multi-dimensional behavioral patterns
  * - Lifetime value calculations
  * - Churn risk prediction

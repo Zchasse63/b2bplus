@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { generateEmbedding, cosineSimilarity as geminiCosineSimilarity } from '@/lib/gemini'
+import { generateEmbedding, cosineSimilarity as geminiCosineSimilarity } from '@/lib/ai/providers/unified'
 
 interface ProductToMap {
   oldSKU: string

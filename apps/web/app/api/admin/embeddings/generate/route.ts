@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { generateEmbedding } from '@/lib/gemini';
+import { generateEmbedding } from '@/lib/ai/providers/unified';
 import { createLogger } from '@/lib/logging/logger';
 
 const logger = createLogger('embeddings-generate');

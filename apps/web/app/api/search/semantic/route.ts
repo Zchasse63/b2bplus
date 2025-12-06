@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateEmbedding } from '@/lib/gemini';
+import { generateEmbedding } from '@/lib/ai/providers/unified';
 
 // POST semantic search
 export async function POST(request: NextRequest) {

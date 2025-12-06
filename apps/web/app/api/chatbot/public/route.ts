@@ -7,7 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateJSON } from '@/lib/gemini';
+import { generateJSON } from '@/lib/ai/providers/unified';
 import { getChatbotPrompt } from '@/lib/ai/chatbot-prompts';
 import { sanitizeAIInput } from '@/lib/ai/input-sanitizer';
 import {
