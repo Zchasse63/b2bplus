@@ -90,7 +90,7 @@ Generate a prediction with:
 
 Return JSON with: predictedDaysFromNow, confidenceScore, recommendedProducts, expectedValue`;
 
-        const prediction = await generateJSON(prompt, {
+        const prediction = await generateJSON<any>(prompt, {
           temperature: 0.3,
           systemPrompt: 'You are a B2B purchase pattern analyst. Predict customer reorder timing and products.'
         });

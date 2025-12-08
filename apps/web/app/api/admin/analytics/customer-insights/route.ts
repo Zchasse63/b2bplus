@@ -314,7 +314,7 @@ Provide:
 
 Format as JSON with keys: observations, risks, recommendations, suggestedProducts`
 
-    const insights = await generateJSONPro(prompt, {
+    const insights = await generateJSONPro<any>(prompt, {
       temperature: 0.3,  // Lower for analytical insights
       systemPrompt: 'You are a B2B food service sales analyst with expertise in customer behavior analysis, lifetime value optimization, and churn prediction. Apply deep analytical reasoning to provide strategic, data-driven insights.'
     })

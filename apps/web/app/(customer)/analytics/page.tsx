@@ -27,6 +27,7 @@ interface SpendingData {
 }
 
 interface CategoryData {
+  [key: string]: string | number;
   name: string;
   value: number;
   color: string;

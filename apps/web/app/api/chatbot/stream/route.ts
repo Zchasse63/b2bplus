@@ -133,7 +133,6 @@ export async function POST(request: Request) {
       system: systemPrompt,
       messages,
       tools,
-      maxSteps: 10, // Allow multiple tool calls per turn
       temperature: useReasoning ? 0.3 : 0.7,
       onFinish: async ({ text, toolCalls, usage }) => {
         // Update conversation with new messages
@@ -175,7 +174,7 @@ export async function POST(request: Request) {
     });
 
     // Return streaming response with conversation ID in headers
-    const response = result.toDataStreamResponse();
+    const response = result.toTextStreamResponse();
 
     // Add conversation ID to response headers
     if (activeConversationId) {

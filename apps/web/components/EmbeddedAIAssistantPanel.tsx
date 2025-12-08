@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button } from "@/components/b2b";
 import { fadeIn, fast } from "@/lib/animations";
 
@@ -71,6 +71,33 @@ const MODE_CONFIG: Record<
     ],
   },
 };
+
+/**
+ * Typing Indicator Component
+ * Uses Design System animation pattern
+ */
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-3 py-2">
+      <span className="text-xs text-b2b-gray-500">AI is thinking</span>
+      <div className="flex gap-1 ml-2">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-b2b-blue-400"
+            animate={{ y: [0, -6, 0] }}
+            transition={{
+              duration: 0.6,
+              repeat: Infinity,
+              delay: i * 0.15,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function EmbeddedAIAssistantPanel({ mode }: EmbeddedAIAssistantPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -147,25 +174,34 @@ export function EmbeddedAIAssistantPanel({ mode }: EmbeddedAIAssistantPanelProps
 
   return (
     <Card className="flex h-full flex-col" padding="lg">
+      {/* Header */}
       <motion.div
-        className="mb-3 flex items-start justify-between gap-2"
+        className="mb-4 pb-4 border-b border-b2b-gray-100"
         variants={fadeIn}
         initial="hidden"
         animate="visible"
         transition={fast}
       >
-        <div>
-          <h2 className="text-lg font-bold text-b2b-dark">{title}</h2>
-          <p className="text-xs text-b2b-gray-500">{subtitle}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-b2b-blue-400 to-b2b-blue-600 flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-b2b-text">{title}</h2>
+            <p className="text-xs text-b2b-gray-500">{subtitle}</p>
+          </div>
         </div>
       </motion.div>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      {/* Quick Prompts */}
+      <div className="mb-4 flex flex-wrap gap-2">
         {quickPrompts.map((q) => (
           <button
             key={q}
             type="button"
-            className="rounded-full bg-b2b-gray-50 px-3 py-1 text-xs text-b2b-gray-700 hover:bg-b2b-gray-100"
+            className="rounded-full bg-b2b-blue-50 px-3 py-1.5 text-xs font-medium text-b2b-blue-600 hover:bg-b2b-blue-100 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-b2b-blue-300"
             onClick={() => sendMessage(q)}
             disabled={loading}
           >
@@ -174,38 +210,75 @@ export function EmbeddedAIAssistantPanel({ mode }: EmbeddedAIAssistantPanelProps
         ))}
       </div>
 
-      <div className="mb-3 flex-1 space-y-2 overflow-y-auto rounded-md border border-b2b-gray-100 bg-b2b-gray-50 p-3 text-sm">
+      {/* Messages Area */}
+      <div className="mb-4 flex-1 space-y-3 overflow-y-auto rounded-xl border border-b2b-gray-100 bg-b2b-gray-50 p-4">
         {messages.length === 0 && (
-          <p className="text-xs text-b2b-gray-500">
-            Start typing below, or tap one of the suggested prompts to get help.
-          </p>
-        )}
-        {messages.map((m, idx) => (
-          <div
-            key={idx}
-            className={
-              m.role === "user"
-                ? "ml-auto max-w-[85%] rounded-lg bg-b2b-blue px-3 py-2 text-xs text-white"
-                : "max-w-[85%] rounded-lg bg-white px-3 py-2 text-xs text-b2b-dark shadow-b2b-sm"
-            }
-          >
-            {m.content}
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <div className="w-12 h-12 rounded-full bg-b2b-blue-50 flex items-center justify-center mb-3">
+              <svg className="w-6 h-6 text-b2b-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <p className="text-sm text-b2b-gray-500 max-w-[200px]">
+              Start a conversation or tap a suggested prompt above
+            </p>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-        {loading && (
-          <p className="text-xs text-b2b-gray-400">Thinking...</p>
         )}
+
+        <AnimatePresence mode="popLayout">
+          {messages.map((m, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className={
+                m.role === "user"
+                  ? "ml-auto max-w-[85%]"
+                  : "max-w-[85%]"
+              }
+            >
+              <div
+                className={
+                  m.role === "user"
+                    ? "rounded-2xl rounded-br-md bg-b2b-blue px-4 py-2.5 text-sm text-white shadow-sm"
+                    : "rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-sm text-b2b-text shadow-b2b-sm"
+                }
+              >
+                {m.content}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        <div ref={messagesEndRef} />
+
+        <AnimatePresence>
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="max-w-[85%]"
+            >
+              <div className="rounded-2xl rounded-bl-md bg-white shadow-b2b-sm">
+                <TypingIndicator />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      <div className="mt-1 flex gap-2">
+      {/* Input Area */}
+      <div className="flex gap-2 pt-2 border-t border-b2b-gray-100">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 rounded-md border border-b2b-gray-300 px-3 py-2 text-xs focus:border-b2b-blue focus:outline-none focus:ring-1 focus:ring-b2b-blue"
+          className="flex-1 rounded-xl border border-b2b-gray-200 bg-white px-4 py-2.5 text-sm focus:border-b2b-blue focus:outline-none focus:ring-2 focus:ring-b2b-blue-100 transition-all duration-150"
           disabled={loading}
         />
         <Button
@@ -213,11 +286,15 @@ export function EmbeddedAIAssistantPanel({ mode }: EmbeddedAIAssistantPanelProps
           size="sm"
           onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
+          className="rounded-xl"
         >
-          Send
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
         </Button>
       </div>
     </Card>
   );
 }
+
 

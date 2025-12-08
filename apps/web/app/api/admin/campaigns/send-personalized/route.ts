@@ -104,7 +104,7 @@ Return ONLY the personalized email in this exact JSON format:
 `;
 
           try {
-            const aiContent = await generateJSON(aiPrompt, {
+            const aiContent = await generateJSON<any>(aiPrompt, {
               temperature: 0.7,
               systemPrompt: 'You are a B2B sales expert specializing in personalized email campaigns.'
             });

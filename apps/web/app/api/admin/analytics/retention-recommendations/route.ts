@@ -66,7 +66,7 @@ Customer Profile:
 
 Provide 5-7 specific, actionable retention recommendations with priority levels (high/medium/low) and expected impact.`;
 
-    const recommendations = await generateJSONPro(prompt, {
+    const recommendations = await generateJSONPro<any>(prompt, {
       temperature: 0.4,
       systemPrompt: 'You are a customer retention strategist. Provide specific, actionable recommendations to retain high-value customers.'
     });

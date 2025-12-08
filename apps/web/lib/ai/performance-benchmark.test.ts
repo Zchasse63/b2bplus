@@ -9,6 +9,13 @@
  */
 
 import { aiCache, CACHE_PREFIXES, getCachedOrGenerate } from '@/lib/cache/ai-cache';
+import { generateText } from '@/lib/ai/providers/unified';
+
+// Mock unified provider
+jest.mock('@/lib/ai/providers/unified', () => ({
+  generateText: jest.fn(),
+}));
+
 import {
   generateTextsInParallel,
   generateCustomerInsightsParallel,
@@ -67,7 +74,7 @@ describe('Task 2.5: Performance Benchmarking', () => {
 
     it('cache hit rate improves performance', () => {
       const params = { query: 'test' };
-      
+
       // Set cache
       aiCache.set(CACHE_PREFIXES.CHATBOT_RESPONSE, params, 'cached response');
 
@@ -109,10 +116,10 @@ describe('Task 2.5: Performance Benchmarking', () => {
 
       expect(seqResults.length).toBe(3);
       expect(parResults.length).toBe(3);
-      
+
       // Parallel should be significantly faster
       expect(timePar).toBeLessThan(timeSeq);
-      
+
       // Calculate improvement
       const improvement = ((timeSeq - timePar) / timeSeq) * 100;
       expect(improvement).toBeGreaterThan(50); // >50% improvement
@@ -129,7 +136,7 @@ describe('Task 2.5: Performance Benchmarking', () => {
       // This would normally make 4 AI calls in parallel
       // We're testing the structure, not actual AI calls
       const start = Date.now();
-      
+
       // Mock the parallel execution
       const mockResults = await Promise.all([
         Promise.resolve('Purchase patterns'),
@@ -171,7 +178,7 @@ describe('Task 2.5: Performance Benchmarking', () => {
 
       // Summary should use significantly fewer tokens
       expect(summaryTokens).toBeLessThan(fullTokens);
-      
+
       const reduction = ((fullTokens - summaryTokens) / fullTokens) * 100;
       expect(reduction).toBeGreaterThan(70); // >70% token reduction
     });
@@ -195,7 +202,7 @@ describe('Task 2.5: Performance Benchmarking', () => {
       const summaryTokens = estimateTokens(summary);
 
       expect(summaryTokens).toBeLessThan(fullTokens);
-      
+
       const reduction = ((fullTokens - summaryTokens) / fullTokens) * 100;
       expect(reduction).toBeGreaterThan(80); // >80% token reduction
     });

@@ -120,7 +120,7 @@ export async function csrfProtection(
 /**
  * Middleware wrapper for API routes with CSRF protection
  */
-export async function withCSRFProtection(
+export function withCSRFProtection(
   handler: (request: NextRequest) => Promise<NextResponse>
 ) {
   return async (request: NextRequest) => {

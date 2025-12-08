@@ -68,7 +68,7 @@ Recent Orders: ${orders?.length || 0} orders in last 90 days
 
 Identify 3-5 key behavioral patterns and provide insights.`;
 
-    const insights = await generateJSONPro(prompt, {
+    const insights = await generateJSONPro<any>(prompt, {
       temperature: 0.3,
       systemPrompt: 'You are a customer behavior analyst. Identify key patterns in purchase behavior.'
     });

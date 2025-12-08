@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Get raw body for signature verification
     const rawBody = await request.text();
 
-    if (!verifySendGridSignature(rawBody, signature, timestamp, signingKey)) {
+    if (!verifySendGridSignature(rawBody, signature ?? undefined, timestamp ?? undefined, signingKey)) {
       logger.warn('Invalid SendGrid webhook signature - rejecting request');
       return NextResponse.json(
         { error: 'Invalid signature' },

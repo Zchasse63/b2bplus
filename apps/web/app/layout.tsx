@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { SkipLink } from "@/components/SkipLink";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { validateStartup } from "@/lib/startup";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -26,13 +27,16 @@ export default function RootLayout({
         <AuthProvider>
           <SkipLink />
           <Header />
-          <main id="main-content" className="flex-1">
+          {/* Add padding-bottom on mobile for bottom nav */}
+          <main id="main-content" className="flex-1 pb-20 md:pb-0">
             {children}
           </main>
           <Footer />
           <FloatingCartButton />
+          <MobileBottomNav />
         </AuthProvider>
       </body>
     </html>
   );
 }
+

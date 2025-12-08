@@ -35,10 +35,10 @@ export const grokModels = {
    * - Cart operations
    * - Order status
    * - Navigation
-   * - Simple Q&A
+   * - Search and quick answers
    * - Real-time operations
    */
-  fast: xai('grok-4.1-fast'),
+  fast: xai('grok-4-1-fast'),
 
   /**
    * Grok 4.1 Fast Reasoning - Complex analysis requiring multi-step thinking
@@ -53,7 +53,7 @@ export const grokModels = {
    * - Invoice processing
    * - Sales forecasting
    */
-  reasoning: xai('grok-4.1-fast-reasoning'),
+  reasoning: xai('grok-4-1-fast-reasoning'),
 };
 
 /**

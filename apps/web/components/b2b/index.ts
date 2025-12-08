@@ -71,3 +71,6 @@ export type { DashboardShellProps } from './DashboardShell';
 
 export { FormField, FieldGroup } from './FormField';
 export type { FormFieldProps, FieldGroupProps } from './FormField';
+
+export { Skeleton, SkeletonText, SkeletonCard } from './Skeleton';
+export type { SkeletonProps, SkeletonTextProps, SkeletonCardProps } from './Skeleton';

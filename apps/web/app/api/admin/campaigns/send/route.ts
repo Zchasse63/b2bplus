@@ -55,7 +55,7 @@ Return JSON with this exact structure:
 }
 `;
 
-    const result = await generateJSON(aiPrompt, {
+    const result = await generateJSON<any>(aiPrompt, {
       temperature: 0.7,
       systemPrompt: 'You are a B2B email personalization expert. Generate engaging, professional email content.'
     });

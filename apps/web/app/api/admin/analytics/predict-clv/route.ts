@@ -68,7 +68,7 @@ Historical Data:
 
 Provide a CLV prediction for the next 3 years with confidence level and key drivers.`;
 
-    const prediction = await generateJSONPro(prompt, {
+    const prediction = await generateJSONPro<any>(prompt, {
       temperature: 0.3,
       systemPrompt: 'You are a customer value analyst. Predict lifetime value based on historical patterns.'
     });

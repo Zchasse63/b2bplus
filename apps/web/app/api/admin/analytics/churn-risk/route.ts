@@ -67,7 +67,7 @@ Customer Metrics:
 
 Provide a churn risk score (0-100) and key risk factors.`;
 
-    const assessment = await generateJSONPro(prompt, {
+    const assessment = await generateJSONPro<any>(prompt, {
       temperature: 0.3,
       systemPrompt: 'You are a customer retention analyst. Assess churn risk based on behavioral indicators.'
     });

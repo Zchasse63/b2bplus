@@ -8,25 +8,34 @@
  * - Data isolation
  */
 
-// Mock Supabase
+/**
+ * @jest-environment node
+ */
+
+// Define mock client
 const mockSupabaseClient = {
   auth: {
-    getUser: jest.fn(),
+    getUser: jest.fn().mockResolvedValue({
+      data: { user: { id: 'test-user-id' } },
+      error: null,
+    }),
   },
   from: jest.fn(),
 };
 
+// Mock authenticated user
 jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() => Promise.resolve(mockSupabaseClient)),
+  createClient: jest.fn(() => mockSupabaseClient),
 }));
 
-// Mock Gemini AI
-jest.mock('@/lib/gemini', () => ({
-  generateJSON: jest.fn(),
-  generateText: jest.fn(),
+// Mock unified AI provider
+jest.mock('@/lib/ai/providers/unified', () => ({
+  generateText: jest.fn().mockResolvedValue('Mocked AI response'),
+  generateJSON: jest.fn().mockResolvedValue({}),
+  streamTextResponse: jest.fn().mockResolvedValue({}),
 }));
 
-import { generateJSON } from '@/lib/gemini';
+import { generateJSON } from '@/lib/ai/providers/unified';
 import { getCustomerContext } from '@/lib/ai/customer-context';
 import { executeChatbotAction } from '@/lib/ai/chatbot-actions';
 import { validateAIRequest } from '@/lib/middleware/ai-security';

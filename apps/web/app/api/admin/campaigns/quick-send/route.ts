@@ -338,7 +338,7 @@ Return JSON with:
 }
 `;
 
-  const result = await generateJSON(prompt);
+  const result = await generateJSON<any>(prompt);
   
   return {
     subject: result.subject,

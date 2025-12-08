@@ -86,21 +86,11 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3">
-                    <Button asChild variant="primary" size="sm">
-                      <Link href="/products">Browse products</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/orders">View orders</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/profile">Account settings</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/tools/container-calculator">Container calculator</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href="/chat">Open full AI assistant</Link>
-                    </Button>
+                    <Link href="/products" className="inline-flex items-center justify-center rounded-lg font-semibold h-8 px-3.5 text-sm bg-b2b-blue text-white hover:bg-b2b-blue-600 shadow-b2b-sm">Browse products</Link>
+                    <Link href="/orders" className="inline-flex items-center justify-center rounded-lg font-semibold h-8 px-3.5 text-sm border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50">View orders</Link>
+                    <Link href="/profile" className="inline-flex items-center justify-center rounded-lg font-semibold h-8 px-3.5 text-sm border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50">Account settings</Link>
+                    <Link href="/tools/container-calculator" className="inline-flex items-center justify-center rounded-lg font-semibold h-8 px-3.5 text-sm border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50">Container calculator</Link>
+                    <Link href="/chat" className="inline-flex items-center justify-center rounded-lg font-semibold h-8 px-3.5 text-sm border-2 border-b2b-blue text-b2b-blue hover:bg-b2b-blue-50">Open full AI assistant</Link>
                   </div>
                 </div>
               </Card>

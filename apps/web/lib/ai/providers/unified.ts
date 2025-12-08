@@ -1,25 +1,16 @@
 /**
- * Unified AI Provider with Feature Flag
+ * Unified AI Provider
  *
- * This module provides drop-in replacements for existing Gemini functions
- * that use Vercel AI SDK + Grok internally when USE_GROK is enabled.
- *
- * Migration strategy:
- * 1. Set USE_GROK=false to use existing Gemini (fallback)
- * 2. Set USE_GROK=true to use new Grok implementation
- * 3. Once migrated, remove feature flag and Gemini code
+ * This module provides AI functions using Vercel AI SDK + Grok (xAI).
+ * All Gemini dependencies have been removed.
  */
 
 import { generateText as aiGenerateText, generateObject, streamText } from 'ai';
 import { z } from 'zod';
 import { grokModels, defaultModel, defaultSettings } from './xai';
 
-// Feature flag to control rollout
-const USE_GROK = process.env.USE_GROK !== 'false'; // Default to true now
-
 /**
- * Drop-in replacement for existing generateText
- * Falls back to Gemini if USE_GROK is false
+ * Generate text using Grok
  */
 export async function generateText(
   prompt: string,
@@ -29,12 +20,6 @@ export async function generateText(
     systemPrompt?: string;
   }
 ): Promise<string> {
-  if (!USE_GROK) {
-    // Use existing Gemini implementation
-    const { generateText: geminiGenerateText } = await import('../../gemini');
-    return geminiGenerateText(prompt, options);
-  }
-
   const result = await aiGenerateText({
     model: defaultModel,
     prompt: options?.systemPrompt
@@ -48,7 +33,7 @@ export async function generateText(
 }
 
 /**
- * Drop-in replacement for existing generateJSON
+ * Generate structured JSON output using Grok
  * Uses Zod schema for type-safe structured output
  */
 export async function generateJSON<T>(
@@ -60,12 +45,6 @@ export async function generateJSON<T>(
     schema?: z.ZodType<T>;
   }
 ): Promise<T> {
-  if (!USE_GROK) {
-    // Use existing Gemini implementation
-    const { generateJSON: geminiGenerateJSON } = await import('../../gemini');
-    return geminiGenerateJSON<T>(prompt, options);
-  }
-
   // If schema provided, use generateObject for type safety
   if (options?.schema) {
     const result = await generateObject({
@@ -90,7 +69,7 @@ export async function generateJSON<T>(
 }
 
 /**
- * Drop-in replacement for generateTextPro (complex reasoning)
+ * Generate text with reasoning model (complex tasks)
  */
 export async function generateTextPro(
   prompt: string,
@@ -100,11 +79,6 @@ export async function generateTextPro(
     systemPrompt?: string;
   }
 ): Promise<string> {
-  if (!USE_GROK) {
-    const { generateTextPro: geminiGenerateTextPro } = await import('../../gemini');
-    return geminiGenerateTextPro(prompt, options);
-  }
-
   const result = await aiGenerateText({
     model: grokModels.reasoning, // Use reasoning model
     prompt: options?.systemPrompt
@@ -118,7 +92,7 @@ export async function generateTextPro(
 }
 
 /**
- * Drop-in replacement for generateJSONPro
+ * Generate structured JSON with reasoning model
  */
 export async function generateJSONPro<T>(
   prompt: string,
@@ -129,11 +103,6 @@ export async function generateJSONPro<T>(
     schema?: z.ZodType<T>;
   }
 ): Promise<T> {
-  if (!USE_GROK) {
-    const { generateJSONPro: geminiGenerateJSONPro } = await import('../../gemini');
-    return geminiGenerateJSONPro<T>(prompt, options);
-  }
-
   if (options?.schema) {
     const result = await generateObject({
       model: grokModels.reasoning,
@@ -205,37 +174,48 @@ export async function generateStructuredObject<T>(
   return result.object;
 }
 
-// Re-export for embeddings (still use Gemini for now as xAI doesn't have embeddings)
-export { generateEmbedding, generateEmbeddings, cosineSimilarity } from '../../gemini';
-
 /**
- * Analyze image and return JSON (falls back to Gemini for vision)
+ * Placeholder for embeddings (not available in xAI yet)
+ * TODO: Implement when xAI supports embeddings or use alternative
  */
-export async function analyzeImageJSON<T>(
-  imageUrl: string,
-  prompt: string,
-  options?: {
-    temperature?: number;
-    systemPrompt?: string;
-  }
-): Promise<T> {
-  // xAI doesn't have vision yet, use Gemini
-  const { analyzeImageJSON: geminiAnalyzeImageJSON } = await import('../../gemini');
-  return geminiAnalyzeImageJSON<T>(imageUrl, prompt, options);
+export async function generateEmbedding(_text: string): Promise<number[]> {
+  throw new Error('Embeddings not yet supported. Consider using Supabase pgvector or alternative embedding service.');
+}
+
+export async function generateEmbeddings(_texts: string[]): Promise<number[][]> {
+  throw new Error('Embeddings not yet supported. Consider using Supabase pgvector or alternative embedding service.');
+}
+
+export function cosineSimilarity(_a: number[], _b: number[]): number {
+  throw new Error('Embeddings not yet supported. Consider using Supabase pgvector or alternative embedding service.');
 }
 
 /**
- * Process document and return JSON (falls back to Gemini for document processing)
+ * Placeholder for image analysis (not available in xAI yet)
+ * TODO: Implement when xAI supports vision
  */
-export async function processDocumentJSON<T>(
-  document: string | Buffer,
-  prompt: string,
-  options?: {
+export async function analyzeImageJSON<T>(
+  _imageUrl: string,
+  _prompt: string,
+  _options?: {
     temperature?: number;
     systemPrompt?: string;
   }
 ): Promise<T> {
-  // Use Gemini for document processing (can switch to Grok when supported)
-  const { processDocumentJSON: geminiProcessDocumentJSON } = await import('../../gemini');
-  return geminiProcessDocumentJSON<T>(document, prompt, options);
+  throw new Error('Image analysis not yet supported in xAI. Consider using alternative vision service.');
+}
+
+/**
+ * Placeholder for document processing (not available in xAI yet)
+ * TODO: Implement when xAI supports document processing
+ */
+export async function processDocumentJSON<T>(
+  _document: string | Buffer,
+  _prompt: string,
+  _options?: {
+    temperature?: number;
+    systemPrompt?: string;
+  }
+): Promise<T> {
+  throw new Error('Document processing not yet supported in xAI. Consider using alternative document processing service.');
 }

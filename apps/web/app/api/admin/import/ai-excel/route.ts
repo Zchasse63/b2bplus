@@ -98,7 +98,7 @@ Return a JSON array of mappings with this structure:
 
 Only map columns where you have at least 50% confidence. Return null for targetField if no good match exists.`;
 
-    const aiResponse = await generateJSON(prompt, {
+    const aiResponse = await generateJSON<any>(prompt, {
       temperature: 0.3,
       systemPrompt: 'You are a data mapping expert for B2B e-commerce platforms. Analyze column names and sample data to suggest accurate field mappings.'
     });

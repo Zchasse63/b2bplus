@@ -2,13 +2,18 @@
  * AI Companion API Endpoint
  *
  * Streaming chat endpoint with tool calling for the AI Companion.
- * Uses Grok 4.1 Fast for simple operations and Grok 4.1 Fast Reasoning for complex tasks.
+ * Uses intelligent model routing to automatically select between
+ * Grok 4.1 Fast and Grok 4.1 Fast Reasoning based on task complexity.
  */
 
 import { streamText, CoreMessage } from 'ai';
 import { createClient } from '@/lib/supabase/server';
-import { grokModels, defaultModel } from '@/lib/ai/providers/xai';
-import { getToolsForRole, allTools } from '@/lib/ai/tools';
+import { grokModels } from '@/lib/ai/providers/xai';
+import { getToolsForRole } from '@/lib/ai/tools';
+import {
+  getModelForRequest,
+  detectToolCategory,
+} from '@/lib/ai/model-router';
 
 // Maximum duration for streaming (5 minutes)
 export const maxDuration = 300;
@@ -58,13 +63,13 @@ export async function POST(request: Request) {
       role = profile?.role as 'customer' | 'admin' | null;
     }
 
-    const { messages, context, useReasoning = false } = await request.json() as {
+    const { messages, context, useReasoning } = await request.json() as {
       messages: CoreMessage[];
       context?: {
         currentPath?: string;
         pageData?: Record<string, any>;
       };
-      useReasoning?: boolean;
+      useReasoning?: boolean; // Optional override flag
     };
 
     // Add context to the system message if provided
@@ -81,22 +86,53 @@ export async function POST(request: Request) {
       }
     }
 
-    // Select model based on task complexity
-    const model = useReasoning ? grokModels.reasoning : defaultModel;
+    // =========================================================================
+    // INTELLIGENT MODEL ROUTING
+    // =========================================================================
+
+    // Stage 1: Analyze prompt complexity for initial model selection
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    const promptContent = typeof lastUserMessage?.content === 'string'
+      ? lastUserMessage.content
+      : '';
+
+    const modelSelection = getModelForRequest(messages, {
+      role,
+      toolCategory: detectToolCategory(promptContent),
+    });
+
+    // Allow manual override if explicitly set
+    const finalUseReasoning = useReasoning !== undefined
+      ? useReasoning
+      : modelSelection.useReasoning;
+
+    const model = finalUseReasoning ? grokModels.reasoning : grokModels.fast;
+    const modelId = finalUseReasoning ? 'grok-4-1-fast-reasoning' : 'grok-4-1-fast';
+
+    console.log('[AI Companion] Model routing:', {
+      modelId,
+      score: modelSelection.score,
+      reasons: modelSelection.reasons,
+      manualOverride: useReasoning !== undefined,
+    });
 
     // Get tools available for user role
     const tools = getToolsForRole(role);
 
-    // Stream the response
+    // Stage 2: prepareStep for dynamic escalation would go here
+    // Currently commented out due to TypeScript compatibility with AI SDK version
+    // TODO: Enable when using Agent class or upgrading SDK
+
+    // Stream the response with intelligent routing
     const result = streamText({
       model,
       system: systemPrompt,
       messages,
       tools,
-      maxSteps: 10, // Allow multiple tool calls per turn
-      temperature: useReasoning ? 0.3 : 0.7,
-      onFinish: async ({ text, toolCalls, toolResults, usage }) => {
-        // Log conversation for analytics (optional)
+      maxSteps: 10 as any, // Allow multiple tool calls per turn (cast for TS compat)
+      temperature: finalUseReasoning ? 0.3 : 0.7,
+      onFinish: async ({ text, toolCalls, usage }: { text?: string; toolCalls?: any[]; usage?: any }) => {
+        // Log conversation for analytics with routing info
         if (user) {
           try {
             await supabase.from('ai_conversations').insert({
@@ -104,17 +140,19 @@ export async function POST(request: Request) {
               messages: messages.length,
               tool_calls: toolCalls?.length || 0,
               tokens_used: usage?.totalTokens || 0,
-              model: useReasoning ? 'grok-4.1-fast-reasoning' : 'grok-4.1-fast',
+              model: modelId,
+              routing_score: modelSelection.score,
+              routing_reasons: modelSelection.reasons,
             });
           } catch (err) {
             console.error('Failed to log AI conversation:', err);
           }
         }
       },
-    });
+    } as any);
 
     // Return streaming response
-    return result.toDataStreamResponse();
+    return (result as any).toDataStreamResponse();
   } catch (error) {
     console.error('AI Companion error:', error);
     return new Response(
@@ -127,7 +165,8 @@ export async function POST(request: Request) {
 // Health check endpoint
 export async function GET() {
   return new Response(
-    JSON.stringify({ status: 'ok', model: 'grok-4.1-fast' }),
+    JSON.stringify({ status: 'ok', model: 'grok-4-1-fast', routing: 'intelligent' }),
     { headers: { 'Content-Type': 'application/json' } }
   );
 }
+

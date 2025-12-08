@@ -11,7 +11,7 @@ import { Input } from '@/components/b2b';
 import { Modal } from '@/components/b2b';
 import { FiUser, FiMail, FiPhone, FiBriefcase, FiSave, FiCheckCircle } from 'react-icons/fi';
 import { fadeIn, fast } from '@/lib/animations';
-	import CustomerDashboardLayout from '@/components/CustomerDashboardLayout';
+import CustomerDashboardLayout from '@/components/CustomerDashboardLayout';
 
 interface Profile {
   id: string;
@@ -247,6 +247,7 @@ export default function ProfilePage() {
           )}
         </div>
 
+        </div>
         {/* Success Modal */}
         <Modal
           isOpen={successModal}

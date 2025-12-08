@@ -1,6 +1,5 @@
 'use client';
 
-import { testUtil } from '@b2b-plus/shared';
 import { motion } from 'framer-motion';
 import { Card, Button, Badge } from '@/components/b2b';
 import Link from 'next/link';
@@ -245,7 +244,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-2">
               <FiCheckCircle className="h-6 w-6 text-b2b-green" />
               <p className="text-lg font-semibold text-b2b-green">
-                {testUtil()}
+                Operational
               </p>
             </div>
           </div>

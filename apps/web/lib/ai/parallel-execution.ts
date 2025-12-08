@@ -7,7 +7,7 @@
  * - Reduce total execution time by running independent operations concurrently
  */
 
-import { generateTextPro, generateText, generateJSON } from '@/lib/gemini';
+import { generateTextPro, generateText, generateJSON } from '@/lib/ai/providers/unified';
 
 /**
  * Execute multiple AI text generation calls in parallel
@@ -312,7 +312,7 @@ export async function executeWithRetry<T>(
       return await fn();
     } catch (error: any) {
       lastError = error;
-      
+
       if (attempt < maxRetries - 1) {
         // Exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
