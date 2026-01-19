@@ -14,6 +14,12 @@ const customJestConfig = {
     '/node_modules/',
     '/.next/',
     '/e2e/',
+    '/__tests__/fixtures/',
+    '/__tests__/integration/helpers/',
+    '-live.test.ts', // Exclude live tests that require real API connections
+  ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@upstash|uncrypto)/)',
   ],
   collectCoverageFrom: [
     'lib/**/*.{js,jsx,ts,tsx}',

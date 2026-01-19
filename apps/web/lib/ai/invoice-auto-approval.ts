@@ -8,7 +8,19 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { MatchingResult } from './invoice-po-matching';
+
+interface InvoiceDiscrepancy {
+  field: string;
+  expected: string | number;
+  actual: string | number;
+  severity: 'low' | 'medium' | 'high';
+}
+
+interface MatchingResult {
+  matched: boolean;
+  confidence: number;
+  discrepancies: InvoiceDiscrepancy[];
+}
 
 /**
  * Auto-approval rule from database

@@ -1,6 +1,6 @@
 /**
  * Quick Send API
- * 
+ *
  * Voice-triggered email automation for individual leads
  * Example: "Email Chris at ABC Supply about new pricing"
  */
@@ -9,15 +9,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail, createEmailTemplate, addUtmParameters, EMAIL_CONFIG } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/ai/providers/unified';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const body = await request.json();
@@ -39,7 +45,7 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (error || !data) {
-        return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+        throw new NotFoundError('Lead', leadId);
       }
       
       lead = data;
@@ -49,9 +55,7 @@ export async function POST(request: NextRequest) {
       const parsed = parseEmailCommand(message);
       
       if (!parsed.companyName && !parsed.contactName) {
-        return NextResponse.json({ 
-          error: 'Could not parse lead information from message. Please provide company or contact name.' 
-        }, { status: 400 });
+        throw new ValidationError('Could not parse lead information from message', { message: ['Please provide company or contact name'] });
       }
       
       // Search for lead
@@ -72,25 +76,19 @@ export async function POST(request: NextRequest) {
       }
       
       const { data, error } = await query.limit(1).single();
-      
+
       if (error || !data) {
-        return NextResponse.json({ 
-          error: `Lead not found. Searched for: ${parsed.companyName || parsed.contactName}` 
-        }, { status: 404 });
+        throw new NotFoundError('Lead', parsed.companyName || parsed.contactName);
       }
-      
+
       lead = data;
     } else {
-      return NextResponse.json({ 
-        error: 'Please provide either leadId or message' 
-      }, { status: 400 });
+      throw new ValidationError('Please provide either leadId or message', { leadId: ['leadId or message is required'], message: ['leadId or message is required'] });
     }
 
     // Validate lead has email
     if (!lead.email) {
-      return NextResponse.json({ 
-        error: `Lead ${lead.company_name} does not have an email address` 
-      }, { status: 400 });
+      throw new ValidationError(`Lead ${lead.company_name} does not have an email address`, { email: ['Email address is required'] });
     }
 
     // Generate personalized email with AI first
@@ -244,12 +242,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Quick send error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to send email', 
-      details: error.message 
-    }, { status: 500 });
+  } catch (error) {
+    return handleError(error);
   }
 }
 

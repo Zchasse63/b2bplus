@@ -1,42 +1,37 @@
 /**
  * Public Chatbot Lead Capture
- * 
+ *
  * POST /api/chatbot/lead-capture
  * Capture lead information from public chatbot conversations
  */
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { z } from 'zod';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
-interface LeadCaptureRequest {
-  conversationId: string;
-  name: string;
-  email: string;
-  company?: string;
-  phone?: string;
-  message?: string;
-}
+const LeadCaptureSchema = z.object({
+  conversationId: z.string().uuid('Invalid conversation ID'),
+  name: z.string().min(1).max(255),
+  email: z.string().email('Invalid email format'),
+  company: z.string().max(255).optional(),
+  phone: z.string().max(20).optional(),
+  message: z.string().max(1000).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LeadCaptureRequest = await request.json();
-    const { conversationId, name, email, company, phone, message } = body;
+    // Rate limiting for public endpoint
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'public');
+    if (!allowed) return rateLimitResponse!;
 
-    // Validate required fields
-    if (!conversationId || !name || !email) {
-      return NextResponse.json(
-        { error: 'Conversation ID, name, and email are required' },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, LeadCaptureSchema);
+    if (!validation.valid) return validation.response!;
 
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
-    }
+    const { conversationId, name, email, company, phone, message } = validation.data!;
 
     const supabase = await createClient();
 
@@ -65,10 +60,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (updateError || !updated) {
-        return NextResponse.json(
-          { error: 'Failed to update lead' },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed('leads', 'update');
       }
 
       leadId = updated.id;
@@ -89,10 +81,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError || !newLead) {
-        return NextResponse.json(
-          { error: 'Failed to create lead' },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed('leads', 'insert');
       }
 
       leadId = newLead.id;
@@ -144,12 +133,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Lead capture error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
@@ -159,14 +144,15 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting for public endpoint
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'public');
+    if (!allowed) return rateLimitResponse!;
+
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+    if (!email || !z.string().email().safeParse(email).success) {
+      throw new ValidationError('Valid email is required');
     }
 
     const supabase = await createClient();
@@ -195,12 +181,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Lead lookup error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

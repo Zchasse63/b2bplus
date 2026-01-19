@@ -1,27 +1,27 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
 
     const body = await request.json();
     const { productId, quantity = 1, customerId } = body;
 
     if (!productId) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID is required');
     }
 
     // Use provided customerId or current user
@@ -36,11 +36,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error getting customer price:', error);
-      return NextResponse.json(
-        { error: 'Failed to calculate price' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('pricing', 'get_customer_price');
     }
 
     // Get product details for context
@@ -97,25 +93,22 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in customer-price API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 // GET endpoint to get price for a single product
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
@@ -123,10 +116,7 @@ export async function GET(request: NextRequest) {
     const quantity = parseInt(searchParams.get('quantity') || '1');
 
     if (!productId) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID is required');
     }
 
     const { data, error } = await supabase.rpc('get_customer_price', {
@@ -137,11 +127,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error getting customer price:', error);
-      return NextResponse.json(
-        { error: 'Failed to calculate price' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('pricing', 'get_customer_price');
     }
 
     return NextResponse.json({
@@ -151,10 +137,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in customer-price GET API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

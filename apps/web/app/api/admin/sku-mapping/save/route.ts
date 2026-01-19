@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler'
 
 interface SKUMappingToSave {
   oldSKU: string
@@ -8,7 +10,7 @@ interface SKUMappingToSave {
   currentSKU: string
   confidenceScore: number
   mappingMethod: string
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -17,12 +19,16 @@ interface SKUMappingToSave {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
 
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Verify admin role
@@ -33,7 +39,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw new ForbiddenError('Admin access required')
     }
 
     const body = await request.json()
@@ -43,10 +49,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!mappings || !Array.isArray(mappings) || mappings.length === 0) {
-      return NextResponse.json(
-        { error: 'mappings array is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('mappings array is required', {
+        mappings: ['At least one mapping is required'],
+      })
     }
 
     // Prepare data for insertion
@@ -73,7 +78,7 @@ export async function POST(request: NextRequest) {
       .select()
 
     if (error) {
-      throw new Error(`Failed to save mappings: ${error.message}`)
+      throw DatabaseError.queryFailed('sku_mappings', 'save')
     }
 
     return NextResponse.json({
@@ -82,12 +87,8 @@ export async function POST(request: NextRequest) {
       message: `Successfully saved ${data?.length || 0} SKU mappings`
     })
 
-  } catch (error: any) {
-    console.error('Save SKU mapping error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to save SKU mappings' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -96,12 +97,16 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Verify admin role
@@ -112,20 +117,19 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw new ForbiddenError('Admin access required')
     }
 
     const body = await request.json()
     const { mappingId, verified, currentProductId } = body
 
     if (!mappingId) {
-      return NextResponse.json(
-        { error: 'mappingId is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('mappingId is required', {
+        mappingId: ['Mapping ID is required'],
+      })
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       verified,
       verified_by: verified ? user.id : null,
       verified_at: verified ? new Date().toISOString() : null
@@ -134,14 +138,14 @@ export async function PATCH(request: NextRequest) {
     // Allow updating the mapped product
     if (currentProductId) {
       updateData.current_product_id = currentProductId
-      
+
       // Fetch the new product's SKU
       const { data: product } = await supabase
         .from('products')
         .select('sku')
         .eq('id', currentProductId)
         .single()
-      
+
       if (product) {
         updateData.current_sku = product.sku
       }
@@ -155,7 +159,7 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
-      throw new Error(`Failed to update mapping: ${error.message}`)
+      throw DatabaseError.queryFailed('sku_mappings', 'update')
     }
 
     return NextResponse.json({
@@ -163,12 +167,8 @@ export async function PATCH(request: NextRequest) {
       mapping: data
     })
 
-  } catch (error: any) {
-    console.error('Update SKU mapping error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to update SKU mapping' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -177,12 +177,16 @@ export async function PATCH(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
 
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Verify admin role
@@ -193,7 +197,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw new ForbiddenError('Admin access required')
     }
 
     const { searchParams } = new URL(request.url)
@@ -216,7 +220,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query
 
     if (error) {
-      throw new Error(`Failed to fetch mappings: ${error.message}`)
+      throw DatabaseError.queryFailed('sku_mappings', 'fetch')
     }
 
     return NextResponse.json({
@@ -224,11 +228,7 @@ export async function GET(request: NextRequest) {
       mappings: data
     })
 
-  } catch (error: any) {
-    console.error('Get SKU mappings error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch SKU mappings' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

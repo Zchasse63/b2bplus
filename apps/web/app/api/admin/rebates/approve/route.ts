@@ -1,40 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { RebateApproveSchema } from '@/lib/validation/schemas';
+import { handleError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
-    const { rebateId, action, paymentMethod, paymentReference, notes } = await request.json();
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
 
-    if (!rebateId || !action) {
-      return NextResponse.json(
-        { error: 'Rebate ID and action are required' },
-        { status: 400 }
-      );
-    }
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
+    // Validate request body
+    const validation = await validateRequestBody(request, RebateApproveSchema);
+    if (!validation.valid) return validation.response!;
+
+    const { rebateId, approved, notes } = validation.data!;
+    const action = approved ? 'approve' : 'cancel';
 
     const supabase = await createClient();
 
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const updateData: any = {
-      approved_by: user.id,
+    const updateData: Record<string, unknown> = {
+      approved_by: user!.id,
       approved_at: new Date().toISOString(),
     };
 
     if (action === 'approve') {
       updateData.status = 'approved';
-    } else if (action === 'pay') {
-      updateData.status = 'paid';
-      updateData.paid_at = new Date().toISOString();
-      if (paymentMethod) updateData.payment_method = paymentMethod;
-      if (paymentReference) updateData.payment_reference = paymentReference;
     } else if (action === 'cancel') {
       updateData.status = 'cancelled';
     }
@@ -51,11 +48,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating rebate:', error);
-      return NextResponse.json(
-        { error: 'Failed to update rebate' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('rebates', 'update');
     }
 
     return NextResponse.json({
@@ -65,10 +58,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in rebate approval:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

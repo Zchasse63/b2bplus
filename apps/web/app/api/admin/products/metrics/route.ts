@@ -1,8 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, DatabaseError } from '@/lib/middleware/error-handler';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
@@ -11,7 +19,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Unauthorized");
     }
 
     // Check admin role
@@ -22,7 +30,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw new ForbiddenError("Admin access required");
     }
 
     // Get query parameters
@@ -36,11 +44,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (error) {
-        console.error("Error fetching product metrics:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch metrics" },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed("product_metrics", "fetch");
       }
 
       return NextResponse.json({ metrics: data });
@@ -52,11 +56,7 @@ export async function GET(request: NextRequest) {
       .select("id, name, sku");
 
     if (prodError) {
-      console.error("Error fetching products:", prodError);
-      return NextResponse.json(
-        { error: "Failed to fetch products" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed("products", "fetch");
     }
 
     // Get metrics for each product in parallel
@@ -102,12 +102,7 @@ export async function GET(request: NextRequest) {
       metrics: metricsData,
       stats,
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

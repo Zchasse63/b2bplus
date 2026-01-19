@@ -1,14 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 // GET all pricing tiers
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     // Check if user is admin
@@ -19,7 +25,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const { data: tiers, error } = await supabase
@@ -28,26 +34,28 @@ export async function GET(request: NextRequest) {
       .order('priority', { ascending: false });
 
     if (error) {
-      console.error('Error fetching pricing tiers:', error);
-      return NextResponse.json({ error: 'Failed to fetch tiers' }, { status: 500 });
+      throw DatabaseError.queryFailed('pricing_tiers', 'select');
     }
 
     return NextResponse.json({ success: true, tiers });
 
   } catch (error) {
-    console.error('Error in pricing tiers API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // POST create new pricing tier
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -57,17 +65,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const body = await request.json();
     const { name, description, discountPercentage, priority, isActive } = body;
 
     if (!name || discountPercentage === undefined) {
-      return NextResponse.json(
-        { error: 'Name and discount percentage are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Name and discount percentage are required', {
+        name: !name ? ['Required'] : [],
+        discountPercentage: discountPercentage === undefined ? ['Required'] : [],
+      });
     }
 
     const { data: tier, error } = await supabase
@@ -83,29 +91,28 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating pricing tier:', error);
-      return NextResponse.json(
-        { error: 'Failed to create tier' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('pricing_tiers', 'insert');
     }
 
     return NextResponse.json({ success: true, tier });
 
   } catch (error) {
-    console.error('Error in pricing tiers POST API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // PATCH update pricing tier
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -115,14 +122,14 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const body = await request.json();
     const { id, name, description, discountPercentage, priority, isActive } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Tier ID is required' }, { status: 400 });
+      throw new ValidationError('Tier ID is required', { id: ['Required'] });
     }
 
     const updates: any = { updated_at: new Date().toISOString() };
@@ -140,26 +147,28 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating pricing tier:', error);
-      return NextResponse.json({ error: 'Failed to update tier' }, { status: 500 });
+      throw DatabaseError.queryFailed('pricing_tiers', 'update');
     }
 
     return NextResponse.json({ success: true, tier });
 
   } catch (error) {
-    console.error('Error in pricing tiers PATCH API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // DELETE pricing tier
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -169,14 +178,14 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Tier ID is required' }, { status: 400 });
+      throw new ValidationError('Tier ID is required', { id: ['Required'] });
     }
 
     const { error } = await supabase
@@ -185,14 +194,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting pricing tier:', error);
-      return NextResponse.json({ error: 'Failed to delete tier' }, { status: 500 });
+      throw DatabaseError.queryFailed('pricing_tiers', 'delete');
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in pricing tiers DELETE API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

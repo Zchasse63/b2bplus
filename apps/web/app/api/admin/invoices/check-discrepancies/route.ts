@@ -1,6 +1,6 @@
 /**
  * Invoice Discrepancy Check API
- * 
+ *
  * POST /api/admin/invoices/check-discrepancies
  * Check for discrepancies between invoice and purchase order
  */
@@ -8,18 +8,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 /**
  * POST /api/admin/invoices/check-discrepancies
- * 
+ *
  * Request body:
  * {
  *   invoiceId: string
  * }
- * 
+ *
  * Response:
  * {
  *   discrepancies: Array<{
@@ -35,6 +37,10 @@ export const maxDuration = 60;
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -43,10 +49,7 @@ export async function POST(request: NextRequest) {
     const { invoiceId } = body;
 
     if (!invoiceId) {
-      return NextResponse.json(
-        { error: 'invoiceId is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('invoiceId is required', { invoiceId: ['Required'] });
     }
 
     const supabase = await createClient();
@@ -59,10 +62,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (invoiceError || !invoice) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Invoice', invoiceId);
     }
 
     // If no matched PO, no discrepancies to check
@@ -83,10 +83,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (poError || !po) {
-      return NextResponse.json(
-        { error: 'Matched purchase order not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Purchase Order', invoice.matched_po_id);
     }
 
     // Check for discrepancies
@@ -124,12 +121,7 @@ export async function POST(request: NextRequest) {
       hasDiscrepancies: discrepancies.length > 0,
       requiresReview: discrepancies.some(d => d.severity === 'high'),
     });
-  } catch (error: any) {
-    console.error('Discrepancy check error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

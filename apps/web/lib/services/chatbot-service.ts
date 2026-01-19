@@ -1,6 +1,6 @@
 /**
  * Chatbot Service
- * 
+ *
  * Centralized service for chatbot operations:
  * - Conversation management
  * - Message handling
@@ -40,8 +40,7 @@ export async function createConversation(
 ): Promise<ChatConversation> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('chatbot_conversations')
+  const { data, error } = await (supabase.from('chatbot_conversations') as any)
     .insert({
       user_id: userId,
       organization_id: organizationId,
@@ -66,8 +65,7 @@ export async function getUserConversations(
 ): Promise<ChatConversation[]> {
   const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('chatbot_conversations')
+  const { data, error } = await (supabase.from('chatbot_conversations') as any)
     .select('*')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
@@ -92,8 +90,7 @@ export async function addMessage(
   const supabase = createAdminClient()
 
   // Verify user owns conversation
-  const { data: conversation, error: convError } = await supabase
-    .from('chatbot_conversations')
+  const { data: conversation, error: convError } = await (supabase.from('chatbot_conversations') as any)
     .select('user_id')
     .eq('id', conversationId)
     .single()
@@ -103,8 +100,7 @@ export async function addMessage(
   }
 
   // Add message
-  const { data, error } = await supabase
-    .from('chatbot_messages')
+  const { data, error } = await (supabase.from('chatbot_messages') as any)
     .insert({
       conversation_id: conversationId,
       role,
@@ -131,8 +127,7 @@ export async function getConversationMessages(
   const supabase = createAdminClient()
 
   // Verify user owns conversation
-  const { data: conversation, error: convError } = await supabase
-    .from('chatbot_conversations')
+  const { data: conversation, error: convError } = await (supabase.from('chatbot_conversations') as any)
     .select('user_id')
     .eq('id', conversationId)
     .single()
@@ -142,8 +137,7 @@ export async function getConversationMessages(
   }
 
   // Get messages
-  const { data, error } = await supabase
-    .from('chatbot_messages')
+  const { data, error } = await (supabase.from('chatbot_messages') as any)
     .select('*')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
@@ -166,8 +160,7 @@ export async function deleteConversation(
   const supabase = createAdminClient()
 
   // Verify user owns conversation
-  const { data: conversation, error: convError } = await supabase
-    .from('chatbot_conversations')
+  const { data: conversation, error: convError } = await (supabase.from('chatbot_conversations') as any)
     .select('user_id')
     .eq('id', conversationId)
     .single()
@@ -177,8 +170,7 @@ export async function deleteConversation(
   }
 
   // Delete conversation and messages
-  const { error } = await supabase
-    .from('chatbot_conversations')
+  const { error } = await (supabase.from('chatbot_conversations') as any)
     .delete()
     .eq('id', conversationId)
 

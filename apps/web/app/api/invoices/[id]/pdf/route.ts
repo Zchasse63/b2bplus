@@ -1,23 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export async function GET(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = createClient();
-    
+
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
-    
+
     // Get invoice details with all related data
     const { data: invoice, error } = await supabase
       .from('invoices')
@@ -44,12 +47,9 @@ export async function GET(
       `)
       .eq('id', params.id)
       .single();
-    
+
     if (error || !invoice) {
-      return NextResponse.json(
-        { error: 'Invoice not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Invoice', params.id);
     }
     
     // Generate PDF HTML content
@@ -62,13 +62,9 @@ export async function GET(
         'Content-Disposition': `inline; filename="invoice-${invoice.invoice_number}.html"`,
       },
     });
-    
+
   } catch (error) {
-    console.error('Error generating invoice PDF:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

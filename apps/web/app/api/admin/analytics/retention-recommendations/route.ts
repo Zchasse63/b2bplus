@@ -1,6 +1,6 @@
 /**
  * Retention Recommendations API
- * 
+ *
  * POST /api/admin/analytics/retention-recommendations
  * Generates AI-powered retention recommendations for a customer
  */
@@ -9,12 +9,18 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting (AI-powered endpoint)
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -23,10 +29,7 @@ export async function POST(request: NextRequest) {
     const { customerId } = body;
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('customerId is required', { customerId: ['customerId is required'] });
     }
 
     const supabase = await createClient();
@@ -39,10 +42,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!analytics) {
-      return NextResponse.json(
-        { error: 'Customer analytics not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Customer analytics', customerId);
     }
 
     // Fetch top products
@@ -136,12 +136,8 @@ Provide 5-7 specific, actionable retention recommendations with priority levels 
         analysisDate: new Date().toISOString()
       }
     });
-  } catch (error: any) {
-    console.error('Retention recommendations error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

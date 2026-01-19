@@ -1,9 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -17,28 +23,24 @@ export async function GET(request: NextRequest) {
       .order("name");
 
     if (error) {
-      console.error("Error fetching feature flags:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch feature flags" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('feature_flags', 'fetch');
     }
 
     return NextResponse.json({
       features: features || [],
       is_super_admin: user!.role === "super_admin",
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
+
     // Check super admin authorization (only super admins can toggle features)
     const { user, error: authError } = await checkAdminRole(true);
     if (authError) return authError;
@@ -50,10 +52,10 @@ export async function PATCH(request: NextRequest) {
     const { feature_name, enabled } = body;
 
     if (!feature_name || typeof enabled !== "boolean") {
-      return NextResponse.json(
-        { error: "feature_name and enabled are required" },
-        { status: 400 }
-      );
+      throw new ValidationError('feature_name and enabled are required', {
+        feature_name: !feature_name ? ['feature_name is required'] : [],
+        enabled: typeof enabled !== 'boolean' ? ['enabled must be a boolean'] : [],
+      });
     }
 
     // Update feature flag
@@ -63,23 +65,14 @@ export async function PATCH(request: NextRequest) {
       .eq("name", feature_name);
 
     if (error) {
-      console.error("Error updating feature flag:", error);
-      return NextResponse.json(
-        { error: "Failed to update feature flag" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('feature_flags', 'update');
     }
 
     return NextResponse.json({
       success: true,
       message: `Feature ${feature_name} ${enabled ? "enabled" : "disabled"}`,
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

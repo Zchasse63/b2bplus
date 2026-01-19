@@ -99,7 +99,7 @@ describe('MiniCart', () => {
     jest.clearAllMocks()
   })
 
-  it('renders drawer when isOpen is true', () => {
+  it('renders drawer when isOpen is true', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     mockSupabase.order.mockResolvedValue({ data: [], error: null })
 
@@ -111,7 +111,7 @@ describe('MiniCart', () => {
     expect(screen.getByText('Shopping Cart')).toBeInTheDocument()
   })
 
-  it('does not load cart when isOpen is false', () => {
+  it('does not load cart when isOpen is false', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
     await act(async () => {
@@ -353,7 +353,7 @@ describe('MiniCart', () => {
     })
   })
 
-  it('calls onClose when close button clicked', () => {
+  it('calls onClose when close button clicked', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     const mockOnClose = jest.fn()
 
@@ -384,7 +384,7 @@ describe('MiniCart', () => {
     consoleErrorSpy.mockRestore()
   })
 
-  it('sets up real-time subscription when opened', () => {
+  it('sets up real-time subscription when opened', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
     await act(async () => {
@@ -394,7 +394,7 @@ describe('MiniCart', () => {
     expect(mockSupabase.channel).toHaveBeenCalledWith('cart-changes')
   })
 
-  it('cleans up subscription when closed', () => {
+  it('cleans up subscription when closed', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } })
 
     const { unmount } = await act(async () => render(<MiniCart isOpen={true} onClose={jest.fn()} />))

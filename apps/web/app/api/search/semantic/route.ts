@@ -1,30 +1,33 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateEmbedding } from '@/lib/ai/providers/unified';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError } from '@/lib/middleware/error-handler';
 
 // POST semantic search
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const body = await request.json();
-    const { 
-      query, 
-      limit = 10, 
+    const {
+      query,
+      limit = 10,
       threshold = 0.7,
-      includeKeywordSearch = true 
+      includeKeywordSearch = true
     } = body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Search query is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Search query is required');
     }
 
     // Check if semantic search is enabled
@@ -119,18 +122,13 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in semantic search API:', error);
-    
-    // Fall back to keyword search on error
+    // Fall back to keyword search on error for certain cases
     try {
       const supabase = await createClient();
       const body = await request.json();
       return performKeywordSearch(supabase, body.query, body.limit || 10);
     } catch (fallbackError) {
-      return NextResponse.json(
-        { error: 'Search failed', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+      return handleError(error);
     }
   }
 }
@@ -176,11 +174,15 @@ async function performKeywordSearch(supabase: any, query: string, limit: number)
 // GET search suggestions (autocomplete)
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
@@ -207,7 +209,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, suggestions });
 
   } catch (error) {
-    console.error('Error in search suggestions API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

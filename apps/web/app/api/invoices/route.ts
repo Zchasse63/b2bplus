@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Get user's organization
@@ -21,7 +27,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!profile?.current_organization_id) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
+      throw new ValidationError('No organization found')
     }
 
     // Get query parameters
@@ -64,14 +70,12 @@ export async function GET(request: NextRequest) {
     const { data: invoices, error: invoicesError } = await query
 
     if (invoicesError) {
-      console.error('Error fetching invoices:', invoicesError)
-      return NextResponse.json({ error: 'Failed to fetch invoices' }, { status: 500 })
+      throw DatabaseError.queryFailed('invoices', 'fetch')
     }
 
     return NextResponse.json(invoices || [])
 
   } catch (error) {
-    console.error('Error in invoices list:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleError(error)
   }
 }

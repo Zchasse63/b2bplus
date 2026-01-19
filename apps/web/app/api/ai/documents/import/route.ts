@@ -7,17 +7,20 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      throw new AuthError('Authentication required');
     }
 
     // Check admin role for imports
@@ -28,10 +31,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profile?.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Admin access required for imports' },
-        { status: 403 }
-      );
+      throw new ForbiddenError('Admin access required for imports');
     }
 
     const {
@@ -43,10 +43,7 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     if (!fileId || !documentType || !data) {
-      return NextResponse.json(
-        { error: 'fileId, documentType, and data are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('fileId, documentType, and data are required');
     }
 
     let result: {
@@ -73,10 +70,7 @@ export async function POST(request: NextRequest) {
         result = await importProductCatalog(supabase, data, mappings, options);
         break;
       default:
-        return NextResponse.json(
-          { error: `Unsupported document type: ${documentType}` },
-          { status: 400 }
-        );
+        throw new ValidationError(`Unsupported document type: ${documentType}`);
     }
 
     // Update document status
@@ -95,11 +89,7 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error('Document import error:', error);
-    return NextResponse.json(
-      { error: 'Failed to import document' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

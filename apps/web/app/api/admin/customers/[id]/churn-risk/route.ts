@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/middleware/rate-limit";
+import { handleError, AuthError, ForbiddenError, DatabaseError } from "@/lib/middleware/error-handler";
 
 function getRiskLevel(score: number): string {
   if (score >= 0.7) return "High";
@@ -20,7 +22,7 @@ export async function GET(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     // Check admin role
@@ -31,7 +33,13 @@ export async function GET(
       .single();
 
     if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin');
+    }
+
+    // Apply rate limiting for admin AI operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, "admin");
+    if (!allowed) {
+      return rateLimitResponse!;
     }
 
     // Get customer's purchase analytics
@@ -41,11 +49,7 @@ export async function GET(
       .eq("customer_id", params.id);
 
     if (analyticsError) {
-      console.error("Error fetching analytics:", analyticsError);
-      return NextResponse.json(
-        { error: "Failed to fetch analytics" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('customer_purchase_analytics', 'fetch');
     }
 
     if (!analytics || analytics.length === 0) {
@@ -83,12 +87,7 @@ export async function GET(
     churnRisks.sort((a, b) => b.risk_score - a.risk_score);
 
     return NextResponse.json({ churn_risks: churnRisks });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/ai/providers/unified';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const { campaignId, leadIds, useAI = true } = await request.json();
 
     if (!campaignId) {
-      return NextResponse.json(
-        { error: 'Campaign ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Campaign ID is required', { campaignId: ['Campaign ID is required'] });
     }
 
     const supabase = await createClient();
@@ -24,10 +27,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (campaignError || !campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Campaign', campaignId);
     }
 
     // Get leads to send to
@@ -48,10 +48,7 @@ export async function POST(request: NextRequest) {
     const { data: leads, error: leadsError } = await query;
 
     if (leadsError || !leads || leads.length === 0) {
-      return NextResponse.json(
-        { error: 'No leads found matching criteria' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Leads matching criteria');
     }
 
     // Update campaign status
@@ -234,10 +231,6 @@ Return ONLY the personalized email in this exact JSON format:
     });
 
   } catch (error) {
-    console.error('Error in personalized campaign send:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

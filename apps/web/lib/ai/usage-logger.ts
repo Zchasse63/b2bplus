@@ -5,6 +5,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/logging/logger';
+import type { AIMetadata, GeminiResponse, OpenAIResponse } from '@/lib/types/ai';
 
 const logger = createLogger('ai-usage-logger');
 
@@ -20,7 +21,7 @@ export interface AIUsageLog {
   duration_ms: number;
   status: 'success' | 'error' | 'rate_limited';
   error_message?: string;
-  metadata?: Record<string, any>;
+  metadata?: AIMetadata;
 }
 
 /**
@@ -101,7 +102,7 @@ export function calculateAICost(
  */
 export async function logGeminiUsage(
   endpoint: string,
-  response: any,
+  response: GeminiResponse,
   durationMs: number,
   userId?: string,
   organizationId?: string
@@ -142,7 +143,7 @@ export async function logGeminiUsage(
  */
 export async function logOpenAIUsage(
   endpoint: string,
-  response: any,
+  response: OpenAIResponse,
   durationMs: number,
   userId?: string,
   organizationId?: string

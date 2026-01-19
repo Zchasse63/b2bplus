@@ -1,8 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createLogger } from "@/lib/logging/logger";
+import { rateLimit } from "@/lib/middleware/rate-limit";
+import { handleError, AuthError, ForbiddenError, ValidationError } from "@/lib/middleware/error-handler";
 
-export async function GET(request: Request) {
+const logger = createLogger('admin-analytics');
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, "admin");
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type") || "overview";
@@ -14,7 +25,7 @@ export async function GET(request: Request) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Authentication required", "unauthorized");
     }
 
     // Check admin role
@@ -25,7 +36,7 @@ export async function GET(request: Request) {
       .single();
 
     if (!memberData || memberData.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw ForbiddenError.insufficientRole("admin");
     }
 
     // Fetch analytics based on type
@@ -41,14 +52,10 @@ export async function GET(request: Request) {
       case "categories":
         return await getCategoryAnalytics(supabase);
       default:
-        return NextResponse.json({ error: "Invalid analytics type" }, { status: 400 });
+        throw new ValidationError("Invalid analytics type", { type: ["Invalid analytics type"] });
     }
-  } catch (error: any) {
-    console.error("Analytics error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch analytics" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

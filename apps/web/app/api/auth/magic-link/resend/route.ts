@@ -1,26 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { MagicLinkResendSchema } from '@/lib/validation/schemas';
+import { handleError } from '@/lib/middleware/error-handler';
+import { ExternalServiceError } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, phone } = await request.json();
+    // Rate limiting for sensitive operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
 
-    if (!email && !phone) {
-      return NextResponse.json(
-        { error: 'Email or phone number is required' },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, MagicLinkResendSchema);
+    if (!validation.valid) return validation.response!;
+
+    const { email } = validation.data!;
 
     // Simply call the request endpoint again
     const requestUrl = new URL('/api/auth/magic-link/request', request.url);
-    
+
     const response = await fetch(requestUrl.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, phone }),
+      body: JSON.stringify({ email }),
     });
 
     const data = await response.json();
@@ -35,10 +41,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in magic link resend:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

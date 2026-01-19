@@ -38,7 +38,7 @@ export async function isLeadOptedOut(leadId: string): Promise<boolean> {
       return false
     }
 
-    return lead.do_not_contact || lead.unsubscribed
+    return (lead as any).do_not_contact || (lead as any).unsubscribed
   } catch (error) {
     logger.error('Error checking opt-out status', { leadId, error })
     return false
@@ -62,7 +62,7 @@ export async function isEmailOptedOut(email: string): Promise<boolean> {
       return false
     }
 
-    return lead.do_not_contact || lead.unsubscribed
+    return (lead as any).do_not_contact || (lead as any).unsubscribed
   } catch (error) {
     logger.error('Error checking email opt-out', { email, error })
     return false
@@ -88,7 +88,7 @@ export async function logAutomationActivity(
     }
 
     // Log activity
-    await supabase.from('lead_activities').insert({
+    await (supabase.from('lead_activities') as any).insert({
       lead_id: activity.leadId,
       activity_type: activity.activityType,
       subject: activity.subject,
@@ -156,8 +156,7 @@ export async function markLeadOptedOut(
   const supabase = createAdminClient()
 
   try {
-    await supabase
-      .from('leads')
+    await (supabase.from('leads') as any)
       .update({
         do_not_contact: true,
         unsubscribed_at: new Date().toISOString(),

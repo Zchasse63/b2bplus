@@ -16,21 +16,43 @@ jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(() => mockSupabaseClient),
 }));
 
+jest.mock('@/lib/env', () => ({
+  getEnv: jest.fn(() => ({
+    NODE_ENV: 'test',
+    SENDGRID_API_KEY: 'test-key',
+    SENDGRID_FROM_EMAIL: 'test@example.com',
+    SENDGRID_FROM_NAME: 'Test',
+    SENDGRID_REPLY_TO_EMAIL: 'test@example.com',
+    NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+  })),
+}));
+
+const mockSendEmail = jest.fn();
+
 jest.mock('@/lib/sendgrid', () => ({
-  sendEmail: jest.fn().mockResolvedValue({ success: true }),
+  get sendEmail() {
+    return mockSendEmail;
+  },
+  EMAIL_CONFIG: {
+    fromEmail: 'test@example.com',
+    fromName: 'Test',
+    replyTo: 'test@example.com',
+    testEmail: 'test@example.com',
+  },
 }));
 
 jest.mock('@/lib/middleware/rate-limit', () => ({
   rateLimit: jest.fn().mockResolvedValue({ allowed: true }),
 }));
 
-jest.mock('@/lib/validation/middleware', () => ({
+jest.mock('@/lib/middleware/validation', () => ({
   validateRequestBody: jest.fn(),
 }));
 
 import { POST as magicLinkRequest } from '@/app/api/auth/magic-link/request/route';
 import { NextRequest, NextResponse } from 'next/server';
-import { validateRequestBody } from '@/lib/validation/middleware';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { sendEmail } from '@/lib/sendgrid';
 
 
 
@@ -68,6 +90,9 @@ const mockLeads = {
 describe('Authentication API Routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Restore sendEmail mock after clearAllMocks
+    mockSendEmail.mockResolvedValue({ success: true });
 
     // Setup default mocks
     mockSupabaseClient.from.mockImplementation((table: string) => {
@@ -183,51 +208,25 @@ describe('Authentication API Routes', () => {
 
     describe('Rate limiting', () => {
       it('should enforce rate limit of 3 requests per hour', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'test@example.com', purpose: 'login' },
         });
 
-        // Mock recent tokens query for rate limiting (under limit)
+        // Mock 3 recent tokens (at limit)
+        const recentTokens = [
+          { id: '1', created_at: new Date().toISOString() },
+          { id: '2', created_at: new Date().toISOString() },
+          { id: '3', created_at: new Date().toISOString() },
+        ];
+
+        // Mock recent tokens query for rate limiting (at limit)
         mockSupabaseClient.from.mockReturnValueOnce({
           select: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              gte: jest.fn().mockResolvedValue({ data: [] }),
+              gte: jest.fn().mockResolvedValue({ data: recentTokens }),
             }),
-          }),
-        });
-
-        // Mock user lookup
-        mockProfiles.select.mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { id: 'user-123', full_name: 'Test User' },
-              error: null,
-            }),
-          }),
-        });
-        mockSupabaseClient.from.mockReturnValueOnce(mockProfiles);
-
-        // Mock insert success
-        mockMagicLinkToken.insert.mockResolvedValue({ error: null });
-        mockSupabaseClient.from.mockReturnValueOnce(mockMagicLinkToken);
-
-        // Mock recent tokens query for rate limiting (under limit - 0 tokens)
-        const tokensUnderLimitMock = {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              gte: jest.fn().mockResolvedValue({ data: [] }),
-            }),
-          }),
-        };
-        mockSupabaseClient.from.mockReturnValueOnce(tokensUnderLimitMock);
-
-        const request = createMockRequest({ email: 'test@example.com' });
-
-        mockMagicLinkToken.select.mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            gte: jest.fn().mockResolvedValue({ data: recentTokens }),
           }),
         });
 
@@ -236,7 +235,7 @@ describe('Authentication API Routes', () => {
 
         expect(response.status).toBe(429);
         const data = await response.json();
-        expect(data.error).toContain('Too many requests');
+        expect(data.error.message).toContain('Too many requests');
       });
 
       it('should allow request if under rate limit', async () => {
@@ -244,6 +243,16 @@ describe('Authentication API Routes', () => {
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'test@example.com', purpose: 'login' },
+        });
+
+        // Mock profile lookup (user exists)
+        mockProfiles.select.mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: { id: 'user-123', full_name: 'Test User' },
+              error: null,
+            }),
+          }),
         });
 
         mockMagicLinkToken.select.mockReturnValue({
@@ -263,7 +272,7 @@ describe('Authentication API Routes', () => {
 
     describe('User identification', () => {
       it('should find existing user by email', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'existing@example.com', purpose: 'login' },
@@ -291,7 +300,7 @@ describe('Authentication API Routes', () => {
       });
 
       it('should find existing lead by email', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'lead@example.com', purpose: 'offer_access' },
@@ -325,7 +334,7 @@ describe('Authentication API Routes', () => {
       });
 
       it('should reject request if user and lead not found', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'unknown@example.com', purpose: 'login' },
@@ -347,15 +356,15 @@ describe('Authentication API Routes', () => {
         const request = createMockRequest({ email: 'unknown@example.com' });
         const response = await magicLinkRequest(request);
 
-        expect(response.status).toBe(400);
+        expect(response.status).toBe(404); // NotFoundError returns 404
         const data = await response.json();
-        expect(data.error).toContain('user not found');
+        expect(data.error.message).toContain('not found');
       });
     });
 
     describe('Token generation', () => {
       it('should generate unique token', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'test@example.com', purpose: 'login' },
@@ -380,7 +389,7 @@ describe('Authentication API Routes', () => {
       });
 
       it('should set token expiration to 10 minutes', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'test@example.com', purpose: 'login' },
@@ -410,7 +419,7 @@ describe('Authentication API Routes', () => {
       });
 
       it('should store IP address and user agent', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
         validateRequestBody.mockResolvedValue({
           valid: true,
           data: { email: 'test@example.com', purpose: 'login' },
@@ -441,7 +450,7 @@ describe('Authentication API Routes', () => {
     describe('Email sending', () => {
       it('should send magic link via email when email provided', async () => {
         const { sendEmail } = require('@/lib/sendgrid');
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,
@@ -470,7 +479,7 @@ describe('Authentication API Routes', () => {
 
       it('should customize email for offer access', async () => {
         const { sendEmail } = require('@/lib/sendgrid');
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,
@@ -497,7 +506,7 @@ describe('Authentication API Routes', () => {
 
       it('should not send email if only phone provided', async () => {
         const { sendEmail } = require('@/lib/sendgrid');
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,
@@ -522,7 +531,7 @@ describe('Authentication API Routes', () => {
 
       it('should return 500 if email sending fails', async () => {
         const { sendEmail } = require('@/lib/sendgrid');
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,
@@ -543,15 +552,15 @@ describe('Authentication API Routes', () => {
         const request = createMockRequest({ email: 'test@example.com' });
         const response = await magicLinkRequest(request);
 
-        expect(response.status).toBe(500);
+        expect(response.status).toBe(502); // ExternalServiceError returns 502
         const data = await response.json();
-        expect(data.error).toContain('Failed to send');
+        expect(data.error.message).toContain('Failed to send');
       });
     });
 
     describe('Database operations', () => {
       it('should return 500 if token insertion fails', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,
@@ -573,7 +582,7 @@ describe('Authentication API Routes', () => {
 
         expect(response.status).toBe(500);
         const data = await response.json();
-        expect(data.error).toContain('Failed to generate');
+        expect(data.error.message).toContain('Failed to generate');
       });
     });
 
@@ -586,18 +595,44 @@ describe('Authentication API Routes', () => {
           data: { email: 'test@example.com', purpose: 'login' },
         });
 
-        mockProfiles.select.mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            single: jest.fn().mockResolvedValue({
-              data: { id: 'user-123', full_name: 'John Doe' },
-            }),
-          }),
+        // Mock rate limit check - need to return separate mock instances
+        const mockGteResult = jest.fn().mockResolvedValue({ data: [] });
+        const mockEqResult = jest.fn().mockReturnValue({
+          gte: mockGteResult,
+        });
+        const mockSelectResult = jest.fn().mockReturnValue({
+          eq: mockEqResult,
         });
 
-        mockMagicLinkToken.insert.mockResolvedValue({ error: null });
+        // Override default mock for this test
+        mockSupabaseClient.from.mockImplementation((table: string) => {
+          if (table === 'magic_link_tokens') {
+            return {
+              insert: jest.fn().mockResolvedValue({ error: null }),
+              select: mockSelectResult,
+            };
+          }
+          if (table === 'profiles') {
+            return {
+              select: jest.fn().mockReturnValue({
+                eq: jest.fn().mockReturnValue({
+                  single: jest.fn().mockResolvedValue({
+                    data: { id: 'user-123', full_name: 'John Doe' },
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        });
 
         const request = createMockRequest({ email: 'test@example.com' });
         const response = await magicLinkRequest(request);
+
+        if (response.status !== 200) {
+          const errorData = await response.json();
+          console.error('Test failed with response:', { status: response.status, error: errorData });
+        }
 
         expect(response.status).toBe(200);
         const data = await response.json();
@@ -606,7 +641,7 @@ describe('Authentication API Routes', () => {
       });
 
       it('should return success message for phone', async () => {
-        const { validateRequestBody } = require('@/lib/validation/middleware');
+        const { validateRequestBody } = require('@/lib/middleware/validation');
 
         validateRequestBody.mockResolvedValue({
           valid: true,

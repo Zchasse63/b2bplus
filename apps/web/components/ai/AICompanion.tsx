@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/b2b/Button';
@@ -35,29 +36,31 @@ export function AICompanion({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const pathname = usePathname();
+  const [inputValue, setInputValue] = useState('');
 
   // Initialize chat with Vercel AI SDK
   const {
     messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
+    status,
     error,
     setMessages,
-    append,
+    sendMessage,
   } = useChat({
-    api: '/api/ai/companion',
-    body: {
-      context: {
-        currentPath: pathname,
+    transport: new DefaultChatTransport({
+      api: '/api/ai/companion',
+      body: {
+        context: {
+          currentPath: pathname,
+        },
+        useReasoning,
       },
-      useReasoning,
-    },
+    }),
     onError: (err) => {
       console.error('Chat error:', err);
     },
   });
+
+  const isLoading = status === 'streaming' || status === 'submitted';
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -74,12 +77,9 @@ export function AICompanion({
   // Send initial message if provided
   useEffect(() => {
     if (initialMessage && messages.length === 0) {
-      append({
-        role: 'user',
-        content: initialMessage,
-      });
+      sendMessage({ text: initialMessage });
     }
-  }, [initialMessage, messages.length, append]);
+  }, [initialMessage, messages.length, sendMessage]);
 
   const handleToggle = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -90,10 +90,24 @@ export function AICompanion({
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSubmit(e as any);
+        if (inputValue.trim()) {
+          sendMessage({ text: inputValue });
+          setInputValue('');
+        }
       }
     },
-    [handleSubmit]
+    [inputValue, sendMessage]
+  );
+
+  const onSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (inputValue.trim()) {
+        sendMessage({ text: inputValue });
+        setInputValue('');
+      }
+    },
+    [inputValue, sendMessage]
   );
 
   const clearChat = useCallback(() => {
@@ -171,7 +185,7 @@ export function AICompanion({
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
-                        onClick={() => append({ role: 'user', content: suggestion })}
+                        onClick={() => sendMessage({ text: suggestion })}
                         className="px-3 py-1 text-xs bg-white rounded-full border border-b2b-gray-200 hover:border-b2b-blue hover:text-b2b-blue transition-colors"
                       >
                         {suggestion}
@@ -181,14 +195,22 @@ export function AICompanion({
                 </div>
               )}
 
-              {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  role={message.role}
-                  content={message.content}
-                  toolInvocations={message.toolInvocations}
-                />
-              ))}
+              {messages.map((message) => {
+                const textContent = message.parts
+                  .filter((part) => part.type === 'text')
+                  .map((part: any) => part.text)
+                  .join('');
+                const toolParts = message.parts.filter((part) => part.type === 'tool-call');
+
+                return (
+                  <MessageBubble
+                    key={message.id}
+                    role={message.role}
+                    content={textContent}
+                    toolInvocations={toolParts as any[]}
+                  />
+                );
+              })}
 
               {isLoading && (
                 <div className="flex items-center gap-2 text-b2b-text-light">
@@ -215,12 +237,12 @@ export function AICompanion({
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="p-4 border-t border-b2b-gray-200 bg-white">
+            <form onSubmit={onSubmit} className="p-4 border-t border-b2b-gray-200 bg-white">
               <div className="flex gap-2">
                 <textarea
                   ref={inputRef}
-                  value={input}
-                  onChange={handleInputChange}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask me anything..."
                   className="flex-1 resize-none rounded-lg border border-b2b-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-b2b-blue-300 min-h-[40px] max-h-[120px]"
@@ -231,7 +253,7 @@ export function AICompanion({
                   type="submit"
                   variant="primary"
                   size="sm"
-                  disabled={isLoading || !input.trim()}
+                  disabled={isLoading || !inputValue.trim()}
                   className="self-end"
                 >
                   {isLoading ? '...' : '→'}

@@ -1,8 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { createLogger } from "@/lib/logging/logger";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
+
+const logger = createLogger('inventory-availability');
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
@@ -11,7 +22,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Authentication required", "unauthorized");
     }
 
     // Check admin role
@@ -22,7 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw ForbiddenError.insufficientRole("admin or super_admin");
     }
 
     // Get query parameters
@@ -31,10 +42,7 @@ export async function GET(request: NextRequest) {
     const locationId = searchParams.get("location_id");
 
     if (!productId) {
-      return NextResponse.json(
-        { error: "product_id is required" },
-        { status: 400 }
-      );
+      throw new ValidationError("product_id is required", { product_id: ["Required"] });
     }
 
     // If location_id is provided, get availability for that location
@@ -45,11 +53,8 @@ export async function GET(request: NextRequest) {
       });
 
       if (error) {
-        console.error("Error fetching product availability:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch availability" },
-          { status: 500 }
-        );
+        logger.error("Error fetching product availability", { error, productId, locationId });
+        throw DatabaseError.queryFailed("inventory", "get_product_availability");
       }
 
       return NextResponse.json({ availability: data });
@@ -61,11 +66,8 @@ export async function GET(request: NextRequest) {
       .select("id, name, address");
 
     if (locError) {
-      console.error("Error fetching locations:", locError);
-      return NextResponse.json(
-        { error: "Failed to fetch locations" },
-        { status: 500 }
-      );
+      logger.error("Error fetching locations", { error: locError });
+      throw DatabaseError.queryFailed("inventory_locations", "select");
     }
 
     // Get availability for each location
@@ -86,12 +88,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({ availability: availabilityByLocation });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

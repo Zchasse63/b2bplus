@@ -10,26 +10,26 @@ import { createClient } from '@/lib/supabase/server';
 import { generateObject } from 'ai';
 import { grokModels } from '@/lib/ai/providers/xai';
 import { documentAnalysisSchema } from '@/lib/ai/schemas/documents';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      throw new AuthError('Authentication required');
     }
 
     const { fileId, headers, sampleRows } = await request.json();
 
     if (!fileId || !headers) {
-      return NextResponse.json(
-        { error: 'fileId and headers are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('fileId and headers are required');
     }
 
     // Build prompt for AI analysis
@@ -76,10 +76,6 @@ Provide your analysis with confidence scores. Map columns to these standard fiel
       analysis: result.object,
     });
   } catch (error) {
-    console.error('Document analysis error:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze document' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

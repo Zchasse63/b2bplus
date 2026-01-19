@@ -12,16 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-
-/**
- * Action result type
- */
-export interface ActionResult {
-  success: boolean;
-  data?: any;
-  error?: string;
-  message?: string;
-}
+import type { ActionResult, OrderItem, ChatbotActionParams } from '@/lib/types/ai';
 
 /**
  * Action 1: Check Order Status
@@ -395,7 +386,7 @@ export async function reorderLastOrder(
     }
 
     // Check which products are still in stock
-    const productIds = lastOrder.order_items.map((item: any) => item.product_id);
+    const productIds = lastOrder.order_items.map((item) => item.product_id);
     const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, name, in_stock')
@@ -413,7 +404,7 @@ export async function reorderLastOrder(
     );
 
     // Add items to cart
-    const itemsToAdd = lastOrder.order_items.filter((item: any) =>
+    const itemsToAdd = lastOrder.order_items.filter((item) =>
       inStockProducts.has(item.product_id)
     );
 
@@ -424,7 +415,7 @@ export async function reorderLastOrder(
       };
     }
 
-    const cartItems = itemsToAdd.map((item: any) => ({
+    const cartItems = itemsToAdd.map((item) => ({
       user_id: userId,
       organization_id: organizationId,
       product_id: item.product_id,
@@ -477,32 +468,62 @@ export async function executeChatbotAction(
   actionName: string,
   userId: string,
   organizationId: string,
-  parameters: Record<string, any>
+  parameters: ChatbotActionParams
 ): Promise<ActionResult> {
   switch (actionName) {
     case 'check_order_status':
+      if (!parameters.orderNumber) {
+        return {
+          success: false,
+          error: 'Order number is required to check order status',
+        };
+      }
       return checkOrderStatus(userId, organizationId, parameters.orderNumber);
 
     case 'get_order_history':
       return getOrderHistory(userId, organizationId, parameters.limit);
 
     case 'check_inventory':
+      if (!parameters.query) {
+        return {
+          success: false,
+          error: 'Search query is required to check inventory',
+        };
+      }
       return checkInventory(organizationId, parameters.query, parameters.limit);
 
     case 'add_to_cart':
+      if (!parameters.productId || !parameters.quantity) {
+        return {
+          success: false,
+          error: 'Product ID and quantity are required to add to cart',
+        };
+      }
       return addToCart(userId, organizationId, parameters.productId, parameters.quantity);
 
     case 'get_product_info':
+      if (!parameters.productId) {
+        return {
+          success: false,
+          error: 'Product ID is required to get product information',
+        };
+      }
       return getProductInfo(parameters.productId);
 
     case 'create_support_ticket':
+      if (!parameters.subject || !parameters.description) {
+        return {
+          success: false,
+          error: 'Subject and description are required to create support ticket',
+        };
+      }
       return createSupportTicket(
         userId,
         organizationId,
         parameters.subject,
         parameters.description,
-        parameters.category,
-        parameters.priority,
+        parameters.category || 'general',
+        parameters.priority || 'medium',
         parameters.chatbotConversationId
       );
 

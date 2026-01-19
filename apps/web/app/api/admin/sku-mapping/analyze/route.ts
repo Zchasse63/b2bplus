@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateEmbedding, cosineSimilarity as geminiCosineSimilarity } from '@/lib/ai/providers/unified'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler'
 
 interface ProductToMap {
   oldSKU: string
@@ -36,12 +38,16 @@ interface SKUMatch {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Verify admin role
@@ -52,14 +58,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw new ForbiddenError('Admin access required')
     }
 
     const body = await request.json()
     let { productsToMap, sourceSystem, oldSKUs, skus } = body as {
       productsToMap?: ProductToMap[]
       sourceSystem?: string
-      oldSKUs?: any[]
+      oldSKUs?: unknown[]
       skus?: string[]
     }
 
@@ -67,14 +73,17 @@ export async function POST(request: NextRequest) {
     if (!productsToMap) {
       if (oldSKUs && Array.isArray(oldSKUs)) {
         // Convert oldSKUs format to productsToMap
-        productsToMap = oldSKUs.map((item: any) => ({
-          oldSKU: item.oldSKU || item,
-          description: item.description || item,
-          category: item.category,
-          size: item.size,
-          uom: item.uom,
-          price: item.price,
-        }))
+        productsToMap = oldSKUs.map((item: unknown) => {
+          const typedItem = item as { oldSKU?: string; description?: string; category?: string; size?: string; uom?: string; price?: number }
+          return {
+            oldSKU: typedItem.oldSKU || String(item),
+            description: typedItem.description || String(item),
+            category: typedItem.category,
+            size: typedItem.size,
+            uom: typedItem.uom,
+            price: typedItem.price,
+          }
+        })
       } else if (skus && Array.isArray(skus)) {
         // Convert simple SKU strings to productsToMap
         productsToMap = skus.map((sku: string) => ({
@@ -85,10 +94,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!productsToMap || !Array.isArray(productsToMap) || productsToMap.length === 0) {
-      return NextResponse.json(
-        { error: 'productsToMap, oldSKUs, or skus array is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('productsToMap, oldSKUs, or skus array is required', {
+        productsToMap: ['At least one of productsToMap, oldSKUs, or skus array is required'],
+      })
     }
 
     // Fetch all current products
@@ -97,11 +105,11 @@ export async function POST(request: NextRequest) {
       .select('id, sku, name, description, category, base_price')
 
     if (productsError) {
-      throw new Error(`Failed to fetch products: ${productsError.message}`)
+      throw DatabaseError.queryFailed('products', 'fetch')
     }
 
     const matches: SKUMatch[] = []
-    const mappings: any[] = []
+    const mappings: { old_sku: string; suggested_product_id: string; suggested_product_name: string; confidence_score: number; match_reasoning: string }[] = []
 
     // Process each product to map
     for (const productToMap of productsToMap) {
@@ -130,12 +138,8 @@ export async function POST(request: NextRequest) {
       matchRate: (matches.length / productsToMap.length * 100).toFixed(1) + '%'
     })
 
-  } catch (error: any) {
-    console.error('SKU mapping error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to map SKUs' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -162,10 +166,10 @@ async function findBestMatch(
 
   // Strategy 2: AI Embedding similarity
   const embeddingMatch = await findEmbeddingMatch(productToMap, currentProducts)
-  
+
   // Strategy 3: Fuzzy text matching
   const fuzzyMatch = findFuzzyMatch(productToMap, currentProducts)
-  
+
   // Strategy 4: Category + feature matching
   const featureMatch = findFeatureMatch(productToMap, currentProducts)
 
@@ -211,7 +215,7 @@ async function findEmbeddingMatch(
     for (const product of currentProducts) {
       // Check if product has embedding
       const productText = `${product.name} ${product.description || ''} ${product.category || ''}`
-      
+
       const productEmbedding = await generateEmbedding(productText)
       const similarity = geminiCosineSimilarity(searchEmbedding, productEmbedding)
 
@@ -281,7 +285,7 @@ function findFeatureMatch(
 ): SKUMatch | null {
   // Extract features from description
   const features = extractFeatures(productToMap.description)
-  
+
   let bestMatch: { product: CurrentProduct; score: number } | null = null
 
   for (const product of currentProducts) {
@@ -314,30 +318,6 @@ function findFeatureMatch(
   }
 
   return null
-}
-
-/**
- * Calculate cosine similarity between two vectors
- */
-function cosineSimilarity(vec1: number[], vec2: number[]): number {
-  let dotProduct = 0
-  let mag1 = 0
-  let mag2 = 0
-
-  for (let i = 0; i < vec1.length; i++) {
-    dotProduct += vec1[i] * vec2[i]
-    mag1 += vec1[i] * vec1[i]
-    mag2 += vec2[i] * vec2[i]
-  }
-
-  mag1 = Math.sqrt(mag1)
-  mag2 = Math.sqrt(mag2)
-
-  if (mag1 === 0 || mag2 === 0) {
-    return 0
-  }
-
-  return dotProduct / (mag1 * mag2)
 }
 
 /**

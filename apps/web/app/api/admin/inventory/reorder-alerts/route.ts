@@ -1,8 +1,19 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { createLogger } from "@/lib/logging/logger";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, DatabaseError } from '@/lib/middleware/error-handler';
+
+const logger = createLogger('inventory-reorder-alerts');
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
@@ -11,7 +22,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Authentication required", "unauthorized");
     }
 
     // Check admin role
@@ -22,7 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw ForbiddenError.insufficientRole("admin or super_admin");
     }
 
     // Get all inventory items
@@ -47,11 +58,8 @@ export async function GET(request: NextRequest) {
       );
 
     if (invError) {
-      console.error("Error fetching inventory:", invError);
-      return NextResponse.json(
-        { error: "Failed to fetch inventory" },
-        { status: 500 }
-      );
+      logger.error("Error fetching inventory", { error: invError });
+      throw DatabaseError.queryFailed("inventory", "select");
     }
 
     // Check reorder status for each item
@@ -87,12 +95,7 @@ export async function GET(request: NextRequest) {
       alerts,
       total_alerts: alerts.length,
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

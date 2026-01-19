@@ -44,19 +44,19 @@ export interface SecureEndpointContext {
   organizationId: string;
   
   /** Request parameters (from body or query string) */
-  params: Record<string, any>;
+  params: Record<string, unknown>;
 }
 
 export interface SecureEndpointResult {
   /** Result data */
-  data?: any;
-  
+  data?: unknown;
+
   /** Number of tokens used (for billing) */
   tokensUsed?: number;
-  
+
   /** Success flag */
   success?: boolean;
-  
+
   /** Error message if failed */
   error?: string;
 }
@@ -172,9 +172,10 @@ export async function secureAIEndpoint(
       ...responseData,
     });
     
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     console.error(`AI endpoint error (${operationType}):`, error);
-    
+
     // Log failed usage if enabled
     if (logUsage) {
       try {
@@ -187,7 +188,7 @@ export async function secureAIEndpoint(
             operationType,
             tokensUsed: 0,
             success: false,
-            errorMessage: error.message,
+            errorMessage,
             metadata: {
               duration: Date.now() - startTime,
             },
@@ -197,12 +198,12 @@ export async function secureAIEndpoint(
         // Ignore logging errors
       }
     }
-    
+
     // Return error response
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error.message || 'Internal server error' 
+        error: errorMessage,
       },
       { status: 500 }
     );

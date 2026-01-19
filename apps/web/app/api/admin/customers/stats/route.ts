@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +12,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -21,8 +27,6 @@ export async function GET(request: NextRequest) {
       .rpc('get_customer_stats');
 
     if (statsError) {
-      console.error('Error fetching customer stats:', statsError);
-
       // Fallback to manual aggregation if RPC doesn't exist yet
       // Get all organizations
       const { data: orgs, error: orgsError } = await supabase
@@ -31,10 +35,7 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false });
 
       if (orgsError) {
-        return NextResponse.json(
-          { error: 'Failed to fetch customers' },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed('organizations', 'fetch');
       }
 
       // Get order stats for all organizations in one query
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
         .neq('status', 'cancelled');
 
       if (orderStatsError) {
-        console.error('Error fetching order stats:', orderStatsError);
+        // Log but don't fail - just return orgs without stats
       }
 
       // Aggregate stats by organization
@@ -77,11 +78,7 @@ export async function GET(request: NextRequest) {
       success: true,
       customers: stats
     });
-  } catch (error: any) {
-    console.error('Error in customer stats API:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

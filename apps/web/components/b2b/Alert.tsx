@@ -84,7 +84,7 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
           )}
           {children && !description && (
             <div className="text-sm">
-              {children}
+              {children as React.ReactNode}
             </div>
           )}
         </div>

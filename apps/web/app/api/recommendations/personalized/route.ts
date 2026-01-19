@@ -1,8 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
@@ -11,7 +18,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Unauthorized");
     }
 
     // Get query parameters
@@ -26,10 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (!profile || !profile.organization_id) {
-      return NextResponse.json(
-        { error: "User organization not found" },
-        { status: 404 }
-      );
+      throw new NotFoundError("User organization", user.id);
     }
 
     // Call personalized recommendations function
@@ -42,11 +46,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (error) {
-      console.error("Error fetching personalized recommendations:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch recommendations" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed("recommendations", "get_personalized_recommendations");
     }
 
     // Fetch full product details for recommendations
@@ -73,12 +73,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ recommendations: [], total: 0 });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

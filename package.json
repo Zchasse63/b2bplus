@@ -13,7 +13,11 @@
     "type-check": "turbo run type-check",
     "clean": "turbo run clean",
     "test": "turbo run test",
-    "test:watch": "turbo run test:watch"
+    "test:watch": "turbo run test:watch",
+    "test:integration": "turbo run test:integration",
+    "test:security": "turbo run test:security",
+    "test:e2e": "turbo run test:e2e",
+    "test:coverage": "turbo run test:coverage"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.78.0",
@@ -27,6 +31,7 @@
   },
   "packageManager": "pnpm@10.10.0",
   "dependencies": {
-    "date-fns": "^4.1.0"
+    "date-fns": "^4.1.0",
+    "react-markdown": "^10.1.0"
   }
 }

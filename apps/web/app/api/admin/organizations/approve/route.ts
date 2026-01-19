@@ -3,10 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { sendEmail, createEmailTemplate } from '@/lib/sendgrid';
 import { csrfProtection } from '@/lib/middleware/csrf';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { OrganizationApproveSchema } from '@/lib/validation/schemas';
+import { handleError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
 /**
  * Organization Approval API
- * 
+ *
  * Allows super admins to approve or reject organization registrations
  * Phase 1, Task 1.3: Registration Approval System
  */
@@ -18,29 +22,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { organizationId, action, reason } = await request.json();
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
 
-    // Validate input
-    if (!organizationId || !action) {
-      return NextResponse.json(
-        { error: 'Organization ID and action are required' },
-        { status: 400 }
-      );
-    }
+    // Validate request body
+    const validation = await validateRequestBody(request, OrganizationApproveSchema);
+    if (!validation.valid) return validation.response!;
 
-    if (!['approve', 'reject'].includes(action)) {
-      return NextResponse.json(
-        { error: 'Action must be "approve" or "reject"' },
-        { status: 400 }
-      );
-    }
-
-    if (action === 'reject' && !reason) {
-      return NextResponse.json(
-        { error: 'Rejection reason is required' },
-        { status: 400 }
-      );
-    }
+    const { organizationId, approved, notes } = validation.data!;
+    const action = approved ? 'approve' : 'reject';
 
     // Check admin role (only super_admin can approve organizations)
     const { user, error: authError } = await checkAdminRole(true);
@@ -68,20 +59,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !org) {
-      console.error('Error fetching organization:', orgError);
-      return NextResponse.json(
-        { error: 'Organization not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Organization', organizationId);
     }
 
     // Get owner details
     const owner = org.members?.[0]?.user;
     if (!owner) {
-      return NextResponse.json(
-        { error: 'Organization owner not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Organization owner');
     }
 
     // Update organization based on action
@@ -94,7 +78,7 @@ export async function POST(request: NextRequest) {
       updateData.rejection_reason = null;
     } else {
       updateData.approval_status = 'rejected';
-      updateData.rejection_reason = reason;
+      updateData.rejection_reason = notes;
       updateData.approved_by = user!.id;
       updateData.approved_at = new Date().toISOString();
     }
@@ -107,11 +91,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (updateError) {
-      console.error('Error updating organization:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to update organization' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('organizations', 'update');
     }
 
     // Send email notification
@@ -120,7 +100,7 @@ export async function POST(request: NextRequest) {
         // Send welcome email
         await sendEmail({
           to: owner.email,
-          subject: 'Welcome to B2B+ - Your Account is Approved! 🎉',
+          subject: 'Welcome to B2B+ - Your Account is Approved!',
           html: createEmailTemplate({
             body: `
               <h2 style="color: #10b981;">Account Approved!</h2>
@@ -135,7 +115,7 @@ export async function POST(request: NextRequest) {
                 <li>Access AI-powered insights and recommendations</li>
               </ul>
               <p style="margin-top: 30px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login" 
+                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login"
                    style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                   Log In to Your Account
                 </a>
@@ -159,10 +139,10 @@ export async function POST(request: NextRequest) {
               <h2 style="color: #ef4444;">Registration Status Update</h2>
               <p>Hi ${owner.full_name || 'there'},</p>
               <p>Thank you for your interest in B2B+. After reviewing your registration for <strong>${org.name}</strong>, we're unable to approve your account at this time.</p>
-              ${reason ? `
+              ${notes ? `
                 <p><strong>Reason:</strong></p>
                 <p style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #ef4444; margin: 20px 0;">
-                  ${reason}
+                  ${notes}
                 </p>
               ` : ''}
               <p>If you believe this is an error or would like to discuss this further, please contact our team:</p>
@@ -192,11 +172,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in organization approval:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

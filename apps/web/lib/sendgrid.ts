@@ -1,27 +1,31 @@
 /**
  * SendGrid Email Helper Library
- * 
+ *
  * Provides functions for sending emails via SendGrid with full tracking support.
  * Used for voice-triggered email automation, regional campaigns, and personalized emails.
  */
 
 import sgMail from '@sendgrid/mail';
+import { getEnv } from './env';
+
+const env = getEnv();
 
 // Initialize SendGrid with API key
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn('SENDGRID_API_KEY not found in environment variables');
+if (env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(env.SENDGRID_API_KEY);
 } else {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.warn('SENDGRID_API_KEY not found in environment variables');
 }
 
 /**
  * Email configuration from environment
+ * All values must be provided via environment variables - no fallbacks
  */
 export const EMAIL_CONFIG = {
-  fromEmail: process.env.SENDGRID_FROM_EMAIL || 'Sales@valuesource.co',
-  fromName: process.env.SENDGRID_FROM_NAME || 'Metro Bag',
-  replyTo: process.env.SENDGRID_REPLY_TO_EMAIL || 'Zach@metrobagllc.com',
-  testEmail: process.env.TEST_EMAIL || 'Zchasse89@gmail.com',
+  fromEmail: env.SENDGRID_FROM_EMAIL || '',
+  fromName: env.SENDGRID_FROM_NAME || '',
+  replyTo: env.SENDGRID_REPLY_TO_EMAIL || '',
+  testEmail: env.TEST_USER_EMAIL || 'test@example.com',
 };
 
 /**

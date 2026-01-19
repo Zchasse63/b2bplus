@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSON } from '@/lib/ai/providers/unified';
 import { createLogger } from '@/lib/logging/logger';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError } from '@/lib/middleware/error-handler';
 
 const logger = createLogger('ai-excel-import');
 
@@ -12,7 +14,7 @@ interface ColumnMapping {
   sampleValues: any[];
 }
 
-interface ValidationError {
+interface ValidationErrorItem {
   row: number;
   column: string;
   value: any;
@@ -22,11 +24,15 @@ interface ValidationError {
 // POST analyze Excel file and suggest column mappings using AI
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -36,24 +42,24 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin');
     }
 
     const body = await request.json();
     const { headers, sampleRows, importType = 'products' } = body;
 
     if (!headers || !sampleRows || !Array.isArray(headers) || !Array.isArray(sampleRows)) {
-      return NextResponse.json(
-        { error: 'Headers and sample rows are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Headers and sample rows are required', {
+        headers: !headers || !Array.isArray(headers) ? ['headers array is required'] : [],
+        sampleRows: !sampleRows || !Array.isArray(sampleRows) ? ['sampleRows array is required'] : [],
+      });
     }
 
     // Define expected fields based on import type
     const expectedFields: Record<string, string[]> = {
       products: [
-        'name', 'sku', 'description', 'category', 'base_price', 
-        'cost_price', 'unit_of_measure', 'min_order_quantity', 
+        'name', 'sku', 'description', 'category', 'base_price',
+        'cost_price', 'unit_of_measure', 'min_order_quantity',
         'is_active', 'image_url'
       ],
       prices: [
@@ -107,14 +113,14 @@ Only map columns where you have at least 50% confidence. Return null for targetF
     try {
       // aiResponse is already parsed JSON from generateJSON
       mappings = aiResponse.mappings || aiResponse;
-      
+
       // Ensure mappings is an array
       if (!Array.isArray(mappings)) {
         throw new Error('Invalid response format');
       }
     } catch (parseError) {
-      console.error('Error parsing AI response:', parseError);
-      
+      logger.warn('Error parsing AI response, falling back to simple matching', { parseError });
+
       // Fallback to simple string matching
       mappings = headers.map((header: string, idx: number) => {
         const headerLower = header.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -140,8 +146,8 @@ Only map columns where you have at least 50% confidence. Return null for targetF
     }
 
     // Validate sample data against target fields
-    const validationErrors: ValidationError[] = [];
-    
+    const validationErrors: ValidationErrorItem[] = [];
+
     sampleRows.slice(0, 10).forEach((row: any, rowIdx: number) => {
       mappings.forEach((mapping) => {
         if (!mapping.targetField) return;
@@ -196,11 +202,7 @@ Only map columns where you have at least 50% confidence. Return null for targetF
     });
 
   } catch (error) {
-    logger.error('Error in AI Excel import API', { error });
-    return NextResponse.json(
-      { error: 'Failed to analyze file', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -208,9 +210,9 @@ Only map columns where you have at least 50% confidence. Return null for targetF
 function similarity(s1: string, s2: string): number {
   const longer = s1.length > s2.length ? s1 : s2;
   const shorter = s1.length > s2.length ? s2 : s1;
-  
+
   if (longer.length === 0) return 1.0;
-  
+
   const editDistance = levenshteinDistance(longer, shorter);
   return (longer.length - editDistance) / longer.length;
 }

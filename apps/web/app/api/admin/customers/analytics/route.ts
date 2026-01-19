@@ -1,29 +1,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { createLogger } from "@/lib/logging/logger";
+import { checkAdminRole } from "@/lib/middleware/admin";
+import { rateLimit } from "@/lib/middleware/rate-limit";
+import { handleError, DatabaseError } from "@/lib/middleware/error-handler";
+
+const logger = createLogger('admin-customers-analytics');
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, "admin");
+    if (!allowed) return rateLimitResponse!;
+
+    // Check admin authorization
+    const { user, error: authError } = await checkAdminRole();
+    if (authError) return authError;
+
     const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check admin role
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
 
     // Fetch all organizations (customers)
     const { data: organizations, error: orgError } = await supabase
@@ -31,11 +27,8 @@ export async function GET(request: NextRequest) {
       .select("id, name, email");
 
     if (orgError) {
-      console.error("Error fetching organizations:", orgError);
-      return NextResponse.json(
-        { error: "Failed to fetch customers" },
-        { status: 500 }
-      );
+      logger.error("Error fetching organizations", { error: orgError });
+      throw DatabaseError.queryFailed('organizations', 'fetch');
     }
 
     // Fetch LTV for each customer in parallel
@@ -81,12 +74,7 @@ export async function GET(request: NextRequest) {
       customers: customersWithLTV.sort((a, b) => b.ltv - a.ltv),
       stats,
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

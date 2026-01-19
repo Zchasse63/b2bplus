@@ -1,14 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 // POST generate recommendations for all products
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -18,7 +24,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ForbiddenError('Admin access required');
     }
 
     // Check if recommendations feature is enabled
@@ -29,10 +35,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!featureFlag?.enabled) {
-      return NextResponse.json(
-        { error: 'Smart recommendations feature is not enabled' },
-        { status: 400 }
-      );
+      throw new ValidationError('Smart recommendations feature is not enabled');
     }
 
     // Get all active products
@@ -42,7 +45,7 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true);
 
     if (productsError || !products || products.length === 0) {
-      return NextResponse.json({ error: 'No products found' }, { status: 404 });
+      throw new NotFoundError('Active products');
     }
 
     let generated = 0;
@@ -121,11 +124,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in generate recommendations API:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate recommendations', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

@@ -1,6 +1,6 @@
 /**
  * Regional Campaign API
- * 
+ *
  * Voice-triggered bulk email campaigns by region
  * Example: "Email all Georgia customers about new pricing"
  */
@@ -9,15 +9,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail, createEmailTemplate, addUtmParameters } from '@/lib/sendgrid';
 import { generateJSON } from '@/lib/ai/providers/unified';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const body = await request.json();
@@ -44,9 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!parsedRegion && !regionTier && !parsedBuyingGroup) {
-      return NextResponse.json({ 
-        error: 'Please specify region, regionTier, or buyingGroup' 
-      }, { status: 400 });
+      throw new ValidationError('Please specify region, regionTier, or buyingGroup', { region: ['region, regionTier, or buyingGroup is required'] });
     }
 
     // Find leads based on filters
@@ -107,15 +111,11 @@ export async function POST(request: NextRequest) {
     const { data: leads, error: leadsError } = await query;
 
     if (leadsError) {
-      console.error('Leads query error:', leadsError);
-      return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
+      throw new Error(`Failed to fetch leads: ${leadsError.message}`);
     }
 
     if (!leads || leads.length === 0) {
-      return NextResponse.json({ 
-        error: 'No leads found matching criteria',
-        filters: { region: parsedRegion, regionTier, buyingGroup: parsedBuyingGroup }
-      }, { status: 404 });
+      throw new NotFoundError('Leads matching criteria');
     }
 
     // Create campaign
@@ -308,12 +308,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Regional campaign error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to send campaign', 
-      details: error.message 
-    }, { status: 500 });
+  } catch (error) {
+    return handleError(error);
   }
 }
 

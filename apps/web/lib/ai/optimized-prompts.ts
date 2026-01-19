@@ -1,6 +1,6 @@
 /**
  * Optimized AI Prompts
- * 
+ *
  * Task 2.4: Reduce AI Token Usage
  * - Optimize prompts and context windows
  * - Limit order history to last 5 orders
@@ -8,10 +8,20 @@
  * - Reduce unnecessary context
  */
 
+import type {
+  Order,
+  Product,
+  TopProduct,
+  CartItem,
+  SummarizedCustomerContext,
+  OpportunityCustomerData,
+  PricingInput
+} from '@/lib/types/ai';
+
 /**
  * Summarize order data to reduce tokens
  */
-export function summarizeOrders(orders: any[]): string {
+export function summarizeOrders(orders: Order[]): string {
   if (orders.length === 0) return 'No recent orders';
 
   // Limit to last 5 orders
@@ -34,7 +44,7 @@ export function summarizeOrders(orders: any[]): string {
 /**
  * Summarize product data to reduce tokens
  */
-export function summarizeProducts(products: any[]): string {
+export function summarizeProducts(products: (TopProduct | Product)[]): string {
   if (products.length === 0) return 'No products';
 
   // Limit to top 10 products
@@ -43,8 +53,8 @@ export function summarizeProducts(products: any[]): string {
   return topProducts
     .map((product, index) => {
       const name = product.name || 'Unknown';
-      const price = product.price || 0;
-      const category = product.category || 'General';
+      const price = 'price' in product ? product.price || 0 : 0;
+      const category = 'category' in product ? product.category || 'General' : 'General';
 
       return `${index + 1}. ${name} ($${price}) - ${category}`;
     })
@@ -54,19 +64,7 @@ export function summarizeProducts(products: any[]): string {
 /**
  * Summarize customer context for AI
  */
-export function summarizeCustomerContext(context: {
-  userId: string;
-  organizationName: string;
-  role: string;
-  recentOrders: any[];
-  topProducts: any[];
-  totalSpend: number;
-  cartItems: any[];
-  cartTotal: number;
-  creditLimit: number;
-  creditAvailable: number;
-  accountStatus: string;
-}): string {
+export function summarizeCustomerContext(context: SummarizedCustomerContext): string {
   return `Customer: ${context.organizationName} (${context.role})
 Total Spend: $${context.totalSpend}
 Credit: $${context.creditAvailable} available of $${context.creditLimit}
@@ -99,7 +97,7 @@ Keep responses under 150 words. Use bullet points for lists.`;
  * Optimized opportunity detection prompt
  */
 export function createOpportunityPrompt(
-  customerData: any,
+  customerData: OpportunityCustomerData,
   opportunityType: 'stopped_buying' | 'cross_sell' | 'upsell'
 ): string {
   const summaries = {
@@ -116,12 +114,7 @@ export function createOpportunityPrompt(
 /**
  * Optimized pricing recommendation prompt
  */
-export function createPricingPrompt(data: {
-  currentPrice: number;
-  customerHistory: any[];
-  competitorPrice?: number;
-  targetMargin?: number;
-}): string {
+export function createPricingPrompt(data: PricingInput): string {
   const historySum = data.customerHistory.length > 0
     ? `Bought ${data.customerHistory.length}x at avg $${(data.customerHistory.reduce((sum, h) => sum + h.price, 0) / data.customerHistory.length).toFixed(2)}`
     : 'No history';
@@ -152,7 +145,7 @@ Omit optional fields if missing. Be precise.`;
  */
 export function createProductSearchPrompt(
   query: string,
-  availableProducts: any[]
+  availableProducts: Product[]
 ): string {
   // Limit to 20 products for context
   const limitedProducts = availableProducts.slice(0, 20);
@@ -220,29 +213,21 @@ export function truncateToTokenLimit(
 /**
  * Optimize context by removing unnecessary data
  */
-export function optimizeContext(context: any): any {
-  // Remove null/undefined values
-  const cleaned = Object.entries(context).reduce((acc, [key, value]) => {
-    if (value !== null && value !== undefined && value !== '') {
-      acc[key] = value;
-    }
-    return acc;
-  }, {} as any);
-
-  // Limit arrays
-  if (cleaned.recentOrders && Array.isArray(cleaned.recentOrders)) {
-    cleaned.recentOrders = cleaned.recentOrders.slice(0, 5);
-  }
-
-  if (cleaned.topProducts && Array.isArray(cleaned.topProducts)) {
-    cleaned.topProducts = cleaned.topProducts.slice(0, 10);
-  }
-
-  if (cleaned.cartItems && Array.isArray(cleaned.cartItems)) {
-    cleaned.cartItems = cleaned.cartItems.slice(0, 20);
-  }
-
-  return cleaned;
+export function optimizeContext(context: SummarizedCustomerContext): SummarizedCustomerContext {
+  // Create optimized context with limited arrays
+  return {
+    userId: context.userId,
+    organizationName: context.organizationName,
+    role: context.role,
+    recentOrders: context.recentOrders?.slice(0, 5) ?? [],
+    topProducts: context.topProducts?.slice(0, 10) ?? [],
+    totalSpend: context.totalSpend,
+    cartItems: context.cartItems?.slice(0, 20) ?? [],
+    cartTotal: context.cartTotal,
+    creditLimit: context.creditLimit,
+    creditAvailable: context.creditAvailable,
+    accountStatus: context.accountStatus,
+  };
 }
 
 /**

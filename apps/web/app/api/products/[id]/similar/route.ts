@@ -1,11 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Get query parameters
@@ -22,11 +28,7 @@ export async function GET(
     );
 
     if (error) {
-      console.error("Error fetching similar products:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch similar products" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('products', 'get_similar_products');
     }
 
     // Limit results
@@ -56,12 +58,8 @@ export async function GET(
     }
 
     return NextResponse.json({ similar_products: [], total: 0 });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

@@ -3,11 +3,18 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { cookies } from 'next/headers';
 import { generateSecurePassword } from '@/lib/security/password-generator';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError } from '@/lib/middleware/error-handler';
+import { AuthError, NotFoundError, DatabaseError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting for security
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
+
     const searchParams = request.nextUrl.searchParams;
     const token = searchParams.get('token');
 
@@ -218,6 +225,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/signup?email=' + encodeURIComponent(magicLinkToken.email || ''), request.url));
 
   } catch (error) {
+    // For GET requests that users access directly, redirect to login with error
+    // but also log the error through handleError's logging
     console.error('Error in magic link verification:', error);
     return NextResponse.redirect(new URL('/login?error=server_error', request.url));
   }

@@ -9,8 +9,10 @@ import { CartSidebarSummary } from '@/components/CartSidebarSummary';
 import { EmbeddedAIAssistantPanel } from '@/components/EmbeddedAIAssistantPanel';
 
 import { FiSearch, FiGrid, FiList } from 'react-icons/fi';
-import type { Product } from '@b2b-plus/supabase';
+import type { Database } from '@b2b-plus/supabase';
 import { fadeIn, fast } from '@/lib/animations';
+
+type Product = Database['public']['Tables']['products']['Row'];
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);

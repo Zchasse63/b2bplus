@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 /**
  * Register or update a user's Expo push token
@@ -7,30 +9,28 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const body = await request.json();
     const { pushToken } = body;
 
     if (!pushToken) {
-      return NextResponse.json(
-        { error: 'pushToken is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('pushToken is required');
     }
 
     // Validate push token format (Expo push tokens start with ExponentPushToken[])
     if (!pushToken.startsWith('ExponentPushToken[') && !pushToken.startsWith('ExpoPushToken[')) {
-      return NextResponse.json(
-        { error: 'Invalid Expo push token format' },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid Expo push token format');
     }
 
     // Update user's push token in profiles
@@ -40,23 +40,15 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Error updating push token:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to register push token' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('profiles', 'update');
     }
 
     return NextResponse.json({
       success: true,
       message: 'Push token registered successfully',
     });
-  } catch (error: any) {
-    console.error('Error in push token registration:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
@@ -66,12 +58,16 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     // Remove user's push token
@@ -81,22 +77,14 @@ export async function DELETE(request: NextRequest) {
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('Error removing push token:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to unregister push token' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('profiles', 'update');
     }
 
     return NextResponse.json({
       success: true,
       message: 'Push token unregistered successfully',
     });
-  } catch (error: any) {
-    console.error('Error in push token unregistration:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

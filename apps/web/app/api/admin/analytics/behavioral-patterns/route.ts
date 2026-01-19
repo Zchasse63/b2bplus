@@ -1,6 +1,6 @@
 /**
  * Behavioral Patterns Analysis API
- * 
+ *
  * POST /api/admin/analytics/behavioral-patterns
  * Analyzes customer behavioral patterns using AI
  */
@@ -9,12 +9,18 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -23,10 +29,7 @@ export async function POST(request: NextRequest) {
     const { customerId } = body;
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('customerId is required', { customerId: ['customerId is required'] });
     }
 
     const supabase = await createClient();
@@ -39,10 +42,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (analyticsError || !analytics) {
-      return NextResponse.json(
-        { error: 'Customer analytics not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Customer analytics', customerId);
     }
 
     // Fetch recent orders for pattern analysis
@@ -111,12 +111,8 @@ Identify 3-5 key behavioral patterns and provide insights.`;
         analysisDate: new Date().toISOString()
       }
     });
-  } catch (error: any) {
-    console.error('Behavioral patterns error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

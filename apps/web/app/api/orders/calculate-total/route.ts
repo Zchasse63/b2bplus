@@ -9,10 +9,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { validateRequestBody } from '@/lib/validation/middleware';
+import { validateRequestBody } from '@/lib/middleware/validation';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/middleware/rate-limit';
 import { csrfProtection, addCSRFTokenToCookie } from '@/lib/middleware/csrf';
+import { createLogger } from '@/lib/logging/logger';
+import { handleError, AuthError, ValidationError } from '@/lib/middleware/error-handler';
+
+const logger = createLogger('orders-calculate-total');
 
 const CalculateTotalSchema = z.object({
   cart_item_ids: z.array(z.string().uuid()),
@@ -55,10 +59,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
 
     // Validate request body
@@ -77,10 +78,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile?.current_organization_id) {
-      return NextResponse.json(
-        { error: 'No organization found' },
-        { status: 400 }
-      );
+      throw new ValidationError('No organization found');
     }
 
     // Verify cart items belong to this user
@@ -91,10 +89,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (cartError || !cartItems || cartItems.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid cart items' },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid cart items');
     }
 
     // Calculate pricing for each item with all discounts applied
@@ -141,7 +136,7 @@ export async function POST(request: NextRequest) {
           subtotalWithDiscount += itemBasePrice;
         }
       } catch (error) {
-        console.error(`Failed to calculate pricing for item ${item.id}:`, error);
+        logger.error(`Failed to calculate pricing for item ${item.id}:`, error);
         // Fallback to base price
         subtotalWithDiscount += itemBasePrice;
       }
@@ -184,7 +179,7 @@ export async function POST(request: NextRequest) {
           },
         });
     } catch (error) {
-      console.error('Failed to log calculation:', error);
+      logger.error('Failed to log calculation:', error);
       // Don't fail the request if logging fails
     }
 
@@ -206,10 +201,7 @@ export async function POST(request: NextRequest) {
     return addCSRFTokenToCookie(response, '');
 
   } catch (error) {
-    console.error('Error calculating order total:', error);
-    return NextResponse.json(
-      { error: 'Failed to calculate order total' },
-      { status: 500 }
-    );
+    logger.error('Error calculating order total:', error);
+    return handleError(error);
   }
 }

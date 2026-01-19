@@ -1,23 +1,25 @@
 /**
  * Document Links API Route
- * 
+ *
  * Manage relationships between documents and other entities
  * (customers, orders, vendors, invoices, products, etc.)
- * 
+ *
  * Phase 5: Operational AI - Week 20
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError, ConflictError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 
 /**
  * POST /api/admin/documents/links
- * 
+ *
  * Create a link between a document and an entity
- * 
+ *
  * Request body:
  * {
  *   document_id: string (UUID),
@@ -29,6 +31,10 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -39,10 +45,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!document_id || !entity_type || !entity_id) {
-      return NextResponse.json(
-        { error: 'document_id, entity_type, and entity_id are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Missing required fields', {
+        document_id: !document_id ? ['document_id is required'] : [],
+        entity_type: !entity_type ? ['entity_type is required'] : [],
+        entity_id: !entity_id ? ['entity_id is required'] : [],
+      });
     }
 
     // Validate entity_type
@@ -58,10 +65,9 @@ export async function POST(request: NextRequest) {
     ];
 
     if (!validEntityTypes.includes(entity_type)) {
-      return NextResponse.json(
-        { error: `Invalid entity_type. Must be one of: ${validEntityTypes.join(', ')}` },
-        { status: 400 }
-      );
+      throw new ValidationError(`Invalid entity_type. Must be one of: ${validEntityTypes.join(', ')}`, {
+        entity_type: [`Must be one of: ${validEntityTypes.join(', ')}`],
+      });
     }
 
     // Check if document exists
@@ -72,10 +78,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (docError || !document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Document', document_id);
     }
 
     // Check if link already exists
@@ -88,10 +91,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingLink) {
-      return NextResponse.json(
-        { error: 'Link already exists' },
-        { status: 409 }
-      );
+      throw ConflictError.alreadyExists('Document link');
     }
 
     // Create link
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (linkError) {
-      throw new Error(`Failed to create link: ${linkError.message}`);
+      throw DatabaseError.queryFailed('document_links', 'insert');
     }
 
     // Log activity
@@ -132,26 +132,26 @@ export async function POST(request: NextRequest) {
       link,
     });
 
-  } catch (error: any) {
-    console.error('Document link creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 /**
  * GET /api/admin/documents/links
- * 
+ *
  * Get links for a document or entity
- * 
+ *
  * Query parameters:
  * - document_id: Get all links for a document
  * - entity_type + entity_id: Get all documents linked to an entity
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false });
 
       if (error) {
-        throw new Error(`Failed to fetch links: ${error.message}`);
+        throw DatabaseError.queryFailed('document_links', 'fetch');
       }
 
       return NextResponse.json({
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
         });
 
       if (error) {
-        throw new Error(`Failed to fetch linked documents: ${error.message}`);
+        throw DatabaseError.queryFailed('linked_documents', 'fetch');
       }
 
       return NextResponse.json({
@@ -197,31 +197,30 @@ export async function GET(request: NextRequest) {
       });
 
     } else {
-      return NextResponse.json(
-        { error: 'Either document_id or (entity_type + entity_id) must be provided' },
-        { status: 400 }
-      );
+      throw new ValidationError('Either document_id or (entity_type + entity_id) must be provided', {
+        query: ['Either document_id or (entity_type + entity_id) must be provided'],
+      });
     }
 
-  } catch (error: any) {
-    console.error('Document links fetch error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 /**
  * DELETE /api/admin/documents/links
- * 
+ *
  * Remove a link between a document and an entity
- * 
+ *
  * Query parameters:
  * - link_id: ID of the link to delete
  */
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -230,10 +229,7 @@ export async function DELETE(request: NextRequest) {
     const linkId = searchParams.get('link_id');
 
     if (!linkId) {
-      return NextResponse.json(
-        { error: 'link_id is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('link_id is required', { link_id: ['link_id is required'] });
     }
 
     // Get link details before deleting
@@ -244,10 +240,7 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (fetchError || !link) {
-      return NextResponse.json(
-        { error: 'Link not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Document link', linkId);
     }
 
     // Delete link
@@ -257,7 +250,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', linkId);
 
     if (deleteError) {
-      throw new Error(`Failed to delete link: ${deleteError.message}`);
+      throw DatabaseError.queryFailed('document_links', 'delete');
     }
 
     // Log activity
@@ -277,12 +270,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Document link removed successfully',
     });
 
-  } catch (error: any) {
-    console.error('Document link deletion error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

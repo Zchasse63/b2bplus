@@ -14,6 +14,11 @@ import {
   getModelForRequest,
   detectToolCategory,
 } from '@/lib/ai/model-router';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { AICompanionSchema } from '@/lib/validation/schemas';
+import { NextRequest } from 'next/server';
+import { handleError, AuthError } from '@/lib/middleware/error-handler';
 
 // Maximum duration for streaming (5 minutes)
 export const maxDuration = 300;
@@ -47,23 +52,28 @@ Be thorough but efficient. Highlight important metrics and potential issues.
 Format your responses using markdown. Use tables for data when appropriate.`,
 };
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting for AI endpoints
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) {
+      return rateLimitResponse!;
+    }
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Get user profile for role-based access
-    let role: 'customer' | 'admin' | null = null;
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      role = profile?.role as 'customer' | 'admin' | null;
+    if (!user) {
+      throw new AuthError('Authentication required');
     }
 
-    const { messages, context, useReasoning } = await request.json() as {
+    // Validate request body before processing
+    const validation = await validateRequestBody(request, AICompanionSchema);
+    if (!validation.valid) {
+      return validation.response!;
+    }
+
+    const { messages, context, useReasoning } = validation.data as {
       messages: CoreMessage[];
       context?: {
         currentPath?: string;
@@ -71,6 +81,15 @@ export async function POST(request: Request) {
       };
       useReasoning?: boolean; // Optional override flag
     };
+
+    // Get user profile for role-based access
+    let role: 'customer' | 'admin' | null = null;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    role = profile?.role as 'customer' | 'admin' | null;
 
     // Add context to the system message if provided
     let systemPrompt = role === 'admin' ? SYSTEM_PROMPTS.admin : SYSTEM_PROMPTS.customer;
@@ -109,19 +128,9 @@ export async function POST(request: Request) {
     const model = finalUseReasoning ? grokModels.reasoning : grokModels.fast;
     const modelId = finalUseReasoning ? 'grok-4-1-fast-reasoning' : 'grok-4-1-fast';
 
-    console.log('[AI Companion] Model routing:', {
-      modelId,
-      score: modelSelection.score,
-      reasons: modelSelection.reasons,
-      manualOverride: useReasoning !== undefined,
-    });
 
     // Get tools available for user role
     const tools = getToolsForRole(role);
-
-    // Stage 2: prepareStep for dynamic escalation would go here
-    // Currently commented out due to TypeScript compatibility with AI SDK version
-    // TODO: Enable when using Agent class or upgrading SDK
 
     // Stream the response with intelligent routing
     const result = streamText({
@@ -154,11 +163,7 @@ export async function POST(request: Request) {
     // Return streaming response
     return (result as any).toDataStreamResponse();
   } catch (error) {
-    console.error('AI Companion error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Failed to process request' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return handleError(error);
   }
 }
 

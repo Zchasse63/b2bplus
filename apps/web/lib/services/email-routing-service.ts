@@ -30,8 +30,7 @@ export async function routeEmail(email: ProcessedEmail): Promise<void> {
 
   try {
     // Check if sender is opted out
-    const { data: lead } = await supabase
-      .from('leads')
+    const { data: lead } = await (supabase.from('leads') as any)
       .select('do_not_contact, unsubscribed')
       .eq('email', email.fromAddress)
       .single()
@@ -78,7 +77,7 @@ async function routeInquiry(email: ProcessedEmail): Promise<void> {
   const supabase = createAdminClient()
 
   // Create ticket or assign to sales
-  await supabase.from('email_actions_log').insert({
+  await (supabase.from('email_actions_log') as any).insert({
     email_id: email.id,
     action_type: 'routed_to_sales',
     success: true,
@@ -96,7 +95,7 @@ async function routeComplaint(email: ProcessedEmail): Promise<void> {
   const supabase = createAdminClient()
 
   // Create high-priority ticket
-  await supabase.from('email_actions_log').insert({
+  await (supabase.from('email_actions_log') as any).insert({
     email_id: email.id,
     action_type: 'routed_to_support',
     success: true,
@@ -113,7 +112,7 @@ async function routeComplaint(email: ProcessedEmail): Promise<void> {
 async function routeFeedback(email: ProcessedEmail): Promise<void> {
   const supabase = createAdminClient()
 
-  await supabase.from('email_actions_log').insert({
+  await (supabase.from('email_actions_log') as any).insert({
     email_id: email.id,
     action_type: 'routed_to_product',
     success: true,
@@ -130,8 +129,7 @@ async function routeSpam(email: ProcessedEmail): Promise<void> {
   const supabase = createAdminClient()
 
   // Mark sender as spam
-  await supabase
-    .from('leads')
+  await (supabase.from('leads') as any)
     .update({ do_not_contact: true })
     .eq('email', email.fromAddress)
 
@@ -146,7 +144,7 @@ async function routeSpam(email: ProcessedEmail): Promise<void> {
 async function routeGeneral(email: ProcessedEmail): Promise<void> {
   const supabase = createAdminClient()
 
-  await supabase.from('email_actions_log').insert({
+  await (supabase.from('email_actions_log') as any).insert({
     email_id: email.id,
     action_type: 'routed_to_general',
     success: true,

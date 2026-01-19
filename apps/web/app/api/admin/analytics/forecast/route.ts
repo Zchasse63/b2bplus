@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkAdminRole } from '@/lib/middleware/admin'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, ValidationError, NotFoundError, AuthError, ForbiddenError } from '@/lib/middleware/error-handler'
 
 /**
  * Product Usage Forecasting API
@@ -12,6 +14,10 @@ import { checkAdminRole } from '@/lib/middleware/admin'
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole()
     if (authError) return authError
@@ -22,10 +28,7 @@ export async function POST(request: NextRequest) {
     const { customerId, productId, forecastPeriod = 'next_30_days' } = body
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('customerId is required', { customerId: ['customerId is required'] })
     }
 
     // Get historical data
@@ -37,10 +40,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (analyticsError || !analytics) {
-      return NextResponse.json(
-        { error: 'No historical data found for this customer/product combination' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Historical data for customer/product combination', customerId)
     }
 
     // Get historical orders
@@ -91,12 +91,8 @@ export async function POST(request: NextRequest) {
       forecast: savedForecast || forecast
     })
 
-  } catch (error: any) {
-    console.error('Forecast error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate forecast' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -192,12 +188,16 @@ function calculateStdDev(values: number[]): number {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -208,17 +208,14 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
     const { searchParams } = new URL(request.url)
     const customerId = searchParams.get('customerId')
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('customerId is required', { customerId: ['customerId is required'] })
     }
 
     const { data: forecasts, error } = await supabase
@@ -244,11 +241,7 @@ export async function GET(request: NextRequest) {
       forecasts
     })
 
-  } catch (error: any) {
-    console.error('Get forecasts error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch forecasts' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

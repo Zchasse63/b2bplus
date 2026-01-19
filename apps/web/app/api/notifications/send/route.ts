@@ -6,6 +6,8 @@ import {
   sendBatchPushNotifications,
   sendOrganizationNotification,
 } from '@/lib/services/notifications';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 /**
  * Send push notifications (Admin only)
@@ -13,6 +15,10 @@ import {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -22,10 +28,7 @@ export async function POST(request: NextRequest) {
     const { type, recipients, title, message, data } = body;
 
     if (!title || !message) {
-      return NextResponse.json(
-        { error: 'title and message are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('title and message are required');
     }
 
     const notification = {
@@ -41,10 +44,7 @@ export async function POST(request: NextRequest) {
       case 'single':
         // Send to a single user
         if (!recipients?.userId) {
-          return NextResponse.json(
-            { error: 'userId is required for single notification' },
-            { status: 400 }
-          );
+          throw new ValidationError('userId is required for single notification');
         }
 
         const { data: profile } = await supabase
@@ -54,10 +54,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (!profile?.expo_push_token) {
-          return NextResponse.json(
-            { error: 'User does not have push notifications enabled' },
-            { status: 404 }
-          );
+          throw new NotFoundError('User with push notifications enabled', recipients.userId);
         }
 
         result = await sendPushNotification(profile.expo_push_token, notification);
@@ -66,10 +63,7 @@ export async function POST(request: NextRequest) {
       case 'organization':
         // Send to all users in an organization
         if (!recipients?.organizationId) {
-          return NextResponse.json(
-            { error: 'organizationId is required for organization notification' },
-            { status: 400 }
-          );
+          throw new ValidationError('organizationId is required for organization notification');
         }
 
         result = await sendOrganizationNotification(
@@ -87,10 +81,7 @@ export async function POST(request: NextRequest) {
           .not('expo_push_token', 'is', null);
 
         if (!allProfiles || allProfiles.length === 0) {
-          return NextResponse.json(
-            { error: 'No users with push notifications enabled' },
-            { status: 404 }
-          );
+          throw new NotFoundError('Users with push notifications enabled');
         }
 
         const messages = allProfiles.map((p: any) => ({
@@ -106,21 +97,14 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid notification type. Must be: single, organization, or broadcast' },
-          { status: 400 }
-        );
+        throw new ValidationError('Invalid notification type. Must be: single, organization, or broadcast');
     }
 
     return NextResponse.json({
       success: true,
       result,
     });
-  } catch (error: any) {
-    console.error('Error sending notification:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

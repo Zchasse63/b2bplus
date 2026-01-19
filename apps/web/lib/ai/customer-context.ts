@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import type { Order, TopProduct, CartItem, Organization, OrderItem } from '@/lib/types/ai';
 
 /**
  * Customer Context for AI Operations
@@ -13,11 +14,11 @@ export interface CustomerContext {
   organizationId: string;
   organizationName: string;
   role: string;
-  recentOrders: any[];
-  topProducts: any[];
+  recentOrders: Order[];
+  topProducts: TopProduct[];
   totalSpend: number;
   // Phase 2 enhancements for chatbot
-  cartItems: any[];
+  cartItems: CartItem[];
   cartTotal: number;
   creditLimit: number;
   creditAvailable: number;
@@ -54,9 +55,9 @@ export async function getCustomerContext(userId: string): Promise<CustomerContex
   if (memberError || !member) {
     throw new Error('User organization membership not found');
   }
-  
-  const org = member.organization as any;
-  
+
+  const org = (Array.isArray(member.organization) ? member.organization[0] : member.organization) as Organization;
+
   // Verify organization is approved
   if (org.approval_status !== 'approved') {
     throw new Error('Organization not approved');
@@ -65,7 +66,7 @@ export async function getCustomerContext(userId: string): Promise<CustomerContex
   const organizationId = org.id;
   
   // Get recent orders (ONLY for this organization)
-  const { data: orders } = await supabase
+  const { data: rawOrders } = await supabase
     .from('orders')
     .select(`
       id,
@@ -82,6 +83,20 @@ export async function getCustomerContext(userId: string): Promise<CustomerContex
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: false })
     .limit(10);
+
+  // Normalize orders data to match Order type
+  const orders: Order[] = rawOrders?.map((order: any) => ({
+    id: order.id,
+    total: order.total,
+    status: order.status,
+    created_at: order.created_at,
+    order_items: order.order_items?.map((item: any) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      products: Array.isArray(item.products) ? item.products[0] : item.products,
+    })) || [],
+  })) || [];
   
   // Calculate total spend (ONLY for this organization)
   const { data: spendData } = await supabase
@@ -130,10 +145,11 @@ export async function getCustomerContext(userId: string): Promise<CustomerContex
     .slice(0, 10);
 
   // Phase 2: Get cart contents
-  const { data: cartItems } = await supabase
+  const { data: rawCartItems } = await supabase
     .from('cart_items')
     .select(`
       id,
+      product_id,
       quantity,
       product:products(
         id,
@@ -146,11 +162,19 @@ export async function getCustomerContext(userId: string): Promise<CustomerContex
     .eq('user_id', userId)
     .eq('organization_id', organizationId);
 
+  // Normalize cart items to match CartItem type
+  const cartItems: CartItem[] = rawCartItems?.map((item: any) => ({
+    id: item.id,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    product: Array.isArray(item.product) ? item.product[0] : item.product,
+  })) || [];
+
   // Calculate cart total
-  const cartTotal = cartItems?.reduce((sum, item: any) => {
+  const cartTotal = cartItems.reduce((sum, item) => {
     const price = item.product?.base_price || 0;
     return sum + (price * item.quantity);
-  }, 0) || 0;
+  }, 0);
 
   // Get credit information
   const creditLimit = org.credit_limit || 0;
@@ -274,8 +298,8 @@ export async function verifyProductAccess(
   if (!member) {
     return false;
   }
-  
-  const org = member.organization as any;
+
+  const org = (Array.isArray(member.organization) ? member.organization[0] : member.organization) as Organization;
   return org.approval_status === 'approved';
 }
 

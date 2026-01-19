@@ -1,14 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 // GET volume discounts for a product
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
@@ -29,29 +35,28 @@ export async function GET(request: NextRequest) {
     const { data: discounts, error } = await query;
 
     if (error) {
-      console.error('Error fetching volume discounts:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch discounts' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('volume_discounts', 'select');
     }
 
     return NextResponse.json({ success: true, discounts });
 
   } catch (error) {
-    console.error('Error in volume-discounts GET API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // POST create volume discount
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const body = await request.json();
@@ -77,24 +82,24 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!productId || !minQuantity) {
-      return NextResponse.json(
-        { error: 'Product ID and minimum quantity are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID and minimum quantity are required', {
+        productId: !productId ? ['Required'] : [],
+        minQuantity: !minQuantity ? ['Required'] : [],
+      });
     }
 
     if (!discountPercentage && !discountAmount) {
-      return NextResponse.json(
-        { error: 'Either discount percentage or discount amount is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Either discount percentage or discount amount is required', {
+        discountPercentage: ['Required if discountAmount not provided'],
+        discountAmount: ['Required if discountPercentage not provided'],
+      });
     }
 
     if (discountPercentage && discountAmount) {
-      return NextResponse.json(
-        { error: 'Cannot specify both discount percentage and amount' },
-        { status: 400 }
-      );
+      throw new ValidationError('Cannot specify both discount percentage and amount', {
+        discountPercentage: ['Cannot be combined with discountAmount'],
+        discountAmount: ['Cannot be combined with discountPercentage'],
+      });
     }
 
     const { data: discount, error } = await supabase
@@ -116,29 +121,28 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error creating volume discount:', error);
-      return NextResponse.json(
-        { error: 'Failed to create discount' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('volume_discounts', 'insert');
     }
 
     return NextResponse.json({ success: true, discount });
 
   } catch (error) {
-    console.error('Error in volume-discounts POST API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // PATCH update volume discount
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -148,7 +152,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const body = await request.json();
@@ -164,7 +168,7 @@ export async function PATCH(request: NextRequest) {
     } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'Discount ID is required' }, { status: 400 });
+      throw new ValidationError('Discount ID is required', { id: ['Required'] });
     }
 
     const updates: any = { updated_at: new Date().toISOString() };
@@ -187,29 +191,28 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating volume discount:', error);
-      return NextResponse.json(
-        { error: 'Failed to update discount' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('volume_discounts', 'update');
     }
 
     return NextResponse.json({ success: true, discount });
 
   } catch (error) {
-    console.error('Error in volume-discounts PATCH API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // DELETE volume discount
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -219,14 +222,14 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Discount ID is required' }, { status: 400 });
+      throw new ValidationError('Discount ID is required', { id: ['Required'] });
     }
 
     const { error } = await supabase
@@ -235,17 +238,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting volume discount:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete discount' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('volume_discounts', 'delete');
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in volume-discounts DELETE API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -25,6 +25,18 @@
     "test:watch": {
       "cache": false,
       "persistent": true
+    },
+    "test:integration": {
+      "dependsOn": ["^build"]
+    },
+    "test:security": {
+      "dependsOn": ["^build"]
+    },
+    "test:e2e": {
+      "cache": false
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"]
     }
   }
 }

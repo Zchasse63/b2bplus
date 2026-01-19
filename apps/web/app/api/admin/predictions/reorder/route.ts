@@ -1,6 +1,6 @@
 /**
  * Reorder Predictions API
- * 
+ *
  * POST /api/admin/predictions/reorder
  * Generate AI-powered reorder predictions for all customers
  */
@@ -9,12 +9,18 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSON } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -34,10 +40,7 @@ export async function POST(request: NextRequest) {
       .limit(100);
 
     if (customersError || !customers) {
-      return NextResponse.json(
-        { error: 'Failed to fetch customers' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('profiles', 'select');
     }
 
     const predictions: any[] = [];
@@ -131,12 +134,7 @@ Return JSON with: predictedDaysFromNow, confidenceScore, recommendedProducts, ex
       message: `Generated ${predictions.length} reorder predictions`,
     });
 
-  } catch (error: any) {
-    console.error('Reorder predictions error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

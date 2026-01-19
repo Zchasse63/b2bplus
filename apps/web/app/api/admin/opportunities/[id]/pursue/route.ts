@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
 interface PursueOpportunityRequest {
   action: 'contact' | 'mark_pursued' | 'dismiss' | 'create_campaign';
@@ -16,6 +18,10 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -32,10 +38,7 @@ export async function POST(
       .single();
 
     if (oppError || !opportunity) {
-      return NextResponse.json(
-        { error: 'Opportunity not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Opportunity', params.id);
     }
 
     // Handle different actions
@@ -52,11 +55,7 @@ export async function POST(
         });
 
         if (taskError) {
-          console.error('Error creating task:', taskError);
-          return NextResponse.json(
-            { error: 'Failed to create task' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('tasks', 'insert');
         }
 
         // Update opportunity status to contacted
@@ -70,11 +69,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (updateError) {
-          console.error('Error updating opportunity:', updateError);
-          return NextResponse.json(
-            { error: 'Failed to update opportunity' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('customer_opportunities', 'update');
         }
 
         return NextResponse.json({
@@ -94,11 +89,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (pursueError) {
-          console.error('Error updating opportunity:', pursueError);
-          return NextResponse.json(
-            { error: 'Failed to update opportunity' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('customer_opportunities', 'update');
         }
 
         return NextResponse.json({
@@ -120,11 +111,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (dismissError) {
-          console.error('Error dismissing opportunity:', dismissError);
-          return NextResponse.json(
-            { error: 'Failed to dismiss opportunity' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('customer_opportunities', 'update');
         }
 
         return NextResponse.json({
@@ -134,86 +121,60 @@ export async function POST(
 
       case 'create_campaign':
         // Create email campaign for this opportunity
-        try {
-          // Get opportunity details
-          const { data: opportunity } = await supabase
-            .from('customer_opportunities')
-            .select('*, product:products(name, description)')
-            .eq('id', params.id)
-            .single();
+        // Get opportunity details
+        const { data: opportunityDetails } = await supabase
+          .from('customer_opportunities')
+          .select('*, product:products(name, description)')
+          .eq('id', params.id)
+          .single();
 
-          if (!opportunity) {
-            return NextResponse.json(
-              { error: 'Opportunity not found' },
-              { status: 404 }
-            );
-          }
-
-          // Create campaign
-          const { data: campaign, error: campaignError } = await supabase
-            .from('email_campaigns')
-            .insert({
-              organization_id: opportunity.organization_id,
-              name: `Campaign: ${opportunity.product?.name || 'Product'}`,
-              subject: `Special Offer: ${opportunity.product?.name || 'Product'}`,
-              body: `We noticed you might be interested in ${opportunity.product?.name}. Here's a special offer just for you!`,
-              status: 'draft',
-              created_by: user?.id,
-            })
-            .select('id')
-            .single();
-
-          if (campaignError || !campaign) {
-            console.error('Error creating campaign:', campaignError);
-            return NextResponse.json(
-              { error: 'Failed to create campaign' },
-              { status: 500 }
-            );
-          }
-
-          // Update opportunity status
-          const { error: updateError } = await supabase
-            .from('customer_opportunities')
-            .update({
-              status: 'contacted',
-              contacted_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', params.id);
-
-          if (updateError) {
-            console.error('Error updating opportunity:', updateError);
-            return NextResponse.json(
-              { error: 'Failed to update opportunity' },
-              { status: 500 }
-            );
-          }
-
-          return NextResponse.json({
-            success: true,
-            message: 'Campaign created successfully',
-            campaignId: campaign.id,
-          });
-        } catch (error) {
-          console.error('Error in create_campaign:', error);
-          return NextResponse.json(
-            { error: 'Failed to create campaign' },
-            { status: 500 }
-          );
+        if (!opportunityDetails) {
+          throw new NotFoundError('Opportunity', params.id);
         }
 
+        // Create campaign
+        const { data: campaign, error: campaignError } = await supabase
+          .from('email_campaigns')
+          .insert({
+            organization_id: opportunityDetails.organization_id,
+            name: `Campaign: ${opportunityDetails.product?.name || 'Product'}`,
+            subject: `Special Offer: ${opportunityDetails.product?.name || 'Product'}`,
+            body: `We noticed you might be interested in ${opportunityDetails.product?.name}. Here's a special offer just for you!`,
+            status: 'draft',
+            created_by: user?.id,
+          })
+          .select('id')
+          .single();
+
+        if (campaignError || !campaign) {
+          throw DatabaseError.queryFailed('email_campaigns', 'insert');
+        }
+
+        // Update opportunity status
+        const { error: campaignUpdateError } = await supabase
+          .from('customer_opportunities')
+          .update({
+            status: 'contacted',
+            contacted_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', params.id);
+
+        if (campaignUpdateError) {
+          throw DatabaseError.queryFailed('customer_opportunities', 'update');
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Campaign created successfully',
+          campaignId: campaign.id,
+        });
+
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        throw new ValidationError('Invalid action', { action: ['Must be contact, mark_pursued, dismiss, or create_campaign'] });
     }
   } catch (error) {
-    console.error('Error in pursue opportunity:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -226,6 +187,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -235,10 +200,7 @@ export async function PATCH(
     const { outcome, outcome_revenue, outcome_notes } = body;
 
     if (!outcome || !['won', 'lost', 'dismissed'].includes(outcome)) {
-      return NextResponse.json(
-        { error: 'Invalid outcome. Must be won, lost, or dismissed' },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid outcome', { outcome: ['Must be won, lost, or dismissed'] });
     }
 
     // Update opportunity with outcome
@@ -255,11 +217,7 @@ export async function PATCH(
       .eq('id', params.id);
 
     if (updateError) {
-      console.error('Error updating opportunity outcome:', updateError);
-      return NextResponse.json(
-        { error: 'Failed to update opportunity outcome' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('customer_opportunities', 'update');
     }
 
     return NextResponse.json({
@@ -267,11 +225,6 @@ export async function PATCH(
       message: `Opportunity marked as ${outcome}`,
     });
   } catch (error) {
-    console.error('Error updating opportunity outcome:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/sendgrid';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { generateJSON } from '@/lib/ai/providers/unified';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 // Batch size for concurrent email sends
 const BATCH_SIZE = 50;
@@ -77,6 +79,10 @@ Return JSON with this exact structure:
 // POST send email campaign
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -87,10 +93,7 @@ export async function POST(request: NextRequest) {
     const { campaignId, useAI = false } = body;
 
     if (!campaignId) {
-      return NextResponse.json(
-        { error: 'Campaign ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Campaign ID is required', { campaignId: ['Campaign ID is required'] });
     }
 
     // Get campaign details
@@ -101,17 +104,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (campaignError || !campaign) {
-      return NextResponse.json(
-        { error: 'Campaign not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Campaign', campaignId);
     }
 
     if (campaign.status === 'sent') {
-      return NextResponse.json(
-        { error: 'Campaign already sent' },
-        { status: 400 }
-      );
+      throw new ValidationError('Campaign already sent', { status: ['Campaign has already been sent'] });
     }
 
     // Update campaign status to sending
@@ -132,11 +129,8 @@ export async function POST(request: NextRequest) {
         .from('email_campaigns')
         .update({ status: 'draft' })
         .eq('id', campaignId);
-        
-      return NextResponse.json(
-        { error: 'No recipients found' },
-        { status: 400 }
-      );
+
+      throw new ValidationError('No recipients found', { recipients: ['No pending recipients for this campaign'] });
     }
 
     // Send emails in batches for better performance
@@ -267,10 +261,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in send campaign API:', error);
-    return NextResponse.json(
-      { error: 'Failed to send campaign', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

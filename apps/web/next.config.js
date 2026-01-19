@@ -4,6 +4,18 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 /**
+ * NODE_ENV Validation
+ * Critical for security: Ensures NODE_ENV is properly set at build time
+ * Prevents dev CSP from leaking into production
+ */
+const NODE_ENV = process.env.NODE_ENV || 'development';
+if (!['development', 'production', 'test'].includes(NODE_ENV)) {
+  throw new Error(
+    `Invalid NODE_ENV: "${NODE_ENV}". Must be one of: development, production, test`
+  );
+}
+
+/**
  * Generate a nonce for CSP
  * In production, this should be generated per-request
  */
@@ -39,6 +51,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'example.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
       },
     ],
   },
@@ -77,11 +93,38 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          // Content-Security-Policy: Prevent XSS and injection attacks
-          // Note: In production, nonces should be generated per-request
+          /**
+           * Content-Security-Policy: Prevent XSS and injection attacks
+           *
+           * DEV MODE: Includes 'unsafe-eval' and 'unsafe-inline' for hot reload
+           * PRODUCTION: Strict script-src CSP without unsafe-eval or unsafe-inline
+           *
+           * Directives:
+           * - default-src 'self': Only load resources from same origin by default
+           * - script-src: Allow scripts from self + CDNs (jsDelivr, Tailwind)
+           *   - PRODUCTION: NO 'unsafe-eval' or 'unsafe-inline' for script execution security
+           *   - DEVELOPMENT: Includes unsafe directives for Next.js hot reload
+           * - style-src: Allow styles from self + Tailwind CDN + 'unsafe-inline'
+           *   - 'unsafe-inline' needed for CSS-in-JS libraries (styled-components, emotion)
+           *   - This is acceptable as style injection doesn't execute code
+           * - img-src: Allow images from self, data URIs, and any HTTPS
+           * - font-src: Allow fonts from self, data URIs, and HTTPS
+           * - connect-src: Allow connections to self, HTTPS APIs, and WebSockets
+           * - frame-ancestors 'none': Prevent clickjacking (no iframes)
+           * - base-uri 'self': Prevent base tag injection
+           * - form-action 'self': Forms can only submit to same origin
+           * - object-src 'none': Block plugins like Flash
+           * - media-src: Allow media from self and HTTPS
+           * - manifest-src 'self': PWA manifest from same origin only
+           *
+           * Security Note: style-src 'unsafe-inline' is required for CSS-in-JS frameworks
+           * and does not pose the same XSS risk as script-src 'unsafe-inline' because
+           * CSS cannot execute arbitrary JavaScript. The critical security boundary is
+           * script-src, which is strict in production (no unsafe-eval, no unsafe-inline).
+           */
           {
             key: 'Content-Security-Policy',
-            value: process.env.NODE_ENV === 'development'
+            value: NODE_ENV === 'development'
               ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; media-src 'self' https:; manifest-src 'self'"
               : "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; style-src 'self' https://cdn.tailwindcss.com; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; media-src 'self' https:; manifest-src 'self'",
           },

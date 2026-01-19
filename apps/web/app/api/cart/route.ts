@@ -11,6 +11,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createLogger } from '@/lib/logging/logger'
 import { withCSRFProtection } from '@/lib/middleware/csrf'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { validateRequestBody } from '@/lib/middleware/validation'
+import { AddToCartSchema } from '@/lib/validation/schemas'
+import { handleError, AuthError, ForbiddenError, DatabaseError } from '@/lib/middleware/error-handler'
 
 const logger = createLogger('cart-api')
 
@@ -24,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     const { data: cartItems, error } = await supabase
@@ -35,19 +39,12 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       logger.error('Failed to fetch cart', { error, userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to fetch cart' },
-        { status: 500 }
-      )
+      throw DatabaseError.queryFailed('cart_items', 'fetch')
     }
 
     return NextResponse.json({ items: cartItems || [] })
-  } catch (error: any) {
-    logger.error('Cart GET error', { error })
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -57,37 +54,39 @@ export async function GET(request: NextRequest) {
  */
 export const POST = withCSRFProtection(async (request: NextRequest) => {
   try {
+    // Apply rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) {
+      return rateLimitResponse!;
+    }
+
     const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
-    const body = await request.json()
-    const { productId, quantity, organizationId } = body
-
-    if (!productId || !quantity || !organizationId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    // Validate request body
+    const validation = await validateRequestBody(request, AddToCartSchema);
+    if (!validation.valid) {
+      return validation.response!;
     }
 
-    // Verify user belongs to organization
+    const { product_id: productId, quantity } = validation.data!;
+
+    // Get user's organization
     const { data: membership } = await supabase
       .from('organization_members')
-      .select('id')
+      .select('organization_id')
       .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .single()
+      .single();
 
     if (!membership) {
-      return NextResponse.json(
-        { error: 'Unauthorized organization' },
-        { status: 403 }
-      )
+      throw new ForbiddenError('User not in organization');
     }
+
+    const organizationId = membership.organization_id;
 
     // Add to cart
     const { data: cartItem, error } = await supabase
@@ -103,20 +102,13 @@ export const POST = withCSRFProtection(async (request: NextRequest) => {
 
     if (error) {
       logger.error('Failed to add to cart', { error, userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to add item to cart' },
-        { status: 500 }
-      )
+      throw DatabaseError.queryFailed('cart_items', 'insert')
     }
 
     logger.info('Item added to cart', { userId: user.id, productId })
     return NextResponse.json({ item: cartItem }, { status: 201 })
-  } catch (error: any) {
-    logger.error('Cart POST error', { error })
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 })
 

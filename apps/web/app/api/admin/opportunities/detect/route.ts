@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateTextPro } from '@/lib/ai/providers/unified'
+import { validateRequestBody } from '@/lib/middleware/validation'
+import { DetectOpportunitiesSchema } from '@/lib/validation/schemas'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ForbiddenError } from '@/lib/middleware/error-handler'
 
 /**
  * Opportunity Detection API
@@ -14,11 +18,11 @@ import { generateTextPro } from '@/lib/ai/providers/unified'
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -29,11 +33,23 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
-    const body = await request.json()
-    const { customerId, opportunityTypes = ['all'] } = body
+    // Apply rate limiting for admin AI operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) {
+      return rateLimitResponse!
+    }
+
+    // Validate request body
+    const validation = await validateRequestBody(request, DetectOpportunitiesSchema)
+    if (!validation.valid) {
+      return validation.response!
+    }
+
+    const { customerId } = validation.data!
+    const opportunityTypes = ['all']
 
     const opportunities = []
 
@@ -75,12 +91,8 @@ export async function POST(request: NextRequest) {
       opportunities
     })
 
-  } catch (error: any) {
-    console.error('Opportunity detection error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to detect opportunities' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -260,7 +272,7 @@ async function detectUpsellOpportunities(supabase: any, customerId?: string) {
 
     if (nextTier) {
       const potentialSavings = (purchase.products.price * nextTier.discount_percentage / 100) * avgQty
-      
+
       opportunities.push({
         customer_id: purchase.customer_id,
         opportunity_type: 'upsell',
@@ -324,7 +336,7 @@ async function generateOpportunityReasoning(
     let prompt = ''
 
     if (type === 'stopped_buying') {
-      prompt = `Customer stopped buying "${product?.name}" (${product?.category}). 
+      prompt = `Customer stopped buying "${product?.name}" (${product?.category}).
 Last purchase: ${data.last_purchase_date}
 Days since: ${data.days_since_purchase}
 Historical revenue: $${data.total_historical_revenue}
@@ -335,7 +347,6 @@ Write a brief, actionable reason why this is a sales opportunity (1-2 sentences)
 
     const response = await generateTextPro(prompt, {
       temperature: 0.3,  // Lower for analytical reasoning
-      maxTokens: 150,
       systemPrompt: 'You are a B2B sales analyst specializing in opportunity detection and revenue optimization. Apply deep analytical reasoning to identify high-value opportunities.'
     })
 
@@ -353,11 +364,11 @@ Write a brief, actionable reason why this is a sales opportunity (1-2 sentences)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -368,7 +379,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
     const { searchParams } = new URL(request.url)
@@ -410,11 +421,7 @@ export async function GET(request: NextRequest) {
       opportunities: data
     })
 
-  } catch (error: any) {
-    console.error('Get opportunities error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch opportunities' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

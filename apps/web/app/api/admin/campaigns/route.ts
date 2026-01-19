@@ -2,10 +2,18 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { csrfProtection } from '@/lib/middleware/csrf';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { CampaignCreateSchema, CampaignUpdateSchema } from '@/lib/validation/schemas';
+import { handleError, ValidationError } from '@/lib/middleware/error-handler';
 
 // GET all campaigns
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -52,8 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, campaigns: campaignsWithStats });
 
   } catch (error) {
-    console.error('Error in campaigns API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -66,13 +73,20 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
+    // Validate request body
+    const validation = await validateRequestBody(request, CampaignCreateSchema);
+    if (!validation.valid) return validation.response!;
+
     const supabase = await createClient();
 
-    const body = await request.json();
     const {
       name,
       subject,
@@ -81,14 +95,7 @@ export async function POST(request: NextRequest) {
       textContent,
       targetAudience,
       scheduledAt
-    } = body;
-
-    if (!name || !subject) {
-      return NextResponse.json(
-        { error: 'Name and subject are required' },
-        { status: 400 }
-      );
-    }
+    } = validation.data!;
 
     // Create campaign
     const { data: campaign, error: campaignError } = await supabase
@@ -151,8 +158,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, campaign });
 
   } catch (error) {
-    console.error('Error in campaigns POST API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -165,18 +171,21 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
+    // Validate request body
+    const validation = await validateRequestBody(request, CampaignUpdateSchema);
+    if (!validation.valid) return validation.response!;
+
     const supabase = await createClient();
 
-    const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 });
-    }
+    const { id, ...updates } = validation.data!;
 
     // Check if campaign can be updated
     const { data: campaign } = await supabase
@@ -186,10 +195,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (campaign?.status === 'sent') {
-      return NextResponse.json(
-        { error: 'Cannot update sent campaign' },
-        { status: 400 }
-      );
+      throw new ValidationError('Cannot update sent campaign', { status: ['Campaign has already been sent'] });
     }
 
     const { data: updatedCampaign, error } = await supabase
@@ -210,8 +216,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, campaign: updatedCampaign });
 
   } catch (error) {
-    console.error('Error in campaigns PATCH API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -224,6 +229,10 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -234,7 +243,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Campaign ID is required' }, { status: 400 });
+      throw new ValidationError('Campaign ID is required', { id: ['Campaign ID is required'] });
     }
 
     const { error } = await supabase
@@ -250,7 +259,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in campaigns DELETE API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

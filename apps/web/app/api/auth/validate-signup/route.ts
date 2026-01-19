@@ -1,84 +1,38 @@
 /**
  * User Signup Validation
- * 
+ *
  * POST /api/auth/validate-signup
  * Validates signup data before creating account
  */
 
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
-
-interface SignupValidationRequest {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  fullName: string;
-}
-
-interface ValidationError {
-  field: string;
-  message: string;
-}
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { SignupValidationSchema } from '@/lib/validation/schemas';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError } from '@/lib/middleware/error-handler';
+import { ValidationError, DatabaseError, ConflictError } from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
   try {
-    const body: SignupValidationRequest = await request.json();
-    const { email, password, confirmPassword, fullName } = body;
+    // Rate limiting (sensitive - prevents enumeration attacks)
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
 
-    const errors: ValidationError[] = [];
-
-    // Validate email
-    if (!email) {
-      errors.push({ field: 'email', message: 'Email is required' });
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.push({ field: 'email', message: 'Invalid email format' });
+    // Validate request body with centralized schema
+    const validation = await validateRequestBody(request, SignupValidationSchema);
+    if (!validation.valid) {
+      return validation.response!;
     }
 
-    // Validate password
-    if (!password) {
-      errors.push({ field: 'password', message: 'Password is required' });
-    } else if (password.length < 8) {
-      errors.push({ field: 'password', message: 'Password must be at least 8 characters' });
-    } else if (!/[A-Z]/.test(password)) {
-      errors.push({ field: 'password', message: 'Password must contain at least one uppercase letter' });
-    } else if (!/[0-9]/.test(password)) {
-      errors.push({ field: 'password', message: 'Password must contain at least one number' });
-    } else if (!/[!@#$%^&*]/.test(password)) {
-      errors.push({ field: 'password', message: 'Password must contain at least one special character (!@#$%^&*)' });
-    }
-
-    // Validate password confirmation
-    if (!confirmPassword) {
-      errors.push({ field: 'confirmPassword', message: 'Password confirmation is required' });
-    } else if (password !== confirmPassword) {
-      errors.push({ field: 'confirmPassword', message: 'Passwords do not match' });
-    }
-
-    // Validate full name
-    if (!fullName) {
-      errors.push({ field: 'fullName', message: 'Full name is required' });
-    } else if (fullName.trim().length < 2) {
-      errors.push({ field: 'fullName', message: 'Full name must be at least 2 characters' });
-    }
-
-    // If validation errors exist, return them
-    if (errors.length > 0) {
-      return NextResponse.json(
-        { valid: false, errors },
-        { status: 400 }
-      );
-    }
+    const { email } = validation.data!;
 
     // Check if email already exists
     const adminClient = createAdminClient();
     const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
 
     if (usersError) {
-      return NextResponse.json(
-        { error: 'Failed to validate email' },
-        { status: 500 }
-      );
+      throw new DatabaseError('Failed to validate email', 'listUsers', 'auth.users');
     }
 
     const emailExists = users?.some(u => u.email?.toLowerCase() === email.toLowerCase());
@@ -96,12 +50,7 @@ export async function POST(request: NextRequest) {
       message: 'Signup data is valid',
     });
 
-  } catch (error: any) {
-    console.error('Signup validation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

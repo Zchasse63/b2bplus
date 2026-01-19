@@ -11,7 +11,7 @@ import { z } from 'zod';
 
 export const MagicLinkRequestSchema = z.object({
   email: z.string().email().optional(),
-  phone: z.string().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/, 'Invalid phone number format (E.164 required)').optional(),
   purpose: z.enum(['login', 'signup', 'password_reset', 'offer_access']).default('login'),
   redirectUrl: z.string().url().optional(),
 }).refine(
@@ -21,14 +21,28 @@ export const MagicLinkRequestSchema = z.object({
 
 export type MagicLinkRequest = z.infer<typeof MagicLinkRequestSchema>;
 
+const passwordValidation = z.string()
+  .min(12, 'Password must be at least 12 characters')
+  .regex(/[a-z]/, 'Password must contain lowercase letters')
+  .regex(/[A-Z]/, 'Password must contain uppercase letters')
+  .regex(/[0-9]/, 'Password must contain numbers')
+  .regex(/[!@#$%^&*]/, 'Password must contain special characters');
+
+export const SignupValidationSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: passwordValidation,
+  confirmPassword: z.string(),
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+}).refine(
+  (data) => data.password === data.confirmPassword,
+  { message: 'Passwords do not match', path: ['confirmPassword'] }
+);
+
+export type SignupValidation = z.infer<typeof SignupValidationSchema>;
+
 export const PasswordResetSchema = z.object({
   email: z.string().email('Invalid email address'),
-  newPassword: z.string()
-    .min(12, 'Password must be at least 12 characters')
-    .regex(/[a-z]/, 'Password must contain lowercase letters')
-    .regex(/[A-Z]/, 'Password must contain uppercase letters')
-    .regex(/[0-9]/, 'Password must contain numbers')
-    .regex(/[!@#$%^&*]/, 'Password must contain special characters'),
+  newPassword: passwordValidation,
   confirmPassword: z.string(),
 }).refine(
   (data) => data.newPassword === data.confirmPassword,
@@ -160,7 +174,7 @@ export const AssignPricingTierSchema = z.object({
 export type AssignPricingTier = z.infer<typeof AssignPricingTierSchema>;
 
 // ============================================================================
-// CHATBOT SCHEMAS
+// CHATBOT & AI SCHEMAS
 // ============================================================================
 
 export const ChatMessageSchema = z.object({
@@ -176,6 +190,21 @@ export const ChatbotMessageSchema = z.object({
 });
 
 export type ChatbotMessage = z.infer<typeof ChatbotMessageSchema>;
+
+export const AICompanionSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string().min(1).max(10000),
+  })).min(1).max(50),
+  userId: z.string().uuid().optional(),
+  context: z.object({
+    productId: z.string().uuid().optional(),
+    orderId: z.string().uuid().optional(),
+    customerId: z.string().uuid().optional(),
+  }).optional(),
+});
+
+export type AICompanion = z.infer<typeof AICompanionSchema>;
 
 // ============================================================================
 // SEARCH SCHEMAS
@@ -200,6 +229,309 @@ export const ReconcileInvoiceSchema = z.object({
 });
 
 export type ReconcileInvoice = z.infer<typeof ReconcileInvoiceSchema>;
+
+// ============================================================================
+// LEAD SCHEMAS
+// ============================================================================
+
+export const LeadCreateSchema = z.object({
+  company_name: z.string().min(1).max(255),
+  industry: z.string().max(100).optional(),
+  company_size: z.string().max(50).optional(),
+  website: z.string().url().optional(),
+  contact_name: z.string().max(255).optional(),
+  contact_title: z.string().max(100).optional(),
+  email: z.string().email('Invalid email format'),
+  phone: z.string().max(20).optional(),
+  mobile: z.string().max(20).optional(),
+  address_line1: z.string().max(255).optional(),
+  address_line2: z.string().max(255).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().min(1).max(2),
+  zip_code: z.string().max(10).optional(),
+  country: z.string().max(2).default('US'),
+  source: z.string().max(50).default('website'),
+  notes: z.string().max(1000).optional(),
+  tags: z.array(z.string().max(50)).optional(),
+});
+
+export type LeadCreate = z.infer<typeof LeadCreateSchema>;
+
+// ============================================================================
+// ADMIN AI OPERATION SCHEMAS
+// ============================================================================
+
+export const OptimizePricingSchema = z.object({
+  productId: z.string().uuid('Invalid product ID').optional(),
+  customerId: z.string().uuid('Invalid customer ID').optional(),
+  targetMargin: z.number().min(0).max(100).optional(),
+});
+
+export type OptimizePricing = z.infer<typeof OptimizePricingSchema>;
+
+export const DetectOpportunitiesSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID').optional(),
+  minValue: z.number().positive().optional(),
+  includeHistorical: z.boolean().default(true),
+});
+
+export type DetectOpportunities = z.infer<typeof DetectOpportunitiesSchema>;
+
+export const CustomerAnalyticsSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID').optional(),
+  startDate: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
+  metrics: z.array(z.enum(['clv', 'churn_risk', 'engagement', 'sentiment'])).optional(),
+});
+
+export type CustomerAnalytics = z.infer<typeof CustomerAnalyticsSchema>;
+
+export const ChurnRiskSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID'),
+  includeRecommendations: z.boolean().default(true),
+});
+
+export type ChurnRisk = z.infer<typeof ChurnRiskSchema>;
+
+export const PredictCLVSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID'),
+  timeHorizon: z.number().int().positive().max(60).default(12), // months
+});
+
+export type PredictCLV = z.infer<typeof PredictCLVSchema>;
+
+export const InventoryForecastSchema = z.object({
+  productId: z.string().uuid('Invalid product ID').optional(),
+  horizon: z.number().int().positive().max(365).default(30), // days
+  includeSeasonality: z.boolean().default(true),
+});
+
+export type InventoryForecast = z.infer<typeof InventoryForecastSchema>;
+
+export const AIExcelImportSchema = z.object({
+  fileUrl: z.string().url('Invalid file URL'),
+  importType: z.enum(['products', 'customers', 'orders', 'inventory']),
+  validateOnly: z.boolean().default(false),
+});
+
+export type AIExcelImport = z.infer<typeof AIExcelImportSchema>;
+
+// ============================================================================
+// NOTIFICATION SCHEMAS
+// ============================================================================
+
+export const NotificationRegisterSchema = z.object({
+  deviceToken: z.string().min(1, 'Device token is required'),
+  platform: z.enum(['ios', 'android', 'web']),
+});
+
+export type NotificationRegister = z.infer<typeof NotificationRegisterSchema>;
+
+export const NotificationSendSchema = z.object({
+  userId: z.string().uuid('Invalid user ID').optional(),
+  title: z.string().min(1).max(100),
+  body: z.string().min(1).max(500),
+  data: z.record(z.any()).optional(),
+});
+
+export type NotificationSend = z.infer<typeof NotificationSendSchema>;
+
+// ============================================================================
+// SAMPLE REQUEST SCHEMAS
+// ============================================================================
+
+export const SampleRequestSchema = z.object({
+  productId: z.string().uuid('Invalid product ID'),
+  quantity: z.number().int().positive().max(10).default(1),
+  notes: z.string().max(500).optional(),
+  shippingAddress: z.object({
+    street: z.string().min(1),
+    city: z.string().min(1),
+    state: z.string().min(1),
+    zip: z.string().min(1),
+    country: z.string().default('US'),
+  }).optional(),
+});
+
+export type SampleRequest = z.infer<typeof SampleRequestSchema>;
+
+// ============================================================================
+// DOCUMENT SCHEMAS
+// ============================================================================
+
+export const DocumentAnalyzeSchema = z.object({
+  documentUrl: z.string().url('Invalid document URL'),
+  analysisType: z.enum(['invoice', 'order', 'general']).default('general'),
+});
+
+export type DocumentAnalyze = z.infer<typeof DocumentAnalyzeSchema>;
+
+export const DocumentImportSchema = z.object({
+  documentUrl: z.string().url('Invalid document URL'),
+  importType: z.enum(['invoice', 'order', 'product', 'customer']),
+  validateOnly: z.boolean().default(false),
+});
+
+export type DocumentImport = z.infer<typeof DocumentImportSchema>;
+
+// ============================================================================
+// ADMIN CAMPAIGN SCHEMAS
+// ============================================================================
+
+export const CampaignCreateSchema = z.object({
+  name: z.string().min(1).max(255),
+  subject: z.string().min(1).max(255),
+  templateId: z.string().uuid().optional(),
+  htmlContent: z.string().optional(),
+  textContent: z.string().optional(),
+  targetAudience: z.record(z.any()).optional(),
+  scheduledAt: z.string().datetime().optional(),
+});
+
+export type CampaignCreate = z.infer<typeof CampaignCreateSchema>;
+
+export const CampaignUpdateSchema = z.object({
+  id: z.string().uuid('Invalid campaign ID'),
+  name: z.string().min(1).max(255).optional(),
+  subject: z.string().min(1).max(255).optional(),
+  htmlContent: z.string().optional(),
+  textContent: z.string().optional(),
+  targetAudience: z.record(z.any()).optional(),
+  scheduledAt: z.string().datetime().optional(),
+  status: z.enum(['draft', 'scheduled', 'sending', 'sent', 'cancelled']).optional(),
+});
+
+export type CampaignUpdate = z.infer<typeof CampaignUpdateSchema>;
+
+// ============================================================================
+// ADMIN ORGANIZATION SCHEMAS
+// ============================================================================
+
+export const OrganizationApproveSchema = z.object({
+  organizationId: z.string().uuid('Invalid organization ID'),
+  approved: z.boolean(),
+  notes: z.string().max(500).optional(),
+});
+
+export type OrganizationApprove = z.infer<typeof OrganizationApproveSchema>;
+
+// ============================================================================
+// ADMIN CRM SCHEMAS
+// ============================================================================
+
+export const CRMContactSchema = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email().optional(),
+  phone: z.string().max(20).optional(),
+  company: z.string().max(255).optional(),
+  title: z.string().max(100).optional(),
+  notes: z.string().max(1000).optional(),
+  customerId: z.string().uuid().optional(),
+  leadId: z.string().uuid().optional(),
+});
+
+export type CRMContact = z.infer<typeof CRMContactSchema>;
+
+export const CRMTaskSchema = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().max(1000).optional(),
+  dueDate: z.string().datetime().optional(),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
+  assignedTo: z.string().uuid().optional(),
+  relatedTo: z.object({
+    type: z.enum(['contact', 'lead', 'customer', 'opportunity']),
+    id: z.string().uuid(),
+  }).optional(),
+});
+
+export type CRMTask = z.infer<typeof CRMTaskSchema>;
+
+export const CRMActivitySchema = z.object({
+  type: z.enum(['call', 'email', 'meeting', 'note', 'task']),
+  subject: z.string().min(1).max(255),
+  description: z.string().max(2000).optional(),
+  relatedTo: z.object({
+    type: z.enum(['contact', 'lead', 'customer', 'opportunity']),
+    id: z.string().uuid(),
+  }),
+  scheduledAt: z.string().datetime().optional(),
+  completedAt: z.string().datetime().optional(),
+});
+
+export type CRMActivity = z.infer<typeof CRMActivitySchema>;
+
+// ============================================================================
+// ADMIN REBATE SCHEMAS
+// ============================================================================
+
+export const RebateCalculateSchema = z.object({
+  customerId: z.string().uuid('Invalid customer ID'),
+  periodStart: z.string().datetime(),
+  periodEnd: z.string().datetime(),
+});
+
+export type RebateCalculate = z.infer<typeof RebateCalculateSchema>;
+
+export const RebateApproveSchema = z.object({
+  rebateId: z.string().uuid('Invalid rebate ID'),
+  approved: z.boolean(),
+  notes: z.string().max(500).optional(),
+});
+
+export type RebateApprove = z.infer<typeof RebateApproveSchema>;
+
+// ============================================================================
+// INVOICE SCHEMAS
+// ============================================================================
+
+export const InvoiceGenerateSchema = z.object({
+  orderId: z.string().uuid('Invalid order ID'),
+  includeDetails: z.boolean().default(true),
+});
+
+export type InvoiceGenerate = z.infer<typeof InvoiceGenerateSchema>;
+
+// ============================================================================
+// AUTH SCHEMAS (Additional)
+// ============================================================================
+
+export const MagicLinkVerifySchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  type: z.enum(['login', 'signup', 'password_reset', 'offer_access']).optional(),
+});
+
+export type MagicLinkVerify = z.infer<typeof MagicLinkVerifySchema>;
+
+export const MagicLinkResendSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  purpose: z.enum(['login', 'signup', 'password_reset', 'offer_access']).default('login'),
+});
+
+export type MagicLinkResend = z.infer<typeof MagicLinkResendSchema>;
+
+// ============================================================================
+// UUID PARAM SCHEMA (for routes with ID params)
+// ============================================================================
+
+export const UUIDParamSchema = z.object({
+  id: z.string().uuid('Invalid ID'),
+});
+
+export type UUIDParam = z.infer<typeof UUIDParamSchema>;
+
+// ============================================================================
+// PAGINATION SCHEMA (for list endpoints)
+// ============================================================================
+
+export const PaginationSchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type Pagination = z.infer<typeof PaginationSchema>;
 
 // ============================================================================
 // VALIDATION HELPER

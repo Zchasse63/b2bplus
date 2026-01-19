@@ -1,6 +1,8 @@
 // Database types for B2B+ Platform
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
+export type Product = Database['public']['Tables']['products']['Row'];
+
 export interface Database {
   public: {
     Tables: {

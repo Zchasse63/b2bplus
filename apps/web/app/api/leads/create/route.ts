@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/sendgrid';
+import { createLogger } from '@/lib/logging/logger';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { LeadCreateSchema } from '@/lib/validation/schemas';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, DatabaseError } from '@/lib/middleware/error-handler';
+
+const logger = createLogger('leads-create');
 
 /**
  * Lead Capture API
@@ -40,28 +47,23 @@ interface LeadData {
 
 /**
  * Create a new lead
- * Public endpoint - no authentication required
+ * Public endpoint - no authentication required but rate limited
  */
 export async function POST(request: NextRequest) {
   try {
-    const leadData: LeadData = await request.json();
-    
-    // Validate required fields
-    if (!leadData.company_name || !leadData.email || !leadData.state) {
-      return NextResponse.json(
-        { error: 'Missing required fields: company_name, email, and state are required' },
-        { status: 400 }
-      );
+    // Apply rate limiting (public tier)
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'public');
+    if (!allowed) {
+      return rateLimitResponse!;
     }
-    
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(leadData.email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+
+    // Validate request body with Zod schema
+    const validation = await validateRequestBody(request, LeadCreateSchema);
+    if (!validation.valid) {
+      return validation.response!;
     }
+
+    const leadData = validation.data!;
     
     // Create Supabase client (service role for public endpoint)
     const supabase = await createClient();
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (updateError) {
-        throw new Error(`Failed to update lead: ${updateError.message}`);
+        throw DatabaseError.queryFailed('leads', 'update');
       }
       
       return NextResponse.json({
@@ -162,14 +164,14 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (createError) {
-      throw new Error(`Failed to create lead: ${createError.message}`);
+      throw DatabaseError.queryFailed('leads', 'insert');
     }
     
     // Send notification email to admins
     try {
       await sendAdminNotification(lead);
     } catch (emailError) {
-      console.error('Failed to send admin notification:', emailError);
+      logger.error('Failed to send admin notification:', emailError);
       // Don't fail the request if email fails
     }
     
@@ -177,7 +179,7 @@ export async function POST(request: NextRequest) {
     try {
       await sendLeadConfirmation(lead);
     } catch (emailError) {
-      console.error('Failed to send lead confirmation:', emailError);
+      logger.error('Failed to send lead confirmation:', emailError);
       // Don't fail the request if email fails
     }
     
@@ -186,13 +188,10 @@ export async function POST(request: NextRequest) {
       leadId: lead.id,
       message: 'Lead created successfully',
     });
-    
-  } catch (error: any) {
-    console.error('Lead creation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create lead' },
-      { status: 500 }
-    );
+
+  } catch (error) {
+    logger.error('Lead creation error:', error);
+    return handleError(error);
   }
 }
 
@@ -209,7 +208,7 @@ async function sendAdminNotification(lead: any) {
     .in('role', ['admin', 'super_admin']);
   
   if (!admins || admins.length === 0) {
-    console.warn('No admin users found to notify');
+    logger.warn('No admin users found to notify');
     return;
   }
   

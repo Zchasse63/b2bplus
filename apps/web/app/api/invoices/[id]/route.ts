@@ -1,18 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { csrfProtection, addCSRFTokenToCookie } from '@/lib/middleware/csrf'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Get user's organization
@@ -23,7 +29,7 @@ export async function GET(
       .single()
 
     if (!profile?.current_organization_id) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
+      throw new ValidationError('No organization found')
     }
 
     // Get invoice with order details
@@ -58,7 +64,7 @@ export async function GET(
       .single()
 
     if (invoiceError || !invoice) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+      throw new NotFoundError('Invoice', params.id)
     }
 
     // Get shipping address if available
@@ -79,8 +85,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching invoice:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleError(error)
   }
 }
 
@@ -100,7 +105,7 @@ export async function PATCH(
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     // Get user's organization
@@ -111,7 +116,7 @@ export async function PATCH(
       .single()
 
     if (!profile?.current_organization_id) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
+      throw new ValidationError('No organization found')
     }
 
     const { status, paymentMethod, paymentReference } = await request.json()
@@ -132,14 +137,12 @@ export async function PATCH(
       .single()
 
     if (updateError) {
-      console.error('Error updating invoice:', updateError)
-      return NextResponse.json({ error: 'Failed to update invoice' }, { status: 500 })
+      throw DatabaseError.queryFailed('invoices', 'update')
     }
 
     return addCSRFTokenToCookie(NextResponse.json(invoice), '')
 
   } catch (error) {
-    console.error('Error updating invoice:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleError(error)
   }
 }

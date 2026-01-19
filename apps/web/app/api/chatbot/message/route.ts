@@ -12,9 +12,12 @@ import { getCustomerContext } from '@/lib/ai/customer-context';
 import { getChatbotPrompt, getActionDetectionPrompt } from '@/lib/ai/chatbot-prompts';
 import { executeChatbotAction } from '@/lib/ai/chatbot-actions';
 import { validateAIRequest } from '@/lib/middleware/ai-security';
+import { validateRequestBody } from '@/lib/middleware/validation';
 import { logAIUsage } from '@/lib/ai/usage-tracking';
 import { createLogger } from '@/lib/logging/logger';
 import { sanitizeAIInput } from '@/lib/ai/input-sanitizer';
+import { ChatbotMessageSchema } from '@/lib/validation/schemas';
+import { handleError, ForbiddenError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
 const logger = createLogger('chatbot-message');
 
@@ -47,25 +50,19 @@ export async function POST(request: NextRequest) {
     });
 
     if (!validation.authorized) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 403 }
-      );
+      throw new ForbiddenError(validation.error || 'Access denied');
     }
 
     const { userId, organizationId } = validation;
     const supabase = await createClient();
 
-    // Parse request body
-    const body: ChatbotRequest = await request.json();
-    const { message, conversationId } = body;
-
-    if (!message || message.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      );
+    // Validate request body using centralized middleware
+    const bodyValidation = await validateRequestBody(request, ChatbotMessageSchema);
+    if (!bodyValidation.valid) {
+      return bodyValidation.response!;
     }
+
+    const { message, conversationId } = bodyValidation.data!
 
     // Sanitize user input to prevent prompt injection attacks
     const sanitizationResult = sanitizeAIInput(message, {
@@ -81,14 +78,9 @@ export async function POST(request: NextRequest) {
         warnings: sanitizationResult.warnings,
       });
 
-      return NextResponse.json(
-        {
-          error: 'Invalid input detected',
-          message: 'Your message contains potentially harmful content. Please rephrase and try again.',
-          warnings: sanitizationResult.warnings,
-        },
-        { status: 400 }
-      );
+      throw new ValidationError('Your message contains potentially harmful content. Please rephrase and try again.', {
+        warnings: sanitizationResult.warnings,
+      });
     }
 
     // Use sanitized message for processing
@@ -111,10 +103,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (convError || !existingConv) {
-        return NextResponse.json(
-          { error: 'Conversation not found' },
-          { status: 404 }
-        );
+        throw new NotFoundError('Conversation', conversationId);
       }
 
       conversation = existingConv;
@@ -131,10 +120,7 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (createError || !newConv) {
-        return NextResponse.json(
-          { error: 'Failed to create conversation' },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed('chatbot_conversations', 'insert');
       }
 
       conversation = newConv;
@@ -157,7 +143,6 @@ export async function POST(request: NextRequest) {
         getActionDetectionPrompt(sanitizedMessage),
         {
           temperature: 0.3,
-          maxTokens: 500,
         }
       );
 
@@ -173,7 +158,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (error) {
-      console.error('Action detection/execution error:', error);
+      logger.error('Action detection/execution error:', error);
       // Continue without action if detection fails
     }
 
@@ -209,7 +194,6 @@ export async function POST(request: NextRequest) {
       {
         systemPrompt,
         temperature: 0.7,
-        maxTokens: 1000,
       }
     );
 
@@ -228,7 +212,7 @@ export async function POST(request: NextRequest) {
       .eq('id', conversation.id);
 
     if (updateError) {
-      console.error('Failed to update conversation:', updateError);
+      logger.error('Failed to update conversation:', updateError);
     }
 
     // Log AI usage
@@ -269,10 +253,7 @@ export async function POST(request: NextRequest) {
       logger.error('Failed to log error', { logError });
     }
 
-    return NextResponse.json(
-      { error: 'Failed to process message' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -282,12 +263,18 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Validate AI request (authentication + rate limiting for GET)
+    const validation = await validateAIRequest(request, {
+      maxRequests: 100,
+      windowMs: 60000, // 100 requests per minute for read operations
+    });
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!validation.authorized) {
+      throw new ForbiddenError(validation.error || 'Access denied');
     }
+
+    const { userId } = validation;
+    const supabase = await createClient();
 
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get('conversationId');
@@ -297,15 +284,12 @@ export async function GET(request: NextRequest) {
       const { data: conversations, error } = await supabase
         .from('chatbot_conversations')
         .select('id, messages, created_at, updated_at')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('updated_at', { ascending: false })
         .limit(20);
 
       if (error) {
-        return NextResponse.json(
-          { error: 'Failed to fetch conversations' },
-          { status: 500 }
-        );
+        throw DatabaseError.queryFailed('chatbot_conversations', 'fetch');
       }
 
       return NextResponse.json({
@@ -319,14 +303,11 @@ export async function GET(request: NextRequest) {
       .from('chatbot_conversations')
       .select('id, messages, created_at, updated_at')
       .eq('id', conversationId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (error || !conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Conversation', conversationId);
     }
 
     return NextResponse.json({
@@ -335,10 +316,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Get conversation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch conversation' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

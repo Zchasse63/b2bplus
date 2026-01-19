@@ -159,7 +159,7 @@ describe('EmptyState', () => {
       )
 
       const icon = screen.getByTestId('mock-icon')
-      expect(icon).toHaveClass('h-16', 'w-16', 'text-muted-foreground', 'mb-4')
+      expect(icon).toHaveClass('h-16', 'w-16', 'text-b2b-gray-400', 'mb-4')
     })
 
     it('applies title styling', () => {
@@ -187,7 +187,7 @@ describe('EmptyState', () => {
 
       const description = screen.getByText('There are no items to display')
       expect(description.tagName).toBe('P')
-      expect(description).toHaveClass('text-muted-foreground', 'mb-6', 'max-w-sm')
+      expect(description).toHaveClass('text-b2b-gray-500', 'mb-6', 'max-w-sm')
     })
   })
 

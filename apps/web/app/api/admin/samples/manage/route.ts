@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, NotFoundError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const {
       sampleRequestId,
       action,
@@ -13,10 +19,10 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     if (!sampleRequestId || !action) {
-      return NextResponse.json(
-        { error: 'Sample request ID and action are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Sample request ID and action are required', {
+        sampleRequestId: !sampleRequestId ? ['Sample request ID is required'] : [],
+        action: !action ? ['Action is required'] : [],
+      });
     }
 
     const supabase = await createClient();
@@ -24,10 +30,7 @@ export async function POST(request: NextRequest) {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
 
     // Get sample request details
@@ -38,13 +41,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!sampleRequest) {
-      return NextResponse.json(
-        { error: 'Sample request not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Sample request', sampleRequestId);
     }
 
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (action === 'approve') {
       updateData.status = 'approved';
@@ -70,11 +70,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating sample request:', error);
-      return NextResponse.json(
-        { error: 'Failed to update sample request' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('sample_requests', 'update');
     }
 
     // Send email notification to requester
@@ -138,10 +134,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in sample request management:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

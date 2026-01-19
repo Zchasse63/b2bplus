@@ -1,8 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Check authentication
@@ -11,7 +17,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      throw new AuthError("Unauthorized");
     }
 
     // Check admin role
@@ -22,30 +28,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      throw new ForbiddenError("Admin access required");
     }
 
     // Call refresh function
     const { error } = await supabase.rpc("refresh_product_recommendations");
 
     if (error) {
-      console.error("Error refreshing recommendations:", error);
-      return NextResponse.json(
-        { error: "Failed to refresh recommendations" },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed("product_recommendations", "refresh");
     }
 
     return NextResponse.json({
       success: true,
       message: "Product recommendations refreshed successfully",
     });
-  } catch (error: any) {
-    console.error("Unexpected error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

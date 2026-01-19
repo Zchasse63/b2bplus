@@ -6,9 +6,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { CRMContactSchema } from '@/lib/validation/schemas';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -29,63 +37,59 @@ export async function GET(request: NextRequest) {
 
     const { data: contacts, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('contacts', 'fetch');
+    }
 
     return NextResponse.json({
       success: true,
       contacts: contacts || [],
     });
   } catch (error) {
-    console.error('Get contacts error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch contacts' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
-    const supabase = await createClient();
-    const body = await request.json();
-    const { leadId, name, email, phone, title, department, notes } = body;
+    // Validate request body
+    const validation = await validateRequestBody(request, CRMContactSchema);
+    if (!validation.valid) return validation.response!;
 
-    if (!leadId || !name || !email) {
-      return NextResponse.json(
-        { error: 'Lead ID, name, and email are required' },
-        { status: 400 }
-      );
-    }
+    const supabase = await createClient();
+    const { leadId, name, email, phone, customerId, title, notes } = validation.data!;
 
     const { data: contact, error } = await supabase
       .from('contacts')
       .insert({
         lead_id: leadId,
+        customer_id: customerId,
         name,
         email,
         phone,
         title,
-        department,
         notes,
       })
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('contacts', 'insert');
+    }
 
     return NextResponse.json({
       success: true,
       contact,
     });
   } catch (error) {
-    console.error('Create contact error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create contact' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -99,10 +103,7 @@ export async function PATCH(request: NextRequest) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Contact ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Contact ID is required', { id: ['Contact ID is required'] });
     }
 
     const { data: contact, error } = await supabase
@@ -112,18 +113,16 @@ export async function PATCH(request: NextRequest) {
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('contacts', 'update');
+    }
 
     return NextResponse.json({
       success: true,
       contact,
     });
   } catch (error) {
-    console.error('Update contact error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update contact' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -137,10 +136,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Contact ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Contact ID is required', { id: ['Contact ID is required'] });
     }
 
     const { error } = await supabase
@@ -148,18 +144,15 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('contacts', 'delete');
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Contact deleted successfully',
     });
   } catch (error) {
-    console.error('Delete contact error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete contact' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

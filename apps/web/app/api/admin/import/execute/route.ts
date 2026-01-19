@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 interface ImportRow {
   [key: string]: any;
@@ -20,11 +22,15 @@ interface ImportResult {
 // POST execute import with confirmed column mappings
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -34,22 +40,22 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin');
     }
 
     const body = await request.json();
-    const { 
-      rows, 
-      mappings, 
+    const {
+      rows,
+      mappings,
       importType = 'products',
-      updateExisting = true 
+      updateExisting = true
     } = body;
 
     if (!rows || !mappings || !Array.isArray(rows) || !Array.isArray(mappings)) {
-      return NextResponse.json(
-        { error: 'Rows and mappings are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Rows and mappings are required', {
+        rows: !rows || !Array.isArray(rows) ? ['rows array is required'] : [],
+        mappings: !mappings || !Array.isArray(mappings) ? ['mappings array is required'] : [],
+      });
     }
 
     const result: ImportResult = {
@@ -68,11 +74,11 @@ export async function POST(request: NextRequest) {
       try {
         // Map row data to target fields
         const mappedData: ImportRow = {};
-        
+
         mappings.forEach((mapping: any) => {
           if (mapping.targetField && row[mapping.sourceColumn] !== undefined) {
             let value = row[mapping.sourceColumn];
-            
+
             // Type conversion based on target field
             if (mapping.targetField === 'base_price' || mapping.targetField === 'cost_price') {
               value = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
@@ -83,7 +89,7 @@ export async function POST(request: NextRequest) {
             } else if (mapping.targetField === 'is_active') {
               value = ['true', 'yes', '1', 'active'].includes(String(value).toLowerCase());
             }
-            
+
             mappedData[mapping.targetField] = value;
           }
         });
@@ -119,11 +125,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in execute import API:', error);
-    return NextResponse.json(
-      { error: 'Failed to execute import', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -136,7 +138,10 @@ async function importProduct(
 ) {
   // Validate required fields
   if (!data.sku || !data.name) {
-    throw new Error('SKU and name are required');
+    throw new ValidationError('SKU and name are required', {
+      sku: !data.sku ? ['SKU is required'] : [],
+      name: !data.name ? ['name is required'] : [],
+    });
   }
 
   // Check if product exists
@@ -157,7 +162,9 @@ async function importProduct(
       })
       .eq('id', existing.id);
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('products', 'update');
+    }
     result.updated++;
   } else if (!existing) {
     // Insert new product
@@ -165,7 +172,9 @@ async function importProduct(
       .from('products')
       .insert(data);
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('products', 'insert');
+    }
     result.imported++;
   } else {
     // Skip if exists and updateExisting is false
@@ -206,7 +215,9 @@ async function updatePrices(
     .update(updates)
     .eq('id', product.id);
 
-  if (error) throw error;
+  if (error) {
+    throw DatabaseError.queryFailed('products', 'update');
+  }
   result.updated++;
 }
 
@@ -266,6 +277,8 @@ async function updateInventory(
       onConflict: 'product_id,location_id'
     });
 
-  if (error) throw error;
+  if (error) {
+    throw DatabaseError.queryFailed('product_inventory', 'upsert');
+  }
   result.updated++;
 }

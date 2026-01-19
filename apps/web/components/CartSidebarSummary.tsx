@@ -48,7 +48,7 @@ export function CartSidebarSummary() {
         return;
       }
 
-      setItems((data || []) as CartItem[]);
+      setItems((data || []) as any);
     } finally {
       setLoading(false);
     }

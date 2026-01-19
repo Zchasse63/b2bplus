@@ -1,5 +1,6 @@
 /**
  * Readiness Check Endpoint
+export const dynamic = 'force-dynamic';
  * Checks if the application is ready to handle requests
  * Verifies database connectivity and external service availability
  */
@@ -7,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/logging/logger';
+import { handleError } from '@/lib/middleware/error-handler';
 
 const logger = createLogger('readiness-check');
 
@@ -80,19 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(status, { status: statusCode });
   } catch (error) {
     logger.error('Readiness check failed', error);
-
-    return NextResponse.json(
-      {
-        ready: false,
-        timestamp: new Date().toISOString(),
-        checks: {
-          database: { status: 'error' as const },
-          environment: { status: 'error' as const },
-        },
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 503 }
-    );
+    return handleError(error);
   }
 }
 

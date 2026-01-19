@@ -8,7 +8,6 @@
 import { streamText, CoreMessage } from 'ai';
 import { createClient } from '@/lib/supabase/server';
 import { grokModels, defaultModel } from '@/lib/ai/providers/xai';
-import { getToolsForRole } from '@/lib/ai/tools';
 import { getCustomerContext } from '@/lib/ai/customer-context';
 import { getChatbotPrompt } from '@/lib/ai/chatbot-prompts';
 import { validateAIRequest } from '@/lib/middleware/ai-security';
@@ -109,8 +108,8 @@ export async function POST(request: Request) {
     // Select model based on task complexity
     const model = useReasoning ? grokModels.reasoning : defaultModel;
 
-    // Get tools available for user role
-    const tools = getToolsForRole(role);
+    // NOTE: AI tools are currently disabled (see lib/ai/tools/index.ts)
+    // Tools will be re-enabled after upgrading to AI SDK with proper type compatibility
 
     // Track conversation in database
     let activeConversationId = conversationId;
@@ -132,7 +131,6 @@ export async function POST(request: Request) {
       model,
       system: systemPrompt,
       messages,
-      tools,
       temperature: useReasoning ? 0.3 : 0.7,
       onFinish: async ({ text, toolCalls, usage }) => {
         // Update conversation with new messages

@@ -1,6 +1,6 @@
 /**
  * Churn Risk Analysis API
- * 
+ *
  * POST /api/admin/analytics/churn-risk
  * Calculates churn risk score for a customer using AI
  */
@@ -9,25 +9,29 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { ChurnRiskSchema } from '@/lib/validation/schemas';
+import { handleError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting for AI operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
-    const body = await request.json();
-    const { customerId } = body;
+    // Validate request body
+    const validation = await validateRequestBody(request, ChurnRiskSchema);
+    if (!validation.valid) return validation.response!;
 
-    if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      );
-    }
+    const { customerId } = validation.data!;
 
     const supabase = await createClient();
 
@@ -39,10 +43,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!analytics) {
-      return NextResponse.json(
-        { error: 'Customer analytics not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Customer analytics', customerId);
     }
 
     // Calculate churn risk indicators
@@ -89,12 +90,8 @@ Provide a churn risk score (0-100) and key risk factors.`;
         analysisDate: new Date().toISOString()
       }
     });
-  } catch (error: any) {
-    console.error('Churn risk error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

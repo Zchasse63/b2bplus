@@ -25,8 +25,7 @@ export interface ValidationResult {
   rateLimitRemaining?: number;
 }
 
-// In-memory rate limit store
-// TODO: Replace with Redis for production multi-instance deployments
+// In-memory rate limit store (for fallback when Redis unavailable)
 const rateLimits = new Map<string, { count: number; resetAt: number }>();
 
 /**

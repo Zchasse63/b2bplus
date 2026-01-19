@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+export const dynamic = 'force-dynamic';
 import { generateJSONPro } from '@/lib/ai/providers/unified'
 import { checkAdminRole } from '@/lib/middleware/admin'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, ValidationError } from '@/lib/middleware/error-handler'
 
 /**
  * Customer Analytics Insights API
@@ -13,6 +16,10 @@ import { checkAdminRole } from '@/lib/middleware/admin'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai')
+    if (!allowed) return rateLimitResponse!
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole()
     if (authError) return authError
@@ -24,10 +31,7 @@ export async function GET(request: NextRequest) {
     const timeRange = searchParams.get('timeRange') || '90' // days
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('customerId is required', { customerId: ['customerId is required'] })
     }
 
     // Get customer purchase analytics
@@ -89,12 +93,8 @@ export async function GET(request: NextRequest) {
       insights
     })
 
-  } catch (error: any) {
-    console.error('Customer insights error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to generate insights' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 

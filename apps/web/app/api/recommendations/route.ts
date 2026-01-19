@@ -1,14 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 // GET product recommendations
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,10 +23,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '5');
 
     if (!productId) {
-      return NextResponse.json(
-        { error: 'Product ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID is required');
     }
 
     // Check if recommendations feature is enabled
@@ -46,11 +49,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Error fetching recommendations:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch recommendations' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('product_recommendations', 'get_product_recommendations');
     }
 
     // Track that user viewed these recommendations
@@ -75,29 +74,29 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in recommendations API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // POST track recommendation interaction
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const body = await request.json();
     const { productId, interactionType } = body;
 
     if (!productId || !interactionType) {
-      return NextResponse.json(
-        { error: 'Product ID and interaction type are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID and interaction type are required');
     }
 
     // Update customer affinity
@@ -110,7 +109,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error tracking recommendation interaction:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

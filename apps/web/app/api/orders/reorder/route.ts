@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { validateRequestBody } from '@/lib/validation/middleware';
+import { validateRequestBody } from '@/lib/middleware/validation';
 import { ReorderSchema } from '@/lib/validation/schemas';
 import { csrfProtection, addCSRFTokenToCookie } from '@/lib/middleware/csrf';
 import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, NotFoundError, ForbiddenError, ValidationError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,10 +26,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Unauthorized');
     }
 
     // Validate request body
@@ -47,10 +45,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profileData) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('User profile', user.id);
     }
 
     const organizationId = profileData.current_organization_id;
@@ -63,17 +58,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Order', orderId);
     }
 
     if (order.organization_id !== organizationId) {
-      return NextResponse.json(
-        { error: 'You do not have permission to reorder this order' },
-        { status: 403 }
-      );
+      throw new ForbiddenError('You do not have permission to reorder this order');
     }
 
     // Get all order items
@@ -83,10 +72,7 @@ export async function POST(request: NextRequest) {
       .eq('order_id', orderId);
 
     if (itemsError || !orderItems || orderItems.length === 0) {
-      return NextResponse.json(
-        { error: 'No items found in this order' },
-        { status: 400 }
-      );
+      throw new ValidationError('No items found in this order');
     }
 
     // Process each item
@@ -165,10 +151,6 @@ export async function POST(request: NextRequest) {
     return addCSRFTokenToCookie(response, '');
 
   } catch (error) {
-    console.error('Reorder error:', error);
-    return NextResponse.json(
-      { error: 'Failed to reorder. Please try again.' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
 import { csrfProtection } from '@/lib/middleware/csrf';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
 interface ApprovePricingRequest {
   action: 'approve' | 'reject' | 'modify';
@@ -17,6 +19,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Rate limiting
+  const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+  if (!allowed) return rateLimitResponse!;
+
   // CSRF Protection
   const { valid, response: csrfResponse } = await csrfProtection(request);
   if (!valid) {
@@ -40,10 +46,7 @@ export async function POST(
       .single();
 
     if (recError || !recommendation) {
-      return NextResponse.json(
-        { error: 'Pricing recommendation not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Pricing recommendation', params.id);
     }
 
     // Handle different actions
@@ -62,11 +65,7 @@ export async function POST(
           .eq('id', recommendation.product_id);
 
         if (productError) {
-          console.error('Error updating product price:', productError);
-          return NextResponse.json(
-            { error: 'Failed to update product price' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('products', 'update');
         }
 
         // Log to pricing history
@@ -99,11 +98,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (updateError) {
-          console.error('Error updating recommendation:', updateError);
-          return NextResponse.json(
-            { error: 'Failed to update recommendation' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('pricing_recommendations', 'update');
         }
 
         return NextResponse.json({
@@ -114,10 +109,7 @@ export async function POST(
 
       case 'modify':
         if (!custom_price || custom_price <= 0) {
-          return NextResponse.json(
-            { error: 'Valid custom price is required for modify action' },
-            { status: 400 }
-          );
+          throw new ValidationError('Valid custom price is required for modify action', { custom_price: ['Must be a positive number'] });
         }
 
         // Update product price with custom value
@@ -132,11 +124,7 @@ export async function POST(
           .eq('id', recommendation.product_id);
 
         if (customProductError) {
-          console.error('Error updating product price:', customProductError);
-          return NextResponse.json(
-            { error: 'Failed to update product price' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('products', 'update');
         }
 
         // Log to pricing history
@@ -169,11 +157,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (customUpdateError) {
-          console.error('Error updating recommendation:', customUpdateError);
-          return NextResponse.json(
-            { error: 'Failed to update recommendation' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('pricing_recommendations', 'update');
         }
 
         return NextResponse.json({
@@ -196,11 +180,7 @@ export async function POST(
           .eq('id', params.id);
 
         if (rejectError) {
-          console.error('Error rejecting recommendation:', rejectError);
-          return NextResponse.json(
-            { error: 'Failed to reject recommendation' },
-            { status: 500 }
-          );
+          throw DatabaseError.queryFailed('pricing_recommendations', 'update');
         }
 
         return NextResponse.json({
@@ -209,17 +189,9 @@ export async function POST(
         });
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        throw new ValidationError('Invalid action', { action: ['Must be approve, reject, or modify'] });
     }
   } catch (error) {
-    console.error('Error in pricing approval:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

@@ -6,9 +6,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { CRMActivitySchema } from '@/lib/validation/schemas';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -34,70 +42,58 @@ export async function GET(request: NextRequest) {
 
     const { data: activities, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('lead_activities', 'fetch');
+    }
 
     return NextResponse.json({
       success: true,
       activities: activities || [],
     });
   } catch (error) {
-    console.error('Get activities error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch activities' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
+    // Validate request body
+    const validation = await validateRequestBody(request, CRMActivitySchema);
+    if (!validation.valid) return validation.response!;
+
     const supabase = await createClient();
-    const body = await request.json();
-    const { leadId, type, subject, description, metadata } = body;
-
-    if (!leadId || !type || !subject) {
-      return NextResponse.json(
-        { error: 'Lead ID, type, and subject are required' },
-        { status: 400 }
-      );
-    }
-
-    const validTypes = ['call', 'email', 'meeting', 'note', 'task_completed', 'status_change'];
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        { error: `Invalid activity type. Must be one of: ${validTypes.join(', ')}` },
-        { status: 400 }
-      );
-    }
+    const { type, subject, description, relatedTo } = validation.data!;
 
     const { data: activity, error } = await supabase
       .from('lead_activities')
       .insert({
-        lead_id: leadId,
+        lead_id: relatedTo.id,
         activity_type: type,
         subject,
         description,
-        metadata: metadata || {},
+        metadata: { relatedToType: relatedTo.type },
         created_by: user?.id,
       })
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('lead_activities', 'insert');
+    }
 
     return NextResponse.json({
       success: true,
       activity,
     });
   } catch (error) {
-    console.error('Create activity error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create activity' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -111,10 +107,7 @@ export async function PATCH(request: NextRequest) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Activity ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Activity ID is required', { id: ['Activity ID is required'] });
     }
 
     const { data: activity, error } = await supabase
@@ -124,18 +117,16 @@ export async function PATCH(request: NextRequest) {
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('lead_activities', 'update');
+    }
 
     return NextResponse.json({
       success: true,
       activity,
     });
   } catch (error) {
-    console.error('Update activity error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update activity' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -149,10 +140,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Activity ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Activity ID is required', { id: ['Activity ID is required'] });
     }
 
     const { error } = await supabase
@@ -160,18 +148,15 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('lead_activities', 'delete');
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Activity deleted successfully',
     });
   } catch (error) {
-    console.error('Delete activity error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete activity' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { validateRequestBody } from '@/lib/middleware/validation'
+import { InvoiceGenerateSchema } from '@/lib/validation/schemas'
+import { handleError, AuthError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
-    // Get request body
-    const { orderId } = await request.json()
+    // Validate request body
+    const validation = await validateRequestBody(request, InvoiceGenerateSchema)
+    if (!validation.valid) return validation.response!
 
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
-    }
+    const { orderId } = validation.data!
 
     // Get user's organization
     const { data: profile } = await supabase
@@ -26,7 +33,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!profile?.current_organization_id) {
-      return NextResponse.json({ error: 'No organization found' }, { status: 400 })
+      throw new ValidationError('No organization found')
     }
 
     // Get order details
@@ -45,7 +52,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (orderError || !order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+      throw new NotFoundError('Order', orderId)
     }
 
     // Check if invoice already exists for this order
@@ -68,8 +75,7 @@ export async function POST(request: NextRequest) {
       .rpc('generate_invoice_number')
 
     if (invoiceNumberError) {
-      console.error('Error generating invoice number:', invoiceNumberError)
-      return NextResponse.json({ error: 'Failed to generate invoice number' }, { status: 500 })
+      throw DatabaseError.queryFailed('invoices', 'generate_invoice_number')
     }
 
     const invoiceNumber = invoiceNumberData
@@ -105,8 +111,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (invoiceError) {
-      console.error('Error creating invoice:', invoiceError)
-      return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 })
+      throw DatabaseError.queryFailed('invoices', 'insert')
     }
 
     return NextResponse.json({
@@ -116,7 +121,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error in invoice generation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return handleError(error)
   }
 }

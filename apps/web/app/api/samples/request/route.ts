@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'public');
+    if (!allowed) return rateLimitResponse!;
+
     const {
       productId,
       requesterName,
@@ -16,10 +22,7 @@ export async function POST(request: NextRequest) {
     } = await request.json();
 
     if (!productId || !requesterName || !requesterEmail) {
-      return NextResponse.json(
-        { error: 'Product ID, name, and email are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Product ID, name, and email are required');
     }
 
     const supabase = await createClient();
@@ -32,10 +35,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (productError || !product) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Product', productId);
     }
 
     // Get current user if logged in
@@ -78,11 +78,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (requestError) {
-      console.error('Error creating sample request:', requestError);
-      return NextResponse.json(
-        { error: 'Failed to create sample request' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('sample_requests', 'insert');
     }
 
     // Log activity if lead exists
@@ -187,16 +183,16 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in sample request:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status') || 'all';
 
@@ -228,20 +224,12 @@ export async function GET(request: NextRequest) {
     const { data: sampleRequests, error } = await query;
 
     if (error) {
-      console.error('Error fetching sample requests:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch sample requests' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('sample_requests', 'fetch');
     }
 
     return NextResponse.json({ sampleRequests });
 
   } catch (error) {
-    console.error('Error in sample requests fetch:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendPushNotification, NotificationTemplates } from '@/lib/services/notifications';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError, NotFoundError } from '@/lib/middleware/error-handler';
 
 /**
  * Send notification when order status changes
@@ -11,6 +13,10 @@ import { sendPushNotification, NotificationTemplates } from '@/lib/services/noti
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
 
     // Verify this is an authenticated request (could also use service role key)
@@ -21,17 +27,14 @@ export async function POST(request: NextRequest) {
     const isServiceRole = authHeader?.includes(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 
     if (!user && !isServiceRole) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const body = await request.json();
     const { orderId, status } = body;
 
     if (!orderId || !status) {
-      return NextResponse.json(
-        { error: 'orderId and status are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('orderId and status are required');
     }
 
     // Get order details
@@ -45,10 +48,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError || !order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Order', orderId);
     }
 
     // Check if user has push token enabled
@@ -125,11 +125,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Notification sent successfully',
     });
-  } catch (error: any) {
-    console.error('Error in order update notification:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

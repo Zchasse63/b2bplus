@@ -1,6 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { generateTextPro } from '@/lib/ai/providers/unified'
+import { validateRequestBody } from '@/lib/middleware/validation'
+import { OptimizePricingSchema } from '@/lib/validation/schemas'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ForbiddenError, NotFoundError } from '@/lib/middleware/error-handler'
 
 /**
  * Pricing Optimization API
@@ -14,11 +18,11 @@ import { generateTextPro } from '@/lib/ai/providers/unified'
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -29,18 +33,22 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
-    const body = await request.json()
-    const { customerId, productId, targetMargin } = body
-
-    if (!customerId || !productId) {
-      return NextResponse.json(
-        { error: 'customerId and productId are required' },
-        { status: 400 }
-      )
+    // Apply rate limiting for admin AI operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) {
+      return rateLimitResponse!
     }
+
+    // Validate request body
+    const validation = await validateRequestBody(request, OptimizePricingSchema)
+    if (!validation.valid) {
+      return validation.response!
+    }
+
+    const { customerId, productId, targetMargin } = validation.data!
 
     // Get product info
     const { data: product, error: productError } = await supabase
@@ -50,10 +58,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (productError || !product) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Product', productId)
     }
 
     // Get customer purchase history for this product
@@ -114,12 +119,8 @@ export async function POST(request: NextRequest) {
       recommendation: saved || recommendation
     })
 
-  } catch (error: any) {
-    console.error('Pricing optimization error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to optimize pricing' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -133,21 +134,21 @@ async function generatePricingRecommendation(
   targetMargin?: number
 ) {
   const currentPrice = parseFloat(product.price)
-  
+
   // Analyze price sensitivity from historical data
   const priceSensitivity = analyzePriceSensitivity(historicalOrders)
-  
+
   // Calculate optimal price
   let suggestedPrice = currentPrice
   let reasoning = ''
 
   if (analytics && historicalOrders.length > 0) {
     // Customer has purchase history
-    const avgHistoricalPrice = historicalOrders.reduce((sum, order) => 
+    const avgHistoricalPrice = historicalOrders.reduce((sum, order) =>
       sum + parseFloat(order.unit_price || 0), 0) / historicalOrders.length
-    
+
     const lastPrice = parseFloat(historicalOrders[historicalOrders.length - 1]?.unit_price || currentPrice)
-    
+
     // If they've been paying more historically, we can price higher
     if (avgHistoricalPrice > currentPrice) {
       suggestedPrice = avgHistoricalPrice * 0.95 // 5% discount from their historical average
@@ -205,7 +206,7 @@ async function generatePricingRecommendation(
     metadata: {
       currentPrice,
       priceSensitivity,
-      historicalAvgPrice: historicalOrders.length > 0 
+      historicalAvgPrice: historicalOrders.length > 0
         ? historicalOrders.reduce((sum, o) => sum + parseFloat(o.unit_price || 0), 0) / historicalOrders.length
         : null,
       expectedQuantity
@@ -260,7 +261,7 @@ function calculateWinProbability(
   // Purchase history
   if (analytics && analytics.total_orders > 0) {
     probability += 0.2 // Existing customer
-    
+
     // Recent purchases
     const daysSinceLastPurchase = Math.floor(
       (Date.now() - new Date(analytics.last_purchase_date).getTime()) / (1000 * 60 * 60 * 24)
@@ -271,9 +272,9 @@ function calculateWinProbability(
 
   // Historical price acceptance
   if (historicalOrders.length > 0) {
-    const avgHistoricalPrice = historicalOrders.reduce((sum, o) => 
+    const avgHistoricalPrice = historicalOrders.reduce((sum, o) =>
       sum + parseFloat(o.unit_price || 0), 0) / historicalOrders.length
-    
+
     if (suggestedPrice <= avgHistoricalPrice) probability += 0.1
   }
 
@@ -303,7 +304,6 @@ Provide a 1-2 sentence recommendation on whether this pricing is optimal and why
 
     const response = await generateTextPro(prompt, {
       temperature: 0.2,  // Lower for precise pricing analysis
-      maxTokens: 150,
       systemPrompt: 'You are a B2B pricing strategist with expertise in multi-variable optimization. Provide concise, data-driven pricing recommendations based on deep analysis.'
     })
 
@@ -321,11 +321,11 @@ Provide a 1-2 sentence recommendation on whether this pricing is optimal and why
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -336,7 +336,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
     const { searchParams } = new URL(request.url)
@@ -365,11 +365,7 @@ export async function GET(request: NextRequest) {
       suggestions: data
     })
 
-  } catch (error: any) {
-    console.error('Get pricing suggestions error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch pricing suggestions' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

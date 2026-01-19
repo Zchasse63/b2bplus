@@ -30,7 +30,7 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
       return false
     }
 
-    return profile.role === 'admin'
+    return (profile as any).role === 'admin'
   } catch (error) {
     logger.error('Error checking admin status', { userId, error })
     return false
@@ -96,7 +96,7 @@ export async function isUserOrgAdmin(
       return false
     }
 
-    return membership.role === 'admin' || membership.role === 'owner'
+    return (membership as any).role === 'admin' || (membership as any).role === 'owner'
   } catch (error) {
     logger.error('Error checking org admin status', {
       userId,
@@ -128,7 +128,7 @@ export async function getUserPrimaryOrganization(
       return null
     }
 
-    return profile.primary_organization_id
+    return (profile as any).primary_organization_id
   } catch (error) {
     logger.error('Error getting user primary organization', { userId, error })
     return null

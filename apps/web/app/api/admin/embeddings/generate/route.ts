@@ -3,17 +3,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { generateEmbedding } from '@/lib/ai/providers/unified';
 import { createLogger } from '@/lib/logging/logger';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, NotFoundError } from '@/lib/middleware/error-handler';
 
 const logger = createLogger('embeddings-generate');
 
 // POST generate embeddings for products
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -23,7 +29,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin');
     }
 
     const body = await request.json();
@@ -41,10 +47,7 @@ export async function POST(request: NextRequest) {
     const { data: products, error: productsError } = await query;
 
     if (productsError || !products || products.length === 0) {
-      return NextResponse.json(
-        { error: 'No products found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Products');
     }
 
     let generated = 0;
@@ -128,22 +131,22 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.error('Error in generate embeddings API', { error });
-    return NextResponse.json(
-      { error: 'Failed to generate embeddings', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 // GET check embedding status
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     // Count total products
@@ -165,7 +168,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error checking embedding status:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Verify Password Reset Email Sending
- * 
+ *
  * GET /api/auth/verify-password-reset?email=user@example.com
  * Verifies that password reset email was sent successfully
  */
@@ -8,17 +8,28 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { z } from 'zod';
+import { handleError } from '@/lib/middleware/error-handler';
+import { ValidationError, NotFoundError, DatabaseError, ExternalServiceError } from '@/lib/errors';
+
+const EmailQuerySchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting for sensitive operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
+
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+    // Validate email
+    const validation = EmailQuerySchema.safeParse({ email });
+    if (!validation.success) {
+      throw ValidationError.fromZodError(validation.error);
     }
 
     const adminClient = createAdminClient();
@@ -27,19 +38,13 @@ export async function GET(request: NextRequest) {
     const { data: { users }, error: usersError } = await adminClient.auth.admin.listUsers();
 
     if (usersError) {
-      return NextResponse.json(
-        { error: 'Failed to verify user' },
-        { status: 500 }
-      );
+      throw new DatabaseError('Failed to verify user', 'listUsers', 'auth.users');
     }
 
     const userExists = users?.some(u => u.email === email);
 
     if (!userExists) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('User');
     }
 
     // Check if password reset was recently requested
@@ -53,12 +58,8 @@ export async function GET(request: NextRequest) {
       verified: true,
     });
 
-  } catch (error: any) {
-    console.error('Password reset verification error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
@@ -68,15 +69,19 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email } = body;
+    // Rate limiting for sensitive operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'sensitive');
+    if (!allowed) return rateLimitResponse!;
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      );
+    const body = await request.json();
+
+    // Validate email
+    const validation = EmailQuerySchema.safeParse(body);
+    if (!validation.success) {
+      throw ValidationError.fromZodError(validation.error);
     }
+
+    const { email } = validation.data;
 
     const supabase = await createClient();
 
@@ -86,11 +91,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Password reset error:', error);
-      return NextResponse.json(
-        { error: 'Failed to send password reset email' },
-        { status: 500 }
-      );
+      throw new ExternalServiceError('Auth', 'Failed to send password reset email', error);
     }
 
     return NextResponse.json({
@@ -99,12 +100,7 @@ export async function POST(request: NextRequest) {
       email,
     });
 
-  } catch (error: any) {
-    console.error('Password reset error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
-

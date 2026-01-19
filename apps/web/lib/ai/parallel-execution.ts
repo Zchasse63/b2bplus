@@ -8,6 +8,23 @@
  */
 
 import { generateTextPro, generateText, generateJSON } from '@/lib/ai/providers/unified';
+import type {
+  Order,
+  TopProduct,
+  CustomerInsights,
+  CustomerInsightsInput,
+  DetectedOpportunities,
+  StoppedBuyingOpportunity,
+  CrossSellOpportunity,
+  UpsellOpportunity,
+  PricingRecommendation,
+  PricingHistoryItem,
+  BatchResponse,
+  BatchCustomerInput,
+  DocumentAnalysisResult,
+  DocumentInput,
+  ActionResult,
+} from '@/lib/types/ai';
 
 /**
  * Execute multiple AI text generation calls in parallel
@@ -28,8 +45,8 @@ export async function generateTextsInParallel(
 /**
  * Execute multiple AI JSON generation calls in parallel
  */
-export async function generateJSONsInParallel<T = any>(
-  prompts: Array<{ prompt: string; schema?: any }>,
+export async function generateJSONsInParallel<T>(
+  prompts: Array<{ prompt: string; schema?: unknown }>,
   options?: { temperature?: number }
 ): Promise<T[]> {
   const promises = prompts.map(({ prompt }) =>
@@ -47,12 +64,7 @@ export async function generateJSONsInParallel<T = any>(
  * - Upsell opportunities
  */
 export async function generateCustomerInsightsParallel(
-  customerData: {
-    recentOrders: any[];
-    topProducts: any[];
-    totalSpend: number;
-    accountStatus: string;
-  }
+  customerData: CustomerInsightsInput
 ): Promise<{
   purchasePatterns: string;
   recommendations: string;
@@ -96,13 +108,9 @@ export async function generateCustomerInsightsParallel(
  * - Upsell
  */
 export async function detectOpportunitiesParallel(
-  customerData: any,
-  productData: any[]
-): Promise<{
-  stoppedBuying: any[];
-  crossSell: any[];
-  upsell: any[];
-}> {
+  customerData: CustomerInsightsInput,
+  productData: TopProduct[]
+): Promise<DetectedOpportunities> {
   const prompts = [
     {
       prompt: `Analyze customer purchase history and identify products they stopped buying: ${JSON.stringify(customerData)}`,
@@ -115,12 +123,12 @@ export async function detectOpportunitiesParallel(
     },
   ];
 
-  const [stoppedBuying, crossSell, upsell] = await generateJSONsInParallel(prompts);
+  const [stoppedBuying, crossSell, upsell] = await generateJSONsInParallel<any>(prompts);
 
   return {
-    stoppedBuying: stoppedBuying || [],
-    crossSell: crossSell || [],
-    upsell: upsell || [],
+    stoppedBuying: (stoppedBuying as StoppedBuyingOpportunity[]) || [],
+    crossSell: (crossSell as CrossSellOpportunity[]) || [],
+    upsell: (upsell as UpsellOpportunity[]) || [],
   };
 }
 
@@ -132,7 +140,7 @@ export async function generatePricingRecommendationsParallel(
     productId: string;
     customerId: string;
     currentPrice: number;
-    historicalData: any;
+    historicalData: PricingHistoryItem[];
   }>
 ): Promise<
   Array<{
@@ -164,13 +172,13 @@ export async function generatePricingRecommendationsParallel(
  * Process multiple chatbot actions in parallel
  * Useful when a single user query requires multiple data fetches
  */
-export async function executeChatbotActionsParallel(
+export async function executeChatbotActionsParallel<TParams, TResult>(
   actions: Array<{
     type: string;
-    params: any;
-    executor: (params: any) => Promise<any>;
+    params: TParams;
+    executor: (params: TParams) => Promise<TResult>;
   }>
-): Promise<any[]> {
+): Promise<TResult[]> {
   const promises = actions.map(({ executor, params }) => executor(params));
   return Promise.all(promises);
 }
@@ -180,11 +188,7 @@ export async function executeChatbotActionsParallel(
  * Useful for batch operations like email campaigns
  */
 export async function generateBatchResponsesParallel(
-  customers: Array<{
-    customerId: string;
-    context: any;
-    prompt: string;
-  }>,
+  customers: BatchCustomerInput[],
   maxConcurrency: number = 5
 ): Promise<
   Array<{
@@ -210,11 +214,11 @@ export async function generateBatchResponsesParallel(
           customerId: customer.customerId,
           response,
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           customerId: customer.customerId,
           response: '',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     });
@@ -231,44 +235,30 @@ export async function generateBatchResponsesParallel(
  * Useful for batch invoice processing
  */
 export async function analyzeDocumentsParallel(
-  documents: Array<{
-    documentId: string;
-    content: Buffer;
-    mimeType: string;
-  }>,
+  documents: DocumentInput[],
   maxConcurrency: number = 3
-): Promise<
-  Array<{
-    documentId: string;
-    extractedData: any;
-    error?: string;
-  }>
-> {
-  const results: Array<{
-    documentId: string;
-    extractedData: any;
-    error?: string;
-  }> = [];
+): Promise<DocumentAnalysisResult[]> {
+  const results: DocumentAnalysisResult[] = [];
 
   // Process in smaller batches for document processing
   for (let i = 0; i < documents.length; i += maxConcurrency) {
     const batch = documents.slice(i, i + maxConcurrency);
 
-    const batchPromises = batch.map(async (doc) => {
+    const batchPromises = batch.map(async (doc): Promise<DocumentAnalysisResult> => {
       try {
         // Simulate document processing
-        const extractedData = await generateJSON(
+        const extractedData = await generateJSON<Record<string, unknown>>(
           `Extract data from document ${doc.documentId}`
         );
         return {
           documentId: doc.documentId,
           extractedData,
         };
-      } catch (error: any) {
+      } catch (error) {
         return {
           documentId: doc.documentId,
           extractedData: null,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     });
@@ -310,13 +300,13 @@ export async function executeWithRetry<T>(
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (error: any) {
-      lastError = error;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
 
       if (attempt < maxRetries - 1) {
         // Exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }

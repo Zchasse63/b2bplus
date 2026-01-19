@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ValidationError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { leads, autoAssignRegion = true, autoCreateAccounts = false } = await request.json();
 
     if (!leads || !Array.isArray(leads) || leads.length === 0) {
-      return NextResponse.json(
-        { error: 'Leads array is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Leads array is required', { leads: ['Must be a non-empty array'] });
     }
 
     const supabase = await createClient();
@@ -18,10 +21,7 @@ export async function POST(request: NextRequest) {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     // Get regions for auto-assignment
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
         // Auto-assign region based on state
         let regionId = leadData.region_id || null;
-        
+
         if (autoAssignRegion && !regionId && regions) {
           const region = regions.find(r => r.states.includes(leadData.state));
           if (region) {
@@ -188,10 +188,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in lead import:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

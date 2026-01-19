@@ -6,9 +6,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { CRMTaskSchema } from '@/lib/validation/schemas';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
@@ -34,63 +42,60 @@ export async function GET(request: NextRequest) {
 
     const { data: tasks, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('tasks', 'fetch');
+    }
 
     return NextResponse.json({
       success: true,
       tasks: tasks || [],
     });
   } catch (error) {
-    console.error('Get tasks error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
-    const supabase = await createClient();
-    const body = await request.json();
-    const { leadId, title, description, dueDate, priority, status = 'pending' } = body;
+    // Validate request body
+    const validation = await validateRequestBody(request, CRMTaskSchema);
+    if (!validation.valid) return validation.response!;
 
-    if (!leadId || !title) {
-      return NextResponse.json(
-        { error: 'Lead ID and title are required' },
-        { status: 400 }
-      );
-    }
+    const supabase = await createClient();
+    const { title, description, dueDate, priority, status = 'pending', relatedTo, assignedTo } = validation.data!;
 
     const { data: task, error } = await supabase
       .from('tasks')
       .insert({
-        lead_id: leadId,
+        related_to_id: relatedTo?.id,
+        related_to_type: relatedTo?.type,
         title,
         description,
         due_date: dueDate,
         priority: priority || 'medium',
         status,
-        assigned_to: user?.id,
+        assigned_to: assignedTo || user?.id,
       })
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('tasks', 'insert');
+    }
 
     return NextResponse.json({
       success: true,
       task,
     });
   } catch (error) {
-    console.error('Create task error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create task' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -104,10 +109,7 @@ export async function PATCH(request: NextRequest) {
     const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Task ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Task ID is required', { id: ['Task ID is required'] });
     }
 
     const { data: task, error } = await supabase
@@ -117,18 +119,16 @@ export async function PATCH(request: NextRequest) {
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('tasks', 'update');
+    }
 
     return NextResponse.json({
       success: true,
       task,
     });
   } catch (error) {
-    console.error('Update task error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update task' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -142,10 +142,7 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Task ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Task ID is required', { id: ['Task ID is required'] });
     }
 
     const { error } = await supabase
@@ -153,18 +150,15 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      throw DatabaseError.queryFailed('tasks', 'delete');
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Task deleted successfully',
     });
   } catch (error) {
-    console.error('Delete task error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete task' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
-

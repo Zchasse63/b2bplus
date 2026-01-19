@@ -6,20 +6,26 @@ import { z } from 'zod';
  * Fails fast with clear error messages if any are missing
  */
 
+// Helper to check if field should be required based on NODE_ENV
+function requiredInProduction<T extends z.ZodTypeAny>(schema: T): z.ZodOptional<T> | T {
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  return nodeEnv === 'production' ? schema : schema.optional();
+}
+
 const EnvSchema = z.object({
-  // Supabase Configuration (Required)
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url('Invalid Supabase URL'),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Supabase service role key is required'),
+  // Supabase Configuration (Required in production, optional in test)
+  NEXT_PUBLIC_SUPABASE_URL: requiredInProduction(z.string().url('Invalid Supabase URL')),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: requiredInProduction(z.string().min(1, 'Supabase anon key is required')),
+  SUPABASE_SERVICE_ROLE_KEY: requiredInProduction(z.string().min(1, 'Supabase service role key is required')),
 
-  // Google Gemini AI (Required)
-  GOOGLE_API_KEY: z.string().min(1, 'Google API key is required'),
+  // Google Gemini AI (Required in production, optional in test)
+  GOOGLE_API_KEY: requiredInProduction(z.string().min(1, 'Google API key is required')),
 
-  // SendGrid Email (Required)
-  SENDGRID_API_KEY: z.string().min(1, 'SendGrid API key is required'),
-  SENDGRID_FROM_EMAIL: z.string().email('Invalid SendGrid from email'),
-  SENDGRID_FROM_NAME: z.string().min(1, 'SendGrid from name is required'),
-  SENDGRID_REPLY_TO_EMAIL: z.string().email('Invalid SendGrid reply-to email').optional(),
+  // SendGrid Email (Required in production, optional in test)
+  SENDGRID_API_KEY: requiredInProduction(z.string().min(1, 'SendGrid API key is required')),
+  SENDGRID_FROM_EMAIL: requiredInProduction(z.string().email('Invalid SendGrid from email')),
+  SENDGRID_FROM_NAME: requiredInProduction(z.string().min(1, 'SendGrid from name is required')),
+  SENDGRID_REPLY_TO_EMAIL: requiredInProduction(z.string().email('Invalid SendGrid reply-to email')),
   SENDGRID_WEBHOOK_SIGNING_KEY: z.string().min(1, 'SendGrid webhook signing key is required').optional(),
 
   // Email Webhook (Optional - for inbound email authentication)
@@ -33,9 +39,19 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_SENTRY_DSN: z.string().url('Invalid Sentry DSN').optional(),
   SENTRY_DSN: z.string().url('Invalid Sentry DSN').optional(),
 
-  // Application Configuration (Optional)
-  NEXT_PUBLIC_APP_URL: z.string().url('Invalid app URL').optional(),
+  // Application Configuration
+  NEXT_PUBLIC_APP_URL: requiredInProduction(z.string().url('Invalid app URL')),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Sales Team Configuration (Optional)
+  SALES_TEAM_EMAILS: z.string().min(1, 'Sales team emails required').optional()
+    .transform((val) => val?.split(',').map(email => email.trim()).filter(Boolean))
+    .refine((emails) => !emails || emails.every(email => z.string().email().safeParse(email).success), {
+      message: 'All sales team emails must be valid email addresses'
+    }),
+
+  // AI Model Configuration (Optional - for invoice auto-approval)
+  INVOICE_AUTO_APPROVAL_MODEL: z.string().optional().default('grok-4-1-fast'),
 
   // Test Configuration (Optional)
   TEST_USER_EMAIL: z.string().email('Invalid test user email').optional(),
@@ -68,6 +84,8 @@ export function validateEnv(): Env {
     SENTRY_DSN: process.env.SENTRY_DSN,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NODE_ENV: process.env.NODE_ENV,
+    SALES_TEAM_EMAILS: process.env.SALES_TEAM_EMAILS,
+    INVOICE_AUTO_APPROVAL_MODEL: process.env.INVOICE_AUTO_APPROVAL_MODEL,
     TEST_USER_EMAIL: process.env.TEST_USER_EMAIL,
     TEST_USER_PASSWORD: process.env.TEST_USER_PASSWORD,
     TEST_ADMIN_EMAIL: process.env.TEST_ADMIN_EMAIL,
@@ -122,4 +140,3 @@ export function isDevelopment(): boolean {
 export function isTest(): boolean {
   return getEnv().NODE_ENV === 'test';
 }
-

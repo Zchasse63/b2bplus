@@ -1,6 +1,6 @@
 /**
  * Customer Segmentation API
- * 
+ *
  * POST /api/admin/analytics/segment-customers
  * Segments customers based on AI analysis
  */
@@ -9,12 +9,18 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'ai');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -31,10 +37,7 @@ export async function POST(request: NextRequest) {
       .order('total_revenue', { ascending: false });
 
     if (!allAnalytics || allAnalytics.length === 0) {
-      return NextResponse.json(
-        { error: 'No customer analytics found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Customer analytics');
     }
 
     // Calculate segments based on revenue and behavior
@@ -131,12 +134,8 @@ export async function POST(request: NextRequest) {
         analysisMethod: 'AI-powered behavioral analysis'
       }
     });
-  } catch (error: any) {
-    console.error('Customer segmentation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

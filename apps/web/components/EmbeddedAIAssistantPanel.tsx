@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Card, Button } from "@/components/b2b";
 import { fadeIn, fast } from "@/lib/animations";
 
@@ -225,49 +225,42 @@ export function EmbeddedAIAssistantPanel({ mode }: EmbeddedAIAssistantPanelProps
           </div>
         )}
 
-        <AnimatePresence mode="popLayout">
-          {messages.map((m, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+        {messages.map((m, idx) => (
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className={
+              m.role === "user"
+                ? "ml-auto max-w-[85%]"
+                : "max-w-[85%]"
+            }
+          >
+            <div
               className={
                 m.role === "user"
-                  ? "ml-auto max-w-[85%]"
-                  : "max-w-[85%]"
+                  ? "rounded-2xl rounded-br-md bg-b2b-blue px-4 py-2.5 text-sm text-white shadow-sm"
+                  : "rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-sm text-b2b-text shadow-b2b-sm"
               }
             >
-              <div
-                className={
-                  m.role === "user"
-                    ? "rounded-2xl rounded-br-md bg-b2b-blue px-4 py-2.5 text-sm text-white shadow-sm"
-                    : "rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-sm text-b2b-text shadow-b2b-sm"
-                }
-              >
-                {m.content}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              {m.content}
+            </div>
+          </motion.div>
+        ))}
 
         <div ref={messagesEndRef} />
-
-        <AnimatePresence>
-          {loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="max-w-[85%]"
-            >
-              <div className="rounded-2xl rounded-bl-md bg-white shadow-b2b-sm">
-                <TypingIndicator />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-[85%]"
+          >
+            <div className="rounded-2xl rounded-bl-md bg-white shadow-b2b-sm">
+              <TypingIndicator />
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Input Area */}

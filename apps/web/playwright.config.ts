@@ -17,7 +17,7 @@ dotenv.config({ path: path.resolve(__dirname, '.env.local') });
  */
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: path.resolve(__dirname, '../../e2e'),
 
   // Run tests in files in parallel, but limit workers to avoid overwhelming Supabase auth
   fullyParallel: true,
@@ -33,7 +33,7 @@ export default defineConfig({
   reporter: 'html',
 
   // Global setup to ensure test users exist
-  globalSetup: require.resolve('./e2e/setup/global-setup.ts'),
+  globalSetup: require.resolve('../../e2e/setup/global-setup.ts'),
 
   // Shared settings for all the projects below
   use: {

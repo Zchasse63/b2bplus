@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, DatabaseError } from '@/lib/middleware/error-handler'
 
 /**
  * Historical Purchase Recommendations API
@@ -8,12 +10,16 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Unauthorized')
     }
 
     const { searchParams } = new URL(request.url)
@@ -41,7 +47,7 @@ export async function GET(request: NextRequest) {
       .limit(limit)
 
     if (error) {
-      throw new Error(`Failed to fetch recommendations: ${error.message}`)
+      throw DatabaseError.queryFailed('customer_purchase_analytics', 'fetch')
     }
 
     // Calculate days since last purchase for each
@@ -65,16 +71,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       recommendations,
-      message: recommendations.length > 0 
+      message: recommendations.length > 0
         ? `Found ${recommendations.length} products you used to buy`
         : 'No historical purchase recommendations at this time'
     })
 
-  } catch (error: any) {
-    console.error('Historical recommendations error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to get recommendations' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

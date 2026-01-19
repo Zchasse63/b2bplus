@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler'
 
 interface HistoricalOrderItem {
   oldSKU: string
@@ -28,12 +30,16 @@ interface HistoricalOrder {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -44,17 +50,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
     const body = await request.json()
     const { orders } = body as { orders: HistoricalOrder[] }
 
     if (!orders || !Array.isArray(orders) || orders.length === 0) {
-      return NextResponse.json(
-        { error: 'orders array is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('orders array is required', { orders: ['orders array is required'] })
     }
 
     const results = {
@@ -80,12 +83,8 @@ export async function POST(request: NextRequest) {
       ...results
     })
 
-  } catch (error: any) {
-    console.error('Import historical data error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to import historical data' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }
 
@@ -95,7 +94,7 @@ export async function POST(request: NextRequest) {
 async function importOrder(supabase: any, order: HistoricalOrder) {
   // Find or create customer
   let customerId: string | null = null
-  
+
   // Try to find existing customer by email
   const { data: existingUser } = await supabase
     .from('auth.users')
@@ -125,7 +124,7 @@ async function importOrder(supabase: any, order: HistoricalOrder) {
     .single()
 
   if (orderError) {
-    throw new Error(`Failed to insert order: ${orderError.message}`)
+    throw DatabaseError.queryFailed('historical_orders', 'insert')
   }
 
   // Get SKU mappings for this order's items
@@ -158,7 +157,7 @@ async function importOrder(supabase: any, order: HistoricalOrder) {
     .insert(itemsToInsert)
 
   if (itemsError) {
-    throw new Error(`Failed to insert order items: ${itemsError.message}`)
+    throw DatabaseError.queryFailed('historical_order_items', 'insert')
   }
 
   // Update customer purchase analytics
@@ -194,11 +193,11 @@ async function updateCustomerAnalytics(
       const { error } = await supabase
         .from('customer_purchase_analytics')
         .update({
-          first_purchase_date: existing.first_purchase_date < orderDate 
-            ? existing.first_purchase_date 
+          first_purchase_date: existing.first_purchase_date < orderDate
+            ? existing.first_purchase_date
             : orderDate,
-          last_purchase_date: existing.last_purchase_date > orderDate 
-            ? existing.last_purchase_date 
+          last_purchase_date: existing.last_purchase_date > orderDate
+            ? existing.last_purchase_date
             : orderDate,
           total_orders: existing.total_orders + 1,
           total_quantity: existing.total_quantity + item.quantity,
@@ -211,7 +210,7 @@ async function updateCustomerAnalytics(
         .eq('product_id', productId)
 
       if (error) {
-        console.error('Failed to update analytics:', error)
+        // Log but don't fail the import
       }
     } else {
       // Create new record
@@ -231,7 +230,7 @@ async function updateCustomerAnalytics(
         })
 
       if (error) {
-        console.error('Failed to create analytics:', error)
+        // Log but don't fail the import
       }
     }
   }
@@ -242,12 +241,16 @@ async function updateCustomerAnalytics(
  */
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
-    
+
     // Check authentication and admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthError('Authentication required', 'unauthorized')
     }
 
     // Verify admin role
@@ -258,7 +261,7 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      throw ForbiddenError.insufficientRole('admin')
     }
 
     // Get statistics
@@ -287,11 +290,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
-    console.error('Get import statistics error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to get statistics' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return handleError(error)
   }
 }

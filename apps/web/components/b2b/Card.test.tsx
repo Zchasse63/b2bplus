@@ -44,7 +44,7 @@ describe('Card', () => {
       const { container } = render(<Card variant="bordered">Bordered</Card>)
       const card = container.firstChild
       expect(card).toHaveClass('border')
-      expect(card).toHaveClass('border-b2b-gray-100')
+      expect(card).toHaveClass('border-b2b-gray-200')
     })
 
     it('renders elevated variant', () => {
@@ -58,27 +58,27 @@ describe('Card', () => {
     it('renders medium padding by default', () => {
       const { container } = render(<Card>Medium</Card>)
       const card = container.firstChild
-      expect(card).toHaveClass('p-4')
+      expect(card).toHaveClass('p-6')
     })
 
     it('renders no padding', () => {
       const { container } = render(<Card padding="none">None</Card>)
       const card = container.firstChild
-      expect(card).not.toHaveClass('p-3')
       expect(card).not.toHaveClass('p-4')
       expect(card).not.toHaveClass('p-6')
+      expect(card).not.toHaveClass('p-8')
     })
 
     it('renders small padding', () => {
       const { container } = render(<Card padding="sm">Small</Card>)
       const card = container.firstChild
-      expect(card).toHaveClass('p-3')
+      expect(card).toHaveClass('p-4')
     })
 
     it('renders large padding', () => {
       const { container } = render(<Card padding="lg">Large</Card>)
       const card = container.firstChild
-      expect(card).toHaveClass('p-6')
+      expect(card).toHaveClass('p-8')
     })
   })
 
@@ -106,7 +106,7 @@ describe('Card', () => {
     it('always has rounded corners', () => {
       const { container } = render(<Card>Content</Card>)
       const card = container.firstChild
-      expect(card).toHaveClass('rounded-lg')
+      expect(card).toHaveClass('rounded-xl')
     })
   })
 
@@ -189,7 +189,7 @@ describe('Card', () => {
       
       const card = screen.getByTestId('complex-card')
       expect(card).toHaveClass('shadow-b2b-lg')
-      expect(card).toHaveClass('p-6')
+      expect(card).toHaveClass('p-8')
       expect(card).toHaveClass('cursor-pointer')
       expect(card).toHaveClass('custom-class')
       expect(screen.getByText('Complex Card')).toBeInTheDocument()

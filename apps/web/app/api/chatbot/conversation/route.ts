@@ -1,42 +1,49 @@
 /**
  * Chatbot Conversation Management
- * 
+ *
  * GET /api/chatbot/conversation?conversationId=xxx
  * Retrieve conversation history
- * 
+ *
  * POST /api/chatbot/conversation
  * Create new conversation
- * 
+ *
  * PATCH /api/chatbot/conversation
  * Update conversation (add message, update status)
  */
 
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { z } from 'zod';
+import { handleError, AuthError, ValidationError, NotFoundError, DatabaseError } from '@/lib/middleware/error-handler';
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
+const ConversationUpdateSchema = z.object({
+  conversationId: z.string().uuid('Invalid conversation ID'),
+  message: z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1).max(5000),
+  }),
+});
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get('conversationId');
 
     if (!conversationId) {
-      return NextResponse.json(
-        { error: 'Conversation ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Conversation ID is required');
     }
 
     // Fetch conversation
@@ -48,10 +55,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error || !conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Conversation', conversationId);
     }
 
     return NextResponse.json({
@@ -64,22 +68,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Get conversation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
     // Create new conversation
@@ -93,10 +97,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !conversation) {
-      return NextResponse.json(
-        { error: 'Failed to create conversation' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('chatbot_conversations', 'insert');
     }
 
     return NextResponse.json({
@@ -108,33 +109,29 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Create conversation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Unauthorized');
     }
 
-    const body = await request.json();
-    const { conversationId, message } = body;
+    // Validate request body
+    const validation = await validateRequestBody(request, ConversationUpdateSchema);
+    if (!validation.valid) return validation.response!;
 
-    if (!conversationId || !message) {
-      return NextResponse.json(
-        { error: 'Conversation ID and message are required' },
-        { status: 400 }
-      );
-    }
+    const { conversationId, message } = validation.data!;
 
     // Get current conversation
     const { data: conversation, error: getError } = await supabase
@@ -145,10 +142,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (getError || !conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Conversation', conversationId);
     }
 
     // Add message to conversation
@@ -171,10 +165,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (updateError || !updated) {
-      return NextResponse.json(
-        { error: 'Failed to update conversation' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('chatbot_conversations', 'update');
     }
 
     return NextResponse.json({
@@ -186,12 +177,8 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
-    console.error('Update conversation error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

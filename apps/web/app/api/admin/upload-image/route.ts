@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, DatabaseError, ExternalServiceError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     // Check admin authorization
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
@@ -15,25 +21,25 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      throw new ValidationError('No file provided', {
+        file: ['File is required'],
+      });
     }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.', {
+        file: ['Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.'],
+      });
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB.' },
-        { status: 400 }
-      );
+      throw new ValidationError('File too large. Maximum size is 5MB.', {
+        file: ['File too large. Maximum size is 5MB.'],
+      });
     }
 
     // Generate unique filename
@@ -56,11 +62,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
-      return NextResponse.json(
-        { error: 'Failed to upload image: ' + uploadError.message },
-        { status: 500 }
-      );
+      throw new ExternalServiceError('Supabase Storage', 'Failed to upload image: ' + uploadError.message);
     }
 
     // Get public URL
@@ -81,11 +83,7 @@ export async function POST(request: NextRequest) {
       url: publicUrl,
       fileName,
     });
-  } catch (error: any) {
-    console.error('Image upload error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

@@ -16,7 +16,6 @@ export async function generateText(
   prompt: string,
   options?: {
     temperature?: number;
-    maxTokens?: number;
     systemPrompt?: string;
   }
 ): Promise<string> {
@@ -26,7 +25,6 @@ export async function generateText(
       ? `${options.systemPrompt}\n\n${prompt}`
       : prompt,
     temperature: options?.temperature ?? defaultSettings.fast.temperature,
-    maxTokens: options?.maxTokens ?? defaultSettings.fast.maxTokens,
   });
 
   return result.text;
@@ -40,7 +38,6 @@ export async function generateJSON<T>(
   prompt: string,
   options?: {
     temperature?: number;
-    maxTokens?: number;
     systemPrompt?: string;
     schema?: z.ZodType<T>;
   }
@@ -75,7 +72,6 @@ export async function generateTextPro(
   prompt: string,
   options?: {
     temperature?: number;
-    maxTokens?: number;
     systemPrompt?: string;
   }
 ): Promise<string> {
@@ -85,7 +81,6 @@ export async function generateTextPro(
       ? `${options.systemPrompt}\n\n${prompt}`
       : prompt,
     temperature: options?.temperature ?? defaultSettings.reasoning.temperature,
-    maxTokens: options?.maxTokens ?? defaultSettings.reasoning.maxTokens,
   });
 
   return result.text;
@@ -98,7 +93,6 @@ export async function generateJSONPro<T>(
   prompt: string,
   options?: {
     temperature?: number;
-    maxTokens?: number;
     systemPrompt?: string;
     schema?: z.ZodType<T>;
   }
@@ -131,7 +125,6 @@ export async function streamTextResponse(
   prompt: string,
   options?: {
     temperature?: number;
-    maxTokens?: number;
     systemPrompt?: string;
     useReasoning?: boolean;
   }
@@ -144,7 +137,6 @@ export async function streamTextResponse(
       ? `${options.systemPrompt}\n\n${prompt}`
       : prompt,
     temperature: options?.temperature ?? defaultSettings.fast.temperature,
-    maxTokens: options?.maxTokens ?? defaultSettings.fast.maxTokens,
   });
 }
 
@@ -175,8 +167,8 @@ export async function generateStructuredObject<T>(
 }
 
 /**
- * Placeholder for embeddings (not available in xAI yet)
- * TODO: Implement when xAI supports embeddings or use alternative
+ * Embeddings not available in xAI
+ * Use Supabase pgvector or alternative embedding service
  */
 export async function generateEmbedding(_text: string): Promise<number[]> {
   throw new Error('Embeddings not yet supported. Consider using Supabase pgvector or alternative embedding service.');
@@ -191,8 +183,8 @@ export function cosineSimilarity(_a: number[], _b: number[]): number {
 }
 
 /**
- * Placeholder for image analysis (not available in xAI yet)
- * TODO: Implement when xAI supports vision
+ * Image analysis not available in xAI
+ * Use alternative vision service for image processing
  */
 export async function analyzeImageJSON<T>(
   _imageUrl: string,
@@ -206,8 +198,8 @@ export async function analyzeImageJSON<T>(
 }
 
 /**
- * Placeholder for document processing (not available in xAI yet)
- * TODO: Implement when xAI supports document processing
+ * Document processing not available in xAI
+ * Use alternative document processing service
  */
 export async function processDocumentJSON<T>(
   _document: string | Buffer,

@@ -1,6 +1,6 @@
 /**
  * Customer Lifetime Value Prediction API
- * 
+ *
  * POST /api/admin/analytics/predict-clv
  * Predicts customer lifetime value using AI
  */
@@ -9,6 +9,10 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJSONPro } from '@/lib/ai/providers/unified';
 import { checkAdminRole } from '@/lib/middleware/admin';
+import { validateRequestBody } from '@/lib/middleware/validation';
+import { PredictCLVSchema } from '@/lib/validation/schemas';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, NotFoundError } from '@/lib/middleware/error-handler';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -19,15 +23,19 @@ export async function POST(request: NextRequest) {
     const { user, error: authError } = await checkAdminRole();
     if (authError) return authError;
 
-    const body = await request.json();
-    const { customerId } = body;
-
-    if (!customerId) {
-      return NextResponse.json(
-        { error: 'customerId is required' },
-        { status: 400 }
-      );
+    // Apply rate limiting for admin AI operations
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) {
+      return rateLimitResponse!;
     }
+
+    // Validate request body
+    const validation = await validateRequestBody(request, PredictCLVSchema);
+    if (!validation.valid) {
+      return validation.response!;
+    }
+
+    const { customerId } = validation.data!;
 
     const supabase = await createClient();
 
@@ -39,10 +47,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!analytics) {
-      return NextResponse.json(
-        { error: 'Customer analytics not found' },
-        { status: 404 }
-      );
+      throw new NotFoundError('Customer analytics', customerId);
     }
 
     // Calculate CLV using multiple methods
@@ -97,12 +102,8 @@ Provide a CLV prediction for the next 3 years with confidence level and key driv
         analysisDate: new Date().toISOString()
       }
     });
-  } catch (error: any) {
-    console.error('CLV prediction error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }
 

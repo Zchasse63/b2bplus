@@ -4,15 +4,32 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+export enum AuthErrorType {
+  SessionExpired = 'SESSION_EXPIRED',
+  NetworkError = 'NETWORK_ERROR',
+  InvalidCredentials = 'INVALID_CREDENTIALS',
+  Unknown = 'UNKNOWN',
+}
+
+export interface AuthError {
+  type: AuthErrorType;
+  message: string;
+  retryable: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   cartCount: number;
   isAdmin: boolean;
-  error: string | null;
+  error: AuthError | null;
+  sessionExpiryWarning: boolean;
+  secondsUntilExpiry: number | null;
   refetch: () => Promise<void>;
   updateCartCount: (count: number) => void;
   refreshUser: () => Promise<void>;
+  clearError: () => void;
+  extendSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,11 +39,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AuthError | null>(null);
+  const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false);
+  const [secondsUntilExpiry, setSecondsUntilExpiry] = useState<number | null>(null);
   const supabase = createClient();
 
+  // Helper to create typed errors
+  const createError = useCallback((type: AuthErrorType, message: string, retryable: boolean = false): AuthError => {
+    return { type, message, retryable };
+  }, []);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   // Fetch user and related data
-  const fetchAuthData = useCallback(async () => {
+  const fetchAuthData = useCallback(async (retryCount = 0) => {
     try {
       setLoading(true);
       setError(null);
@@ -37,7 +65,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error: userError,
       } = await supabase.auth.getUser();
 
+      // Handle auth errors
       if (userError) {
+        // AuthSessionMissingError is expected when not logged in
+        if (userError.name === 'AuthSessionMissingError') {
+          setUser(null);
+          setCartCount(0);
+          setIsAdmin(false);
+          return;
+        }
+
+        // Session expired
+        if (userError.message?.includes('expired') || userError.message?.includes('refresh')) {
+          setError(createError(
+            AuthErrorType.SessionExpired,
+            'Your session has expired. Please log in again.',
+            false
+          ));
+          setUser(null);
+          setCartCount(0);
+          setIsAdmin(false);
+          return;
+        }
+
+        // Network error - retryable
+        if (userError.message?.includes('fetch') || userError.message?.includes('network')) {
+          setError(createError(
+            AuthErrorType.NetworkError,
+            'Network error. Please check your connection.',
+            true
+          ));
+          // Retry logic for transient failures
+          if (retryCount < 2) {
+            setTimeout(() => fetchAuthData(retryCount + 1), 1000 * (retryCount + 1));
+            return;
+          }
+          throw userError;
+        }
+
         throw userError;
       }
 
@@ -73,11 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error('Error fetching auth data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch auth data');
+      setError(createError(
+        AuthErrorType.Unknown,
+        err instanceof Error ? err.message : 'Failed to fetch authentication data',
+        true
+      ));
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, createError]);
 
   // Initial fetch
   useEffect(() => {
@@ -188,15 +257,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchAuthData();
   }, [fetchAuthData]);
 
+  const extendSession = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.refreshSession();
+      if (error) throw error;
+      setSessionExpiryWarning(false);
+      setSecondsUntilExpiry(null);
+    } catch (err) {
+      console.error('Failed to extend session:', err);
+    }
+  }, [supabase]);
+
+  // Session expiry warning effect
+  useEffect(() => {
+    if (!user) {
+      setSessionExpiryWarning(false);
+      setSecondsUntilExpiry(null);
+      return;
+    }
+
+    const checkExpiry = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const expiresAt = session.expires_at;
+      if (!expiresAt) return;
+
+      const expiryTime = expiresAt * 1000;
+      const now = Date.now();
+      const timeUntilExpiry = expiryTime - now;
+      const secondsRemaining = Math.floor(timeUntilExpiry / 1000);
+
+      if (secondsRemaining <= 60 && secondsRemaining > 0) {
+        setSessionExpiryWarning(true);
+        setSecondsUntilExpiry(secondsRemaining);
+      } else {
+        setSessionExpiryWarning(false);
+        setSecondsUntilExpiry(null);
+      }
+    };
+
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 5000);
+
+    return () => clearInterval(interval);
+  }, [user, supabase]);
+
   const value: AuthContextType = {
     user,
     loading,
     cartCount,
     isAdmin,
     error,
+    sessionExpiryWarning,
+    secondsUntilExpiry,
     refetch: fetchAuthData,
     updateCartCount,
     refreshUser,
+    clearError,
+    extendSession,
   };
 
   return (

@@ -1,14 +1,20 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, AuthError, ForbiddenError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 // POST assign customer to pricing tier
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -18,17 +24,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const body = await request.json();
     const { customerId, tierId, effectiveFrom, effectiveTo } = body;
 
     if (!customerId || !tierId) {
-      return NextResponse.json(
-        { error: 'Customer ID and Tier ID are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Customer ID and Tier ID are required', {
+        customerId: !customerId ? ['Required'] : [],
+        tierId: !tierId ? ['Required'] : [],
+      });
     }
 
     const { data: assignment, error } = await supabase
@@ -47,39 +53,35 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error assigning tier:', error);
-      return NextResponse.json(
-        { error: 'Failed to assign tier' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('customer_pricing_tiers', 'insert');
     }
 
     return NextResponse.json({ success: true, assignment });
 
   } catch (error) {
-    console.error('Error in assign-tier API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // GET customer tier assignments
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customerId');
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'Customer ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Customer ID is required', { customerId: ['Required'] });
     }
 
     const { data: assignments, error } = await supabase
@@ -92,29 +94,28 @@ export async function GET(request: NextRequest) {
       .order('effective_from', { ascending: false });
 
     if (error) {
-      console.error('Error fetching tier assignments:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch assignments' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('customer_pricing_tiers', 'select');
     }
 
     return NextResponse.json({ success: true, assignments });
 
   } catch (error) {
-    console.error('Error in assign-tier GET API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }
 
 // DELETE remove tier assignment
 export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const supabase = await createClient();
-    
+
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Authentication required', 'unauthorized');
     }
 
     const { data: profile } = await supabase
@@ -124,17 +125,14 @@ export async function DELETE(request: NextRequest) {
       .single();
 
     if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw ForbiddenError.insufficientRole('admin or super_admin');
     }
 
     const { searchParams } = new URL(request.url);
     const assignmentId = searchParams.get('id');
 
     if (!assignmentId) {
-      return NextResponse.json(
-        { error: 'Assignment ID is required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Assignment ID is required', { id: ['Required'] });
     }
 
     const { error } = await supabase
@@ -143,17 +141,12 @@ export async function DELETE(request: NextRequest) {
       .eq('id', assignmentId);
 
     if (error) {
-      console.error('Error deleting tier assignment:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete assignment' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('customer_pricing_tiers', 'delete');
     }
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Error in assign-tier DELETE API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleError(error);
   }
 }

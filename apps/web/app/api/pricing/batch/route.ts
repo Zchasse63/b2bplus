@@ -10,21 +10,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { batchCalculatePricing } from '@/lib/billing/billing-service'
 import { createLogger } from '@/lib/logging/logger'
+import { rateLimit } from '@/lib/middleware/rate-limit'
+import { handleError, AuthError, ValidationError } from '@/lib/middleware/error-handler'
 
 const logger = createLogger('batch-pricing')
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'authenticated')
+    if (!allowed) return rateLimitResponse!
+
     const supabase = await createClient()
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      throw new AuthError('Unauthorized')
     }
 
     // Parse request body
@@ -33,26 +36,17 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'Items array is required and must not be empty' },
-        { status: 400 }
-      )
+      throw new ValidationError('Items array is required and must not be empty')
     }
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: 'organizationId is required' },
-        { status: 400 }
-      )
+      throw new ValidationError('organizationId is required')
     }
 
     // Validate each item
     for (const item of items) {
       if (!item.productId || !item.quantity || typeof item.quantity !== 'number') {
-        return NextResponse.json(
-          { error: 'Each item must have productId and quantity' },
-          { status: 400 }
-        )
+        throw new ValidationError('Each item must have productId and quantity')
       }
     }
 
@@ -74,12 +68,9 @@ export async function POST(request: NextRequest) {
       items: pricing,
       count: pricing.length,
     })
-  } catch (error: any) {
+  } catch (error) {
     logger.error('Batch pricing error', { error })
-    return NextResponse.json(
-      { error: error.message || 'Failed to calculate batch pricing' },
-      { status: 500 }
-    )
+    return handleError(error)
   }
 }
 

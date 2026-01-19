@@ -1,13 +1,20 @@
 /**
  * CSRF Token Endpoint
+export const dynamic = 'force-dynamic';
  * Provides CSRF tokens for client-side requests
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateCSRFToken, addCSRFTokenToCookie } from '@/lib/middleware/csrf';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError } from '@/lib/middleware/error-handler';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'public');
+    if (!allowed) return rateLimitResponse!;
+
     // Get or create CSRF token
     const token = getOrCreateCSRFToken(request);
 
@@ -23,13 +30,7 @@ export async function GET(request: NextRequest) {
     // Add token to cookie
     return addCSRFTokenToCookie(response, token);
   } catch (error) {
-    console.error('Error generating CSRF token:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to generate CSRF token',
-      },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

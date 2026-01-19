@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError, ValidationError, DatabaseError } from '@/lib/middleware/error-handler';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const { allowed, response: rateLimitResponse } = await rateLimit(request, 'admin');
+    if (!allowed) return rateLimitResponse!;
+
     const { leadId, productId } = await request.json();
 
     if (!leadId || !productId) {
-      return NextResponse.json(
-        { error: 'Lead ID and Product ID are required' },
-        { status: 400 }
-      );
+      throw new ValidationError('Lead ID and Product ID are required');
     }
 
     const supabase = await createClient();
@@ -21,11 +24,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error getting lead price:', error);
-      return NextResponse.json(
-        { error: 'Failed to calculate price' },
-        { status: 500 }
-      );
+      throw DatabaseError.queryFailed('pricing', 'get_lead_price');
     }
 
     // Get lead details for context
@@ -56,10 +55,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in lead price calculation:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

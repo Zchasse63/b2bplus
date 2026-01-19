@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/sendgrid';
-import { validateRequestBody } from '@/lib/validation/middleware';
+import { validateRequestBody } from '@/lib/middleware/validation';
 import { MagicLinkRequestSchema } from '@/lib/validation/schemas';
 import { rateLimit } from '@/lib/middleware/rate-limit';
+import { handleError } from '@/lib/middleware/error-handler';
+import {
+  ValidationError,
+  RateLimitError,
+  NotFoundError,
+  DatabaseError,
+  ExternalServiceError,
+} from '@/lib/errors';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,10 +41,7 @@ export async function POST(request: NextRequest) {
       .gte('created_at', oneHourAgo);
 
     if (recentTokens && recentTokens.length >= 3) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
+      throw new RateLimitError('Too many requests. Please try again later.');
     }
 
     // Check if user exists
@@ -68,14 +73,23 @@ export async function POST(request: NextRequest) {
           userName = lead.contact_name || lead.company_name;
         }
       }
+    } else if (phone) {
+      // Check in leads table by phone
+      const { data: lead } = await supabase
+        .from('leads')
+        .select('id, contact_name, company_name')
+        .eq('phone', phone)
+        .single();
+
+      if (lead) {
+        leadId = lead.id;
+        userName = lead.contact_name || lead.company_name;
+      }
     }
 
     // Validate that we have either a user_id or lead_id to work with
     if (!userId && !leadId) {
-      return NextResponse.json(
-        { error: 'Invalid request: user not found and lead not identified' },
-        { status: 400 }
-      );
+      throw new NotFoundError('User');
     }
 
     // Generate unique token
@@ -105,11 +119,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (tokenError) {
-      console.error('Error creating magic link token:', tokenError);
-      return NextResponse.json(
-        { error: 'Failed to generate magic link' },
-        { status: 500 }
-      );
+      throw new DatabaseError('Failed to generate magic link', 'insert', 'magic_link_tokens');
     }
 
     // Send magic link via email
@@ -177,11 +187,7 @@ export async function POST(request: NextRequest) {
           html: emailBody,
         });
       } catch (emailError) {
-        console.error('Error sending magic link email:', emailError);
-        return NextResponse.json(
-          { error: 'Failed to send magic link email' },
-          { status: 500 }
-        );
+        throw new ExternalServiceError('Email', 'Failed to send magic link email', emailError instanceof Error ? emailError : undefined);
       }
     }
 
@@ -189,10 +195,6 @@ export async function POST(request: NextRequest) {
     if (phone) {
       // SMS sending is optional - email is the primary method
       // SMS integration can be added later via Twilio or similar service
-      // For now, we log the code for debugging purposes only in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[DEV] Magic link code for ${phone}: ${token.substring(0, 6)}`);
-      }
     }
 
     return NextResponse.json({
@@ -203,10 +205,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in magic link request:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
